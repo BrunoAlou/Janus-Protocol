@@ -1,0 +1,29 @@
+{
+  "name": "janus-protocol",
+  "version": "1.0.0",
+  "description": "Janus-Protocol é um projeto de TCC que explora o campo de Avaliação Baseada em Jogos (Game-Based Assessment). Trata-se de um jogo 2D de pixel art, com visão top-down, onde o jogador deve escapar de um escritório durante uma crise de sistema causada por uma Inteligência Artificial chamada JANUS.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrunoAlou/Janus-Protocol.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BrunoAlou/Janus-Protocol/issues"
+  },
+  "homepage": "https://github.com/BrunoAlou/Janus-Protocol#readme",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.3"
+  }
+}
