@@ -1,5 +1,7 @@
 # Janus-Protocol
 
+[Veja o GDD do projeto](./GDD.md)
+
 
 Janus-Protocol é um projeto de TCC que explora o campo de Avaliação Baseada em Jogos (Game-Based Assessment). Trata-se de um jogo 2D de pixel art, com visão top-down, onde o jogador deve escapar de um escritório durante uma crise de sistema causada por uma Inteligência Artificial chamada JANUS.
 
