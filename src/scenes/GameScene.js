@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { createSlime } from '../characters/SlimeFactory.js';
+import SlimeController from '../characters/SlimeController.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -6,142 +8,132 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    console.log('Iniciando carregamento dos assets...');
-    
-    // Carregar as imagens dos tilesets (usando as imagens em assets)
+    // Carregar as imagens dos tilesets
     this.load.image("office_tiles_image", "./src/assets/Modern_Office_Shadowless_16x16.png");
     this.load.image("office_tiles_2_image", "./src/assets/Room_Builder_Office_16x16.png");
     
     // Carregar o tilemap JSON
     this.load.tilemapTiledJSON("nivel_1", "./src/assets/nivel_1.json");
-    
-    // Adicionar listeners para debug
-    this.load.on('complete', () => {
-      console.log('Todos os assets foram carregados!');
-    });
-    
-    this.load.on('filecomplete', (key, type, data) => {
-      console.log(`Asset carregado: ${key} (${type})`);
-    });
-    
-    this.load.on('loaderror', (file) => {
-      console.error('Erro ao carregar asset:', file);
-      console.error('Detalhes do erro:', {
-        key: file.key,
-        url: file.url,
-        type: file.type
-      });
-    });
   }
 
+
+
   create() {
-    console.log('Iniciando create()...');
-
-    // SOLUÇÃO: Iniciar a cena da UI para que ela rode em paralelo.
+    // Iniciar a cena da UI em paralelo
     this.scene.launch('UIScene');
-    console.log('GameScene: Comandando o início da UIScene.');
 
-    // 1. CRIAR O MAPA E AS CAMADAS PRIMEIRO
-    const map = this.make.tilemap({ key: 'nivel_1' });
-    const tileset1 = map.addTilesetImage('office_tiles', 'office_tiles_image');
-    const tileset2 = map.addTilesetImage('office_tiles_2', 'office_tiles_2_image');
+    // Criar texturas placeholder se as imagens de tileset não foram carregadas
+    this.ensureTilesetTextures();
+
+    // 1. CRIAR O MAPA E AS CAMADAS
+    this.map = this.make.tilemap({ key: 'nivel_1' });
+    const tileset1 = this.map.addTilesetImage('office_tiles', 'office_tiles_image');
+    const tileset2 = this.map.addTilesetImage('office_tiles_2', 'office_tiles_2_image');
 
     if (!tileset1 || !tileset2) {
-      console.error("Falha ao criar os tilesets. Verifique os nomes no Tiled e no código.");
+      console.error("Falha ao criar os tilesets. Adicione as imagens dos tilesets em src/assets/");
       return;
     }
 
     // Criar as camadas
-    const chaoLayer = map.createLayer('Chão', [tileset1, tileset2], 0, 0);
-    const paredes2Layer = map.createLayer('paredes2', [tileset1, tileset2], 0, 0);
-    const paredesLayer = map.createLayer('Paredes', [tileset1, tileset2], 0, 0);
-    const objetosLayer = map.createLayer('Objetos', [tileset1, tileset2], 0, 0);
-    const objetosSobrepostosLayer = map.createLayer('ObjetosSobrepostos', [tileset1, tileset2], 0, 0);
+    const chaoLayer = this.map.createLayer('Chão', [tileset1, tileset2], 0, 0);
+    const paredes2Layer = this.map.createLayer('paredes2', [tileset1, tileset2], 0, 0);
+    const paredesLayer = this.map.createLayer('Paredes', [tileset1, tileset2], 0, 0);
+    const objetosLayer = this.map.createLayer('Objetos', [tileset1, tileset2], 0, 0);
+    const objetosSobrepostosLayer = this.map.createLayer('ObjetosSobrepostos', [tileset1, tileset2], 0, 0);
 
     // Definir a ordem de renderização (profundidade)
     chaoLayer.setDepth(0);
     paredes2Layer.setDepth(1);
     paredesLayer.setDepth(2);
     objetosLayer.setDepth(3);
-    objetosSobrepostosLayer.setDepth(5); // Maior para ficar sobre o jogador
+    objetosSobrepostosLayer.setDepth(5);
 
-    // 2. CRIAR O JOGADOR
+    // 2. CRIAR O SLIME (personagem principal)
+    const spawnPoint = this.getPlayerSpawnPoint();
+    console.log('[GameScene] Spawn point:', spawnPoint);
+    console.log('[GameScene] Map dimensions:', { 
+      widthInPixels: this.map.widthInPixels, 
+      heightInPixels: this.map.heightInPixels,
+      tileWidth: this.map.tileWidth,
+      tileHeight: this.map.tileHeight,
+      widthInTiles: this.map.width,
+      heightInTiles: this.map.height
+    });
     
-    // MELHORIA: Verificar se a camada de objetos existe antes de procurar o spawn point.
-    // Isso remove o aviso do console. No editor Tiled, certifique-se de que "Objetos"
-    // seja uma "Camada de Objetos", não uma "Camada de Tiles".
-    let spawnPoint = null;
-    const objectLayer = map.getObjectLayer('Objetos');
-    if (objectLayer) {
-        spawnPoint = objectLayer.objects.find(obj => obj.name === "PlayerSpawn");
-    }
+    const playerX = spawnPoint ? spawnPoint.x : this.map.widthInPixels / 2;
+    const playerY = spawnPoint ? spawnPoint.y : this.map.heightInPixels / 2;
+    console.log('[GameScene] Calculated player position:', { playerX, playerY });
 
-    const playerX = spawnPoint ? spawnPoint.x : map.widthInPixels / 2;
-    const playerY = spawnPoint ? spawnPoint.y : map.heightInPixels / 2;
+    // Criar slime principal
+    this.slime = createSlime(this, playerX, playerY);
 
-    this.player = this.physics.add.sprite(playerX, playerY, null); // Usamos um sprite para física
-    this.player.body.setSize(16, 16); // Tamanho da hitbox
-    this.player.setCollideWorldBounds(true);
-    this.player.setDepth(4); // Renderiza acima dos objetos, mas abaixo dos "ObjetosSobrepostos"
-
-    // Adiciona o visual do retângulo vermelho ao sprite físico
-    const graphics = this.add.graphics();
-    graphics.fillStyle(0xff0000, 1.0);
-    graphics.fillRect(-8, -8, 16, 16); // Desenha o retângulo centrado
-    this.player.setData('graphics', graphics); // Guarda a referência
-    
-    // Sincroniza a posição do gráfico com o sprite
-    graphics.x = this.player.x;
-    graphics.y = this.player.y;
-
-    // 3. DEFINIR QUAIS TILES VÃO COLIDIR
+    // 3. DEFINIR COLISÕES
     paredesLayer.setCollisionByExclusion([-1]);
     paredes2Layer.setCollisionByExclusion([-1]);
     objetosLayer.setCollisionByExclusion([-1]);
 
-    // 4. CRIAR OS COLLIDERS AGORA QUE TUDO EXISTE
-    this.physics.add.collider(this.player, paredesLayer);
-    this.physics.add.collider(this.player, paredes2Layer);
-    this.physics.add.collider(this.player, objetosLayer);
+    // 4. CRIAR OS COLLIDERS
+    this.physics.add.collider(this.slime, paredesLayer);
+    this.physics.add.collider(this.slime, paredes2Layer);
+    this.physics.add.collider(this.slime, objetosLayer);
 
-    // Configurar a câmera para seguir o jogador
-    this.cameras.main.startFollow(this.player);
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    this.cameras.main.setZoom(2); // Dê um zoom para ver melhor
+    // Controlador de input do slime
+    this.slimeController = new SlimeController(this, this.slime, { speed: 160 });
 
-    // Configurar controles
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.playerSpeed = 200;
-    
-    console.log('Create() finalizado com sucesso!');
+    // 5. CONFIGURAR A CÂMERA
+    this.cameras.main.startFollow(this.slime);
+    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+    this.cameras.main.setZoom(2);
   }
 
-  // A função createPlayer() não é mais necessária, pois a criação está dentro de create()
+  getPlayerSpawnPoint() {
+    const objectLayer = this.map.getObjectLayer('Objetos');
+    if (objectLayer) {
+      return objectLayer.objects.find(obj => obj.name === 'PlayerSpawn');
+    }
+    return null;
+  }
+
+  ensureTilesetTextures() {
+    // Criar texturas placeholder se as imagens dos tilesets não foram carregadas
+    if (!this.textures.exists('office_tiles_image')) {
+      const canvas1 = document.createElement('canvas');
+      canvas1.width = 256;
+      canvas1.height = 848;
+      const ctx1 = canvas1.getContext('2d');
+      // Grid cinza para visualização
+      ctx1.fillStyle = '#444444';
+      ctx1.fillRect(0, 0, 256, 848);
+      ctx1.strokeStyle = '#666666';
+      for (let i = 0; i < 848; i += 16) {
+        for (let j = 0; j < 256; j += 16) {
+          ctx1.strokeRect(j, i, 16, 16);
+        }
+      }
+      this.textures.addCanvas('office_tiles_image', canvas1);
+      console.warn('Tileset placeholder criado para office_tiles_image');
+    }
+    
+    if (!this.textures.exists('office_tiles_2_image')) {
+      const canvas2 = document.createElement('canvas');
+      canvas2.width = 256;
+      canvas2.height = 224;
+      const ctx2 = canvas2.getContext('2d');
+      ctx2.fillStyle = '#555555';
+      ctx2.fillRect(0, 0, 256, 224);
+      ctx2.strokeStyle = '#777777';
+      for (let i = 0; i < 224; i += 16) {
+        for (let j = 0; j < 256; j += 16) {
+          ctx2.strokeRect(j, i, 16, 16);
+        }
+      }
+      this.textures.addCanvas('office_tiles_2_image', canvas2);
+      console.warn('Tileset placeholder criado para office_tiles_2_image');
+    }
+  }
   
   update() {
-    if (!this.player || !this.player.body) {
-      return;
-    }
-
-    this.player.body.setVelocity(0);
-
-    if (this.cursors.left.isDown) {
-      this.player.body.setVelocityX(-this.playerSpeed);
-    } else if (this.cursors.right.isDown) {
-      this.player.body.setVelocityX(this.playerSpeed);
-    }
-
-    if (this.cursors.up.isDown) {
-      this.player.body.setVelocityY(-this.playerSpeed);
-    } else if (this.cursors.down.isDown) {
-      this.player.body.setVelocityY(this.playerSpeed);
-    }
-
-    // Atualiza a posição do gráfico para seguir o corpo físico
-    const graphics = this.player.getData('graphics');
-    if (graphics) {
-        graphics.x = this.player.x;
-        graphics.y = this.player.y;
-    }
+    if (this.slimeController) this.slimeController.update();
   }
 }
