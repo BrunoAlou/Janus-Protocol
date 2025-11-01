@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph Client[Cliente]
+      Game[Phaser GameScene\n(Arcade Physics)] --> Telemetry[Telemetry Utility\n(Batching + Hash Chain)]
+    end
+
+    subgraph Server[Backend Node]
+      API[/HTTP API\n/api/events\n/api/events/batch\n/api/last_hash/] --> Writer[Validação de hash\n+ escrita em disco]
+    end
+
+    subgraph Storage[Persistência]
+      File[(events.json)]
+      MongoDB[(MongoDB opcional)]
+    end
+
+    Telemetry -- POST (batch/single) --> API
+    Writer -->|append| File
+    Writer -->|insert| MongoDB
+
+    Note["Fluxos-chave:\n• Eventos são encadeados por prev_hash\n• Cliente tenta batch; cai para single se falhar\n• Servidor valida hash; 409 em conflito\n• Consulta de last_hash por session_id"]
+
+    classDef comp fill:#0ea5e9,stroke:#0369a1,color:#fff
+    classDef store fill:#f97316,stroke:#9a3412,color:#fff
+    class Game,Telemetry,API,Writer comp
+    class File,MongoDB store

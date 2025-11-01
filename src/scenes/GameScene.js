@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import { createSlime } from '../characters/SlimeFactory.js';
-import SlimeController from '../characters/SlimeController.js';
+import loadPlayerAssets from '../assets/loadPlayerAssets.js';
+import { createPlayer } from '../player/PlayerFactory.js';
+import PlayerController from '../player/PlayerController.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -14,6 +15,9 @@ export default class GameScene extends Phaser.Scene {
     
     // Carregar o tilemap JSON
     this.load.tilemapTiledJSON("nivel_1", "./src/assets/nivel_1.json");
+
+    // Carregar spritesheet do PLAYER
+    loadPlayerAssets(this);
   }
 
 
@@ -49,7 +53,7 @@ export default class GameScene extends Phaser.Scene {
     objetosLayer.setDepth(3);
     objetosSobrepostosLayer.setDepth(5);
 
-    // 2. CRIAR O SLIME (personagem principal)
+    // 2. CRIAR O PLAYER (personagem principal)
     const spawnPoint = this.getPlayerSpawnPoint();
     console.log('[GameScene] Spawn point:', spawnPoint);
     console.log('[GameScene] Map dimensions:', { 
@@ -65,8 +69,8 @@ export default class GameScene extends Phaser.Scene {
     const playerY = spawnPoint ? spawnPoint.y : this.map.heightInPixels / 2;
     console.log('[GameScene] Calculated player position:', { playerX, playerY });
 
-    // Criar slime principal
-    this.slime = createSlime(this, playerX, playerY);
+    // Criar player principal
+    this.player = createPlayer(this, playerX, playerY);
 
     // 3. DEFINIR COLISÕES
     paredesLayer.setCollisionByExclusion([-1]);
@@ -74,15 +78,15 @@ export default class GameScene extends Phaser.Scene {
     objetosLayer.setCollisionByExclusion([-1]);
 
     // 4. CRIAR OS COLLIDERS
-    this.physics.add.collider(this.slime, paredesLayer);
-    this.physics.add.collider(this.slime, paredes2Layer);
-    this.physics.add.collider(this.slime, objetosLayer);
+    this.physics.add.collider(this.player, paredesLayer);
+    this.physics.add.collider(this.player, paredes2Layer);
+    this.physics.add.collider(this.player, objetosLayer);
 
-    // Controlador de input do slime
-    this.slimeController = new SlimeController(this, this.slime, { speed: 160 });
+    // Controlador de input do player
+    this.playerController = new PlayerController(this, this.player, { speed: 200 });
 
     // 5. CONFIGURAR A CÂMERA
-    this.cameras.main.startFollow(this.slime);
+    this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
     this.cameras.main.setZoom(2);
   }
@@ -133,7 +137,7 @@ export default class GameScene extends Phaser.Scene {
     }
   }
   
-  update() {
-    if (this.slimeController) this.slimeController.update();
+  update(time, delta) {
+    if (this.playerController) this.playerController.update(time, delta);
   }
 }

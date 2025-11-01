@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://janus-protocol.local/schemas/events.schema.json",
+  "title": "Janus Telemetry Event",
+  "type": "object",
+  "required": [
+    "session_id",
+    "timestamp",
+    "type",
+    "payload",
+    "prev_hash",
+    "hash"
+  ],
+  "properties": {
+    "session_id": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "slime_spawn",
+        "slime_animation",
+        "position_sample",
+        "error",
+        "custom"
+      ]
+    },
+    "payload": { "type": "object", "additionalProperties": true },
+    "prev_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string" },
+        "client": { "type": "string" },
+        "env": { "type": "string", "enum": ["dev", "prod", "test"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

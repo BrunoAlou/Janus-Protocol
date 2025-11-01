@@ -1,0 +1,8 @@
+flowchart TB
+    Dev[Dev Machine\n(Vite + Phaser)] --> LocalAPI[Local Backend Node]
+    LocalAPI --> LocalFile[(backend/data/events.json)]
+    LocalAPI -. opcional .-> CloudDB[(MongoDB Atlas)]
+
+    Dev -. build .-> Static[Static Host\n(gh-pages / Vercel)]
+    Static --> CloudAPI[Backend Hospedado]
+    CloudAPI --> CloudDB[(MongoDB)]

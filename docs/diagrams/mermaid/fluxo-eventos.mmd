@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant P as Player
+    participant G as GameScene (Phaser)
+    participant T as Telemetry (cliente)
+    participant B as Backend (Node)
+    participant S as Storage (events.json / MongoDB)
+
+    P->>G: Ação (ex.: tecla pressionada)
+    G->>T: logAction(payload)
+    alt Batch disponível
+      T->>B: POST /api/events/batch [n eventos]
+    else Fallback single
+      T->>B: POST /api/events [1 evento]
+    end
+    B->>B: Recomputar SHA-256 (canonical)
+    B->>B: Validar prev_hash (session_id)
+    alt Hash ok
+      B->>S: Persistir evento(s)
+      B-->>T: 200 OK
+    else Conflito hash
+      B-->>T: 409 Conflict (last_hash)
+      T->>T: Reconciliar e reenfileirar
+    end
