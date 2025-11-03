@@ -1,5 +1,13 @@
 // PlayerController: centraliza lógica de movimentação e controle de animações
-// Inspirado nas boas práticas de Character-Generator-2.0 (entrada + animações/spritesheets)
+// Supports directional animations (walk_right, walk_up, walk_left, walk_down)
+
+import {
+  ANIM_WALK_RIGHT,
+  ANIM_WALK_UP,
+  ANIM_WALK_LEFT,
+  ANIM_WALK_DOWN,
+  ANIM_IDLE
+} from './playerAnimations.js';
 
 export default class PlayerController {
   constructor(scene, player, options = {}) {
@@ -35,7 +43,7 @@ export default class PlayerController {
     });
 
     this._moving = false;
-    this._lastDir = { x: 0, y: 0 };
+    this._lastDirection = ANIM_WALK_DOWN; // Default facing direction
 
     // Ensure arcade body has zero drag by default unless configured
     if (this.player.body && this.player.body.setDrag) {
@@ -70,13 +78,29 @@ export default class PlayerController {
       // Set velocity using Arcade physics
       this.player.body.setVelocity(vx, vy);
 
-      // Flip sprite horizontally when moving left
-      if (dx < 0) this.player.setFlipX(true);
-      else if (dx > 0) this.player.setFlipX(false);
+      // Determine animation based on primary movement direction
+      let animKey;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal movement dominates
+        animKey = dx > 0 ? ANIM_WALK_RIGHT : ANIM_WALK_LEFT;
+      } else {
+        // Vertical movement dominates
+        animKey = dy > 0 ? ANIM_WALK_DOWN : ANIM_WALK_UP;
+      }
 
-      // Play walk animation if not already
-      if (this.player.anims && (!this.player.anims.currentAnim || this.player.anims.currentAnim.key !== 'walk')) {
-        if (this.player.anims.exists('walk')) this.player.play('walk');
+      // Play appropriate directional animation
+      // Use scene's global animation manager
+      if (this.scene.anims.exists(animKey)) {
+        if (!this.player.anims.isPlaying || this.player.anims.currentAnim.key !== animKey) {
+          console.log('[PlayerController] Switching to animation:', animKey, 'dx:', dx.toFixed(2), 'dy:', dy.toFixed(2));
+          this.player.play(animKey);
+        }
+        this._lastDirection = animKey;
+      } else {
+        // Debug: check scene anims manager
+        const allAnims = Object.keys(this.scene.anims.anims.entries);
+        console.warn('[PlayerController] Animation does not exist:', animKey);
+        console.warn('[PlayerController] Available animations:', allAnims);
       }
 
       // movement started
@@ -88,12 +112,12 @@ export default class PlayerController {
       // No input: stop movement
       this.player.body.setVelocity(0, 0);
 
-      // Stop animation and show the initial frame (don't hardcode frame 4)
-      if (this.player.anims && this.player.anims.isPlaying) {
+      // Stop animation on current frame (mantém o último frame da direção)
+      if (this.player.anims.isPlaying) {
         this.player.anims.stop();
+        // Opcional: forçar o primeiro frame da última direção
+        // this.player.anims.setCurrentFrame(this.player.anims.currentAnim.frames[0]);
       }
-      // Manter o frame atual ao parar (não forçar frame 4)
-      // Se quiser um frame idle específico, use: this.player.setFrame('idleFrameNumber');
 
       // movement ended
       if (this._moving) {
@@ -103,3 +127,4 @@ export default class PlayerController {
     }
   }
 }
+

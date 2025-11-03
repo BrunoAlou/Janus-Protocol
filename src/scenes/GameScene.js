@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import loadPlayerAssets from '../assets/loadPlayerAssets.js';
+import loadPlayerAssets from '../player/loadPlayerAssets.js';
 import { createPlayer } from '../player/PlayerFactory.js';
 import PlayerController from '../player/PlayerController.js';
 
@@ -10,11 +10,14 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     // Carregar as imagens dos tilesets
-    this.load.image("office_tiles_image", "./src/assets/Modern_Office_Shadowless_16x16.png");
-    this.load.image("office_tiles_2_image", "./src/assets/Room_Builder_Office_16x16.png");
+    this.load.image("1_generic_image", "./src/assets/1_Generic_32x32.png");
+    this.load.image("5_classroom_image", "./src/assets/5_Classroom_and_library_32x32.png");
+    this.load.image("generic_home_image", "./src/assets/Generic_Home_1_Layer_1_32x32.png");
+    this.load.image("condo_layer1_image", "./src/assets/Condominium_Design_2_layer_1_32x32.png");
+    this.load.image("condo_preview_image", "./src/assets/Condominium_Design_preview_32x32.png");
     
-    // Carregar o tilemap JSON
-    this.load.tilemapTiledJSON("nivel_1", "./src/assets/nivel_1.json");
+    // Carregar o tilemap JSON da recepção
+    this.load.tilemapTiledJSON("reception", "./src/assets/reception.json");
 
     // Carregar spritesheet do PLAYER
     loadPlayerAssets(this);
@@ -30,28 +33,38 @@ export default class GameScene extends Phaser.Scene {
     this.ensureTilesetTextures();
 
     // 1. CRIAR O MAPA E AS CAMADAS
-    this.map = this.make.tilemap({ key: 'nivel_1' });
-    const tileset1 = this.map.addTilesetImage('office_tiles', 'office_tiles_image');
-    const tileset2 = this.map.addTilesetImage('office_tiles_2', 'office_tiles_2_image');
+    this.map = this.make.tilemap({ key: 'reception' });
+    const tileset3 = this.map.addTilesetImage('1_Generic_32x32', '1_generic_image');
+    const tileset4 = this.map.addTilesetImage('5_Classroom_and_library_32x32', '5_classroom_image');
+    const tileset5 = this.map.addTilesetImage('Generic_Home_1_Layer_1_32x32', 'generic_home_image');
+    const tileset6 = this.map.addTilesetImage('Condominium_Design_2_layer_1_32x32', 'condo_layer1_image');
+    const tileset7 = this.map.addTilesetImage('Condominium_Design_2_preview_32x32', 'condo_preview_image');
 
-    if (!tileset1 || !tileset2) {
+    if (!tileset3 || !tileset4 || !tileset5 || !tileset6 || !tileset7) {
       console.error("Falha ao criar os tilesets. Adicione as imagens dos tilesets em src/assets/");
       return;
     }
 
-    // Criar as camadas
-    const chaoLayer = this.map.createLayer('Chão', [tileset1, tileset2], 0, 0);
-    const paredes2Layer = this.map.createLayer('paredes2', [tileset1, tileset2], 0, 0);
-    const paredesLayer = this.map.createLayer('Paredes', [tileset1, tileset2], 0, 0);
-    const objetosLayer = this.map.createLayer('Objetos', [tileset1, tileset2], 0, 0);
-    const objetosSobrepostosLayer = this.map.createLayer('ObjetosSobrepostos', [tileset1, tileset2], 0, 0);
+    // Array com todos os tilesets para uso nas camadas
+    const allTilesets = [tileset3, tileset4, tileset5, tileset6, tileset7];
+
+    // Criar as camadas (novas layers da recepção)
+    const debugNumbersLayer = this.map.createLayer('debug_numbers', allTilesets, 0, 0);
+    const chaoLayer = this.map.createLayer('Chão', allTilesets, 0, 0);
+    const paredes2Layer = this.map.createLayer('paredes2', allTilesets, 0, 0);
+    const paredesLayer = this.map.createLayer('Paredes', allTilesets, 0, 0);
+    const objetosLayer = this.map.createLayer('Objetos', allTilesets, 0, 0);
+    const portasLayer = this.map.createLayer('Portas', allTilesets, 0, 0);
+    const objetosSobrepostosLayer = this.map.createLayer('ObjetosSobrepostos', allTilesets, 0, 0);
 
     // Definir a ordem de renderização (profundidade)
-    chaoLayer.setDepth(0);
-    paredes2Layer.setDepth(1);
-    paredesLayer.setDepth(2);
-    objetosLayer.setDepth(3);
-    objetosSobrepostosLayer.setDepth(5);
+    if (debugNumbersLayer) debugNumbersLayer.setDepth(0).setAlpha(0.3); // Debug layer semi-transparente
+    chaoLayer.setDepth(1);
+    paredes2Layer.setDepth(2);
+    paredesLayer.setDepth(3);
+    objetosLayer.setDepth(4);
+    portasLayer.setDepth(5);
+    objetosSobrepostosLayer.setDepth(6);
 
     // 2. CRIAR O PLAYER (personagem principal)
     const spawnPoint = this.getPlayerSpawnPoint();
@@ -65,30 +78,44 @@ export default class GameScene extends Phaser.Scene {
       heightInTiles: this.map.height
     });
     
-    const playerX = spawnPoint ? spawnPoint.x : this.map.widthInPixels / 2;
-    const playerY = spawnPoint ? spawnPoint.y : this.map.heightInPixels / 2;
-    console.log('[GameScene] Calculated player position:', { playerX, playerY });
+    // DEFINA AQUI A POSIÇÃO INICIAL DO PLAYER EM PIXELS
+    // Exemplo: playerX = 320, playerY = 240 (centro do mapa 40x30)
+    const playerX = 320;  // Posição X em pixels (0 a 640)
+    const playerY = 450;  // Posição Y em pixels (0 a 480)
+    
+    console.log('[GameScene] Player position set to:', { playerX, playerY });
 
     // Criar player principal
     this.player = createPlayer(this, playerX, playerY);
 
-    // 3. DEFINIR COLISÕES
+    // Configurar limites do mundo físico para impedir o player de sair do mapa
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+    
+    // Garantir que o player colida com os limites do mundo
+    this.player.setCollideWorldBounds(true);
+
+    // 3. DEFINIR COLISÕES (incluindo portas)
     paredesLayer.setCollisionByExclusion([-1]);
     paredes2Layer.setCollisionByExclusion([-1]);
     objetosLayer.setCollisionByExclusion([-1]);
+    portasLayer.setCollisionByExclusion([-1]);
 
     // 4. CRIAR OS COLLIDERS
     this.physics.add.collider(this.player, paredesLayer);
     this.physics.add.collider(this.player, paredes2Layer);
     this.physics.add.collider(this.player, objetosLayer);
+    this.physics.add.collider(this.player, portasLayer);
 
-    // Controlador de input do player
-    this.playerController = new PlayerController(this, this.player, { speed: 200 });
+    // Controlador de input do player (velocidade ajustada para mapa menor)
+    this.playerController = new PlayerController(this, this.player, { speed: 180 });
 
     // 5. CONFIGURAR A CÂMERA
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.cameras.main.setZoom(2);
+    
+    // Aumentar zoom para que o mapa fique maior na tela
+    // Com mapa 40x30 (640x480px), usar zoom 2.0 para melhor visualização
+    this.cameras.main.setZoom(4.0);
   }
 
   getPlayerSpawnPoint() {

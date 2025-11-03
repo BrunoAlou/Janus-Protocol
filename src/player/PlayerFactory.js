@@ -1,25 +1,14 @@
-import { createPlayerAnimations, WALK_ROW_INDEX } from '../assets/playerAnimations.js';
-import { PLAYER_TEXTURE_KEY, FRAME_WIDTH, FRAME_HEIGHT } from '../assets/loadPlayerAssets.js';
+import { createPlayerAnimations } from './playerAnimations.js';
+import { PLAYER_TEXTURE_KEY, FRAME_WIDTH, FRAME_HEIGHT } from './loadPlayerAssets.js';
 
 export function createPlayer(scene, x, y) {
   console.log('[PlayerFactory] createPlayer called with position:', { x, y });
   
-  let preferredFrame = 0;
-  const texture = scene.textures.get(PLAYER_TEXTURE_KEY);
-  if (texture) {
-    const source = texture.source && texture.source[0];
-    const sheetWidth = source ? source.width : FRAME_WIDTH;
-    const sheetHeight = source ? source.height : FRAME_HEIGHT;
-    const framesPerRow = Math.max(1, Math.floor(sheetWidth / FRAME_WIDTH));
-    const totalRows = Math.max(1, Math.floor(sheetHeight / FRAME_HEIGHT));
-    const totalFrames = texture.frameTotal || framesPerRow * totalRows;
-    const startIndex = Math.min(WALK_ROW_INDEX, totalRows - 1) * framesPerRow;
-    preferredFrame = Math.min(totalFrames - 1, startIndex);
-  }
+  // For texture atlas, use default frame (walk_down_01)
+  const preferredFrame = 'walk_down_01';
   
-  // Create physics sprite com configuração MÍNIMA
+  // Create physics sprite with idle frame
   const sprite = scene.physics.add.sprite(x, y, PLAYER_TEXTURE_KEY, preferredFrame);
-  sprite.setFrame(preferredFrame);
   console.log('[PlayerFactory] Sprite created at:', { x: sprite.x, y: sprite.y, frame: sprite.frame.name });
   
   sprite.setCollideWorldBounds(true);
@@ -27,8 +16,9 @@ export function createPlayer(scene, x, y) {
   
   const tileWidth = scene.map?.tileWidth ?? FRAME_WIDTH;
   const tileHeight = scene.map?.tileHeight ?? FRAME_HEIGHT;
-  const desiredTilesWide = 2;
-  const desiredTilesTall = 2;
+  // Player ocupa 3x3 tiles para melhor proporção
+  const desiredTilesWide = 4;
+  const desiredTilesTall = 4;
   const scaleX = (tileWidth * desiredTilesWide) / FRAME_WIDTH;
   const scaleY = (tileHeight * desiredTilesTall) / FRAME_HEIGHT;
   const scale = Number.isFinite(scaleX) && Number.isFinite(scaleY)
@@ -45,17 +35,34 @@ export function createPlayer(scene, x, y) {
   });
 
   if (sprite.body) {
-    const bodyWidth = FRAME_WIDTH * 0.7;
-    const bodyHeight = FRAME_HEIGHT * 0.85;
-    const offsetX = (FRAME_WIDTH - bodyWidth) / 2;
-    const offsetY = FRAME_HEIGHT - bodyHeight;
+    // Hitbox pequena e centralizada (apenas os pés do personagem)
+    // Frame original: 32x64 pixels
+    const bodyWidth = 12;   // Hitbox bem estreita
+    const bodyHeight = 35;   // Hitbox bem baixa (só os pés)
+    
+    // Ajustar offset para compensar o deslocamento
+    const offsetX = 10;  // Movido mais para a esquerda (era 10)
+    const offsetY = FRAME_HEIGHT - bodyHeight;  // 64-8 = 56px do topo
+    
     sprite.body.setSize(bodyWidth, bodyHeight);
     sprite.body.setOffset(offsetX, offsetY);
-    console.log('[PlayerFactory] Hitbox size:', { bodyWidth, bodyHeight, offsetX, offsetY });
+    console.log('[PlayerFactory] Hitbox size:', { 
+      bodyWidth, 
+      bodyHeight, 
+      offsetX, 
+      offsetY,
+      frameOriginal: `${FRAME_WIDTH}x${FRAME_HEIGHT}`
+    });
   }
 
   // Register animations
   createPlayerAnimations(scene);
+  
+  // Start with idle animation
+  if (sprite.anims && sprite.anims.exists('idle')) {
+    sprite.play('idle');
+    console.log('[PlayerFactory] Playing idle animation');
+  }
 
   return sprite;
 }
