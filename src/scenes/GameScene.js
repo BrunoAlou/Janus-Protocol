@@ -28,6 +28,10 @@ export default class GameScene extends Phaser.Scene {
   create() {
     // Iniciar a cena da UI em paralelo
     this.scene.launch('UIScene');
+    this.scene.launch('MinimapScene');
+
+    // Notificar minimapa sobre a sala atual
+    this.game.events.emit('room-changed', 'GameScene');
 
     // Criar texturas placeholder se as imagens de tileset não foram carregadas
     this.ensureTilesetTextures();
@@ -87,7 +91,6 @@ export default class GameScene extends Phaser.Scene {
 
     // Criar player principal
     this.player = createPlayer(this, playerX, playerY);
-
     // Configurar limites do mundo físico para impedir o player de sair do mapa
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
     
@@ -101,10 +104,22 @@ export default class GameScene extends Phaser.Scene {
     portasLayer.setCollisionByExclusion([-1]);
 
     // 4. CRIAR OS COLLIDERS
-    this.physics.add.collider(this.player, paredesLayer);
-    this.physics.add.collider(this.player, paredes2Layer);
-    this.physics.add.collider(this.player, objetosLayer);
-    this.physics.add.collider(this.player, portasLayer);
+    const colliderParedes = this.physics.add.collider(this.player, paredesLayer);
+    const colliderParedes2 = this.physics.add.collider(this.player, paredes2Layer);
+    const colliderObjetos = this.physics.add.collider(this.player, objetosLayer);
+    const colliderPortas = this.physics.add.collider(this.player, portasLayer);
+
+    // 5. SISTEMA DE DEBUG DE COLISÕES
+    this.collisionDebugger = new CollisionDebugger(this, this.player);
+    this.collisionDebugger.registerCollider(colliderParedes, 'Paredes');
+    this.collisionDebugger.registerCollider(colliderParedes2, 'Paredes2');
+    this.collisionDebugger.registerCollider(colliderObjetos, 'Objetos');
+    this.collisionDebugger.registerCollider(colliderPortas, 'Portas');
+
+    // Tecla D para toggle do debug de colisões
+    this.input.keyboard.on('keydown-D', () => {
+      this.collisionDebugger.toggle();
+    });
 
     // Controlador de input do player (velocidade ajustada para mapa menor)
     this.playerController = new PlayerController(this, this.player, { speed: 180 });
