@@ -1,5 +1,6 @@
 /**
  * CollisionDebugger - Sistema de debug para visualizar colisões
+ * Inclui visualização da hitbox do player com suporte a hitbox circular
  */
 
 export default class CollisionDebugger {
@@ -10,8 +11,13 @@ export default class CollisionDebugger {
     this.collisionText = null;
     this.enabled = true;
     
+    // Gráficos para visualização da hitbox
+    this.hitboxGraphics = null;
+    this.hitboxInfoText = null;
+    
     this.createDebugUI();
-    console.log('[CollisionDebugger] Initialized');
+    this.createHitboxVisualization();
+    console.log('[CollisionDebugger] Initialized with hitbox visualization');
   }
 
   createDebugUI() {
@@ -25,6 +31,24 @@ export default class CollisionDebugger {
       padding: { x: 10, y: 5 },
       align: 'center'
     }).setOrigin(0.5, 0).setDepth(10000).setScrollFactor(0);
+  }
+  
+  /**
+   * Cria a visualização gráfica da hitbox do player
+   */
+  createHitboxVisualization() {
+    // Gráficos que seguem o player
+    this.hitboxGraphics = this.scene.add.graphics();
+    this.hitboxGraphics.setDepth(99999); // Sempre no topo
+    
+    // Texto com informações da hitbox
+    this.hitboxInfoText = this.scene.add.text(10, 60, '', {
+      fontSize: '12px',
+      color: '#00ff00',
+      backgroundColor: '#000000aa',
+      padding: { x: 8, y: 4 },
+      fontFamily: 'monospace'
+    }).setDepth(10000).setScrollFactor(0);
   }
 
   /**
@@ -170,6 +194,9 @@ export default class CollisionDebugger {
   update() {
     if (!this.player.body) return;
 
+    // Atualizar visualização da hitbox
+    this.updateHitboxVisualization();
+
     // Verificar limites do mundo
     this.checkWorldBounds();
 
@@ -187,6 +214,130 @@ export default class CollisionDebugger {
       }
     }
   }
+  
+  /**
+   * Atualiza a visualização gráfica da hitbox do player
+   */
+  updateHitboxVisualization() {
+    if (!this.hitboxGraphics || !this.enabled) {
+      if (this.hitboxGraphics) this.hitboxGraphics.clear();
+      if (this.hitboxInfoText) this.hitboxInfoText.setVisible(false);
+      return;
+    }
+    
+    const body = this.player.body;
+    if (!body) return;
+    
+    this.hitboxGraphics.clear();
+    this.hitboxInfoText.setVisible(true);
+    
+    // Detectar se é hitbox circular ou retangular
+    const isCircle = body.isCircle;
+    
+    // Cores para debug
+    const fillColor = 0x00ff00;  // Verde para área da hitbox
+    const strokeColor = 0xffff00; // Amarelo para contorno
+    const pivotColor = 0xff0000;  // Vermelho para pivot point
+    const spriteColor = 0x0088ff; // Azul para área total do sprite
+    
+    // Posição do body no mundo
+    const bodyX = body.x;
+    const bodyY = body.y;
+    
+    // Área total do sprite (contorno azul pontilhado)
+    this.hitboxGraphics.lineStyle(1, spriteColor, 0.5);
+    const spriteLeft = this.player.x - (this.player.displayWidth * this.player.originX);
+    const spriteTop = this.player.y - (this.player.displayHeight * this.player.originY);
+    this.hitboxGraphics.strokeRect(
+      spriteLeft,
+      spriteTop,
+      this.player.displayWidth,
+      this.player.displayHeight
+    );
+    
+    if (isCircle) {
+      // === HITBOX CIRCULAR ===
+      const radius = body.radius;
+      const centerX = bodyX + radius;
+      const centerY = bodyY + radius;
+      
+      // Preenchimento semi-transparente
+      this.hitboxGraphics.fillStyle(fillColor, 0.3);
+      this.hitboxGraphics.fillCircle(centerX, centerY, radius);
+      
+      // Contorno sólido
+      this.hitboxGraphics.lineStyle(2, strokeColor, 1);
+      this.hitboxGraphics.strokeCircle(centerX, centerY, radius);
+      
+      // Linha indicando o raio
+      this.hitboxGraphics.lineStyle(1, 0xffffff, 0.8);
+      this.hitboxGraphics.lineBetween(centerX, centerY, centerX + radius, centerY);
+      
+      // Atualizar texto informativo
+      this.hitboxInfoText.setText([
+        '=== HITBOX DEBUG (D) ===',
+        `Tipo: CÍRCULO (pés)`,
+        `Raio: ${radius.toFixed(1)}px`,
+        `Centro: (${centerX.toFixed(0)}, ${centerY.toFixed(0)})`,
+        `Player Y: ${this.player.y.toFixed(0)}`,
+        `Depth: ${this.player.depth}`,
+        `Pivot: (${this.player.originX}, ${this.player.originY})`,
+        `Touching: ${this.getTouchingString()}`,
+        '\n[VERDE] Hitbox | [AZUL] Sprite',
+        '[VERMELHO] Pivot point'
+      ].join('\n'));
+      
+    } else {
+      // === HITBOX RETANGULAR ===
+      const width = body.width;
+      const height = body.height;
+      
+      // Preenchimento semi-transparente
+      this.hitboxGraphics.fillStyle(fillColor, 0.3);
+      this.hitboxGraphics.fillRect(bodyX, bodyY, width, height);
+      
+      // Contorno sólido
+      this.hitboxGraphics.lineStyle(2, strokeColor, 1);
+      this.hitboxGraphics.strokeRect(bodyX, bodyY, width, height);
+      
+      // Atualizar texto informativo
+      this.hitboxInfoText.setText([
+        '=== HITBOX DEBUG (D) ===',
+        `Tipo: RETÂNGULO (pés)`,
+        `Tamanho: ${width.toFixed(0)}x${height.toFixed(0)}px`,
+        `Posição: (${bodyX.toFixed(0)}, ${bodyY.toFixed(0)})`,
+        `Player Y: ${this.player.y.toFixed(0)}`,
+        `Depth: ${this.player.depth}`,
+        `Pivot: (${this.player.originX}, ${this.player.originY})`,
+        `Touching: ${this.getTouchingString()}`,
+        '\n[VERDE] Hitbox | [AZUL] Sprite',
+        '[VERMELHO] Pivot point'
+      ].join('\n'));
+    }
+    
+    // Marcar pivot point do player (origem)
+    this.hitboxGraphics.fillStyle(pivotColor, 1);
+    this.hitboxGraphics.fillCircle(this.player.x, this.player.y, 3);
+    
+    // Cruz no pivot para melhor visibilidade
+    this.hitboxGraphics.lineStyle(1, pivotColor, 1);
+    this.hitboxGraphics.lineBetween(this.player.x - 6, this.player.y, this.player.x + 6, this.player.y);
+    this.hitboxGraphics.lineBetween(this.player.x, this.player.y - 6, this.player.x, this.player.y + 6);
+  }
+  
+  /**
+   * Retorna string das direções que estão colidindo
+   */
+  getTouchingString() {
+    if (!this.player.body) return 'N/A';
+    const t = this.player.body.touching;
+    const dirs = [];
+    if (t.up) dirs.push('↑');
+    if (t.down) dirs.push('↓');
+    if (t.left) dirs.push('←');
+    if (t.right) dirs.push('→');
+    return dirs.length > 0 ? dirs.join(' ') : 'Nenhuma';
+  }
 
   /**
    * Ativa/desativa o debugger
@@ -194,6 +345,12 @@ export default class CollisionDebugger {
   toggle() {
     this.enabled = !this.enabled;
     this.collisionText.setVisible(this.enabled);
+    this.hitboxInfoText?.setVisible(this.enabled);
+    
+    if (!this.enabled && this.hitboxGraphics) {
+      this.hitboxGraphics.clear();
+    }
+    
     console.log('[CollisionDebugger]', this.enabled ? 'ENABLED' : 'DISABLED');
   }
 
@@ -202,6 +359,8 @@ export default class CollisionDebugger {
    */
   destroy() {
     this.collisionText?.destroy();
+    this.hitboxGraphics?.destroy();
+    this.hitboxInfoText?.destroy();
     this.activeCollisions.clear();
   }
 }

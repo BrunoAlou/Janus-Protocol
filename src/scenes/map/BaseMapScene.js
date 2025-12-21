@@ -29,12 +29,6 @@ export default class BaseMapScene extends Phaser.Scene {
   }
 
   create() {
-    // Lançar cenas de UI
-    this.scene.launch('UIScene');
-    this.scene.launch('DialogScene');
-    this.scene.launch('PauseMenuScene');
-    this.scene.launch('MinimapScene');
-
     // Notificar mudança de sala para o minimapa
     this.game.events.emit('room-changed', this.sceneKey);
 
@@ -54,19 +48,75 @@ export default class BaseMapScene extends Phaser.Scene {
     this.setupCamera();
 
     console.log(`[${this.sceneKey}] Scene created`);
+    
+    // SceneManager já gerencia as cenas UI
+    console.log(`[${this.sceneKey}] UI scenes managed by SceneManager`);
   }
 
   setupMap() {
+    console.log(`[${this.sceneKey}] Setting up map with key: ${this.mapKey}`);
+    
+    // Verificar se o tilemap existe
+    if (!this.cache.tilemap.has(this.mapKey)) {
+      console.error(`[${this.sceneKey}] Tilemap "${this.mapKey}" not found in cache!`);
+      console.log('Available tilemaps:', this.cache.tilemap.getKeys());
+      return;
+    }
+    
     this.map = this.make.tilemap({ key: this.mapKey });
     
-    // Adicionar tilesets (mesmos para todas as cenas)
-    const tileset1 = this.map.addTilesetImage('1_Generic_32x32', '1_generic_image');
-    const tileset2 = this.map.addTilesetImage('5_Classroom_and_library_32x32', '5_classroom_image');
-    const tileset3 = this.map.addTilesetImage('Generic_Home_1_Layer_1_32x32', 'generic_home_image');
-    const tileset4 = this.map.addTilesetImage('Condominium_Design_2_layer_1_32x32', 'condo_layer1_image');
-    const tileset5 = this.map.addTilesetImage('Condominium_Design_2_preview_32x32', 'condo_preview_image');
-
-    const allTilesets = [tileset1, tileset2, tileset3, tileset4, tileset5];
+    if (!this.map) {
+      console.error(`[${this.sceneKey}] Failed to create tilemap!`);
+      return;
+    }
+    
+    console.log(`[${this.sceneKey}] Map created:`, {
+      width: this.map.width,
+      height: this.map.height,
+      tileWidth: this.map.tileWidth,
+      tileHeight: this.map.tileHeight,
+      layers: this.map.layers.map(l => l.name),
+      tilesets: this.map.tilesets.map(ts => ({ name: ts.name, firstgid: ts.firstgid }))
+    });
+    
+    // Adicionar tilesets baseado no que o mapa realmente usa
+    console.log(`[${this.sceneKey}] Tentando adicionar tilesets...`);
+    const allTilesets = [];
+    
+    // Para cada tileset no mapa, tentar adicionar
+    this.map.tilesets.forEach(tilesetData => {
+      const tilesetName = tilesetData.name;
+      console.log(`[${this.sceneKey}] Procurando tileset: ${tilesetName}`);
+      
+      // Mapear nome do tileset para chave da textura carregada
+      let textureKey = null;
+      if (tilesetName.includes('1_Generic_32x32')) textureKey = '1_generic_image';
+      else if (tilesetName.includes('5_Classroom')) textureKey = '5_classroom_image';
+      else if (tilesetName.includes('Generic_Home')) textureKey = 'generic_home_image';
+      else if (tilesetName.includes('Condominium_Design_2_layer_1')) textureKey = 'condo_layer1_image';
+      else if (tilesetName.includes('Condominium_Design_2_preview')) textureKey = 'condo_preview_image';
+      
+      if (textureKey) {
+        console.log(`[${this.sceneKey}] Tentando adicionar ${tilesetName} com textura ${textureKey}`);
+        const tileset = this.map.addTilesetImage(tilesetName, textureKey);
+        if (tileset) {
+          allTilesets.push(tileset);
+          console.log(`[${this.sceneKey}] ✓ Tileset ${tilesetName} adicionado com sucesso`);
+        } else {
+          console.error(`[${this.sceneKey}] ✗ Falha ao adicionar tileset ${tilesetName}`);
+        }
+      } else {
+        console.warn(`[${this.sceneKey}] Tileset ${tilesetName} não tem mapeamento de textura`);
+      }
+    });
+    
+    console.log(`[${this.sceneKey}] Tilesets criados: ${allTilesets.length}`);
+    
+    if (allTilesets.length === 0) {
+      console.error(`[${this.sceneKey}] No valid tilesets created!`);
+      console.error('Map tilesets expected:', this.map.tilesets?.map(ts => ts.name));
+      return;
+    }
 
     // Criar camadas (nomes padrão)
     this.layers = {
@@ -78,6 +128,8 @@ export default class BaseMapScene extends Phaser.Scene {
       doors: this.map.createLayer('Portas', allTilesets, 0, 0),
       objectsOver: this.map.createLayer('ObjetosSobrepostos', allTilesets, 0, 0)
     };
+    
+    console.log(`[${this.sceneKey}] Layers created:`, Object.keys(this.layers).filter(k => this.layers[k] !== null));
 
     // Configurar depths
     if (this.layers.debug) this.layers.debug.setDepth(0).setAlpha(0.3);
@@ -169,14 +221,30 @@ export default class BaseMapScene extends Phaser.Scene {
     if (this.collisionDebugger) {
       this.collisionDebugger.update();
     }
-    // Atualizar posição de elementos dos NPCs
-    this.npcs.forEach(npc => npc.updateElements?.());
+    
+    // === Y-SORTING ===
+    // Atualizar depth do player baseado na posição Y
+    // Quanto maior o Y (mais para baixo), mais "na frente" o objeto está
+    if (this.player) {
+      // Usar a posição Y do player para determinar a profundidade
+      // Base depth de 100 + Y garante que objetos com Y maior ficam na frente
+      // Dividir por 10 para não explodir o número
+      this.player.setDepth(100 + Math.floor(this.player.y / 10));
+    }
+    
+    // Y-sorting para NPCs também
+    this.npcs.forEach(npc => {
+      if (npc && npc.y !== undefined) {
+        npc.setDepth(100 + Math.floor(npc.y / 10));
+      }
+      npc.updateElements?.();
+    });
   }
 
   /**
    * Transição para outra cena
    */
   transitionTo(sceneKey, data = {}) {
-    this.scene.start(sceneKey, { ...data, user: this.user, previousScene: this.sceneKey });
+    window.sceneManager.switchToMap(sceneKey, { ...data, user: this.user, previousScene: this.sceneKey });
   }
 }

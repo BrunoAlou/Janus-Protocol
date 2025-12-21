@@ -1,0 +1,14 @@
+{ "columns":28,
+ "image":"Condominium_Design_2_layer_1_32x32.png",
+ "imageheight":192,
+ "imagewidth":448,
+ "margin":0,
+ "name":"Condominium_Design_2_layer_1_32x32",
+ "spacing":0,
+ "tilecount":336,
+ "tiledversion":"1.11.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
+}

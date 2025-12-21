@@ -81,11 +81,6 @@ export default class DialogScene extends Phaser.Scene {
     this.spaceKey = this.input.keyboard.addKey('SPACE');
     this.spaceKey.on('down', () => this.advanceDialogue());
 
-    // Escutar eventos de interação
-    this.game.scene.getScene('ReceptionScene')?.events.on('npc-interact', (data) => {
-      this.showDialog(data);
-    });
-
     console.log('[DialogScene] Created');
   }
 
@@ -93,17 +88,30 @@ export default class DialogScene extends Phaser.Scene {
    * Mostra diálogo do NPC
    */
   showDialog(data) {
+    console.log('[DialogScene] showDialog called with data:', data);
+    console.log('[DialogScene] dialogContainer visible before:', this.dialogContainer.visible);
+    
+    // Trazer DialogScene para o topo
+    this.scene.bringToTop();
+    console.log('[DialogScene] Scene brought to top');
+    
     this.currentDialogue = data.dialogues;
     this.dialogueIndex = 0;
     this.npcNameText.setText(data.name);
     
     this.dialogContainer.setVisible(true);
+    console.log('[DialogScene] dialogContainer visible after:', this.dialogContainer.visible);
+    
     this.displayCurrentDialogue();
 
-    // Pausar movimentação do player
-    const mainScene = this.game.scene.getScene('ReceptionScene');
-    if (mainScene?.playerController) {
-      mainScene.playerController.enabled = false;
+    // Pausar movimentação do player - buscar cena ativa do jogo
+    const activeGameScene = this.getActiveGameScene();
+    if (activeGameScene?.playerController) {
+      console.log('[DialogScene] Disabling player controller, current state:', activeGameScene.playerController.enabled);
+      activeGameScene.playerController.enabled = false;
+      console.log('[DialogScene] Player controller disabled on:', activeGameScene.scene.key, '- new state:', activeGameScene.playerController.enabled);
+    } else {
+      console.warn('[DialogScene] Could not find active game scene or player controller!');
     }
 
     console.log('[DialogScene] Showing dialog from:', data.name);
@@ -138,7 +146,10 @@ export default class DialogScene extends Phaser.Scene {
         } else {
           typeTimer.remove();
           this.isTyping = false;
-          this.continueIndicator.setVisible(this.dialogueIndex < this.currentDialogue.length - 1);
+          // Verificar se currentDialogue ainda existe antes de acessar
+          this.continueIndicator.setVisible(
+            this.currentDialogue && this.dialogueIndex < this.currentDialogue.length - 1
+          );
         }
       },
       loop: true
@@ -176,17 +187,44 @@ export default class DialogScene extends Phaser.Scene {
     this.dialogueIndex = 0;
     this.isTyping = false;
 
-    // Retomar movimentação do player
-    const mainScene = this.game.scene.getScene('ReceptionScene');
-    if (mainScene?.playerController) {
-      mainScene.playerController.enabled = true;
+    // Retomar movimentação do player - buscar cena ativa do jogo
+    const activeGameScene = this.getActiveGameScene();
+    if (activeGameScene?.playerController) {
+      console.log('[DialogScene] Enabling player controller, current state:', activeGameScene.playerController.enabled);
+      activeGameScene.playerController.enabled = true;
+      console.log('[DialogScene] Player controller enabled on:', activeGameScene.scene.key, '- new state:', activeGameScene.playerController.enabled);
+      
+      // Garantir reativação com delay adicional
+      this.time.delayedCall(100, () => {
+        if (activeGameScene?.playerController) {
+          activeGameScene.playerController.enabled = true;
+          console.log('[DialogScene] Player controller re-enabled after delay');
+        }
+      });
+    } else {
+      console.warn('[DialogScene] Could not find active game scene or player controller on close!');
     }
 
     // Finalizar interação
-    if (mainScene?.interactionManager) {
-      mainScene.interactionManager.endInteraction();
+    if (activeGameScene?.interactionManager) {
+      activeGameScene.interactionManager.endInteraction();
     }
 
     console.log('[DialogScene] Dialog closed');
+  }
+
+  /**
+   * Busca a cena de jogo ativa (não UI)
+   */
+  getActiveGameScene() {
+    const activeScenes = this.scene.manager.getScenes(true);
+    return activeScenes.find(scene => 
+      scene.scene.key !== 'UIScene' && 
+      scene.scene.key !== 'DialogScene' && 
+      scene.scene.key !== 'PauseMenuScene' &&
+      scene.scene.key !== 'MinimapScene' &&
+      scene.scene.key !== 'LoginScene' &&
+      !scene.scene.key.includes('Game') // Exclui minigames
+    );
   }
 }

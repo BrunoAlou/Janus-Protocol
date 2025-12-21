@@ -1,6 +1,32 @@
 import { createPlayerAnimations } from './playerAnimations.js';
 import { PLAYER_TEXTURE_KEY, FRAME_WIDTH, FRAME_HEIGHT } from './loadPlayerAssets.js';
 
+/**
+ * Configurações da hitbox do player
+ * Seguindo boas práticas de jogos top-down:
+ * - Hitbox reduzida para apenas os pés (terço inferior)
+ * - Hitbox circular para movimentação fluida nas quinas
+ * - Pivot point na base para Y-sorting correto
+ */
+export const PLAYER_HITBOX_CONFIG = {
+  // Usar hitbox circular para colisões mais suaves
+  useCircle: true,
+  
+  // Raio do círculo (apenas os pés do personagem)
+  circleRadius: 8,
+  
+  // Offset do círculo para posicionar nos pés
+  // (baseado no frame 64x64)
+  circleOffsetX: -16,  // Centralizado horizontalmente
+  circleOffsetY: 12, // Próximo à base do sprite
+  
+  // Fallback para hitbox retangular (se useCircle = false)
+  rectWidth: 16,
+  rectHeight: 12,
+  rectOffsetX: 24,  // (64 - 16) / 2 = 24
+  rectOffsetY: 50,  // 64 - 12 - 2 = 50 (próximo à base)
+};
+
 export function createPlayer(scene, x, y) {
   console.log('[PlayerFactory] createPlayer called with position:', { x, y });
   
@@ -11,12 +37,19 @@ export function createPlayer(scene, x, y) {
   const sprite = scene.physics.add.sprite(x, y, PLAYER_TEXTURE_KEY, preferredFrame);
   console.log('[PlayerFactory] Sprite created at:', { x: sprite.x, y: sprite.y, frame: sprite.frame.name });
   
+  // === PIVOT POINT NA BASE ===
+  // Definir origem na parte inferior central do sprite
+  // Isso facilita o Y-sorting e alinha a posição com os pés
+  sprite.setOrigin(0.5, 1); // Centro horizontal, base vertical
+  
   sprite.setCollideWorldBounds(true);
+  
+  // Depth será controlado dinamicamente pelo Y-sorting
   sprite.setDepth(4);
   
   const tileWidth = scene.map?.tileWidth ?? FRAME_WIDTH;
   const tileHeight = scene.map?.tileHeight ?? FRAME_HEIGHT;
-  // Player ocupa 3x3 tiles para melhor proporção
+  // Player ocupa 4x4 tiles para melhor proporção
   const desiredTilesWide = 4;
   const desiredTilesTall = 4;
   const scaleX = (tileWidth * desiredTilesWide) / FRAME_WIDTH;
@@ -31,28 +64,45 @@ export function createPlayer(scene, x, y) {
     height: sprite.height,
     displayWidth: sprite.displayWidth, 
     displayHeight: sprite.displayHeight,
-    scale
+    scale,
+    origin: { x: sprite.originX, y: sprite.originY }
   });
 
   if (sprite.body) {
-    // Hitbox pequena e centralizada (apenas os pés do personagem)
-    // Frame original: 32x64 pixels
-    const bodyWidth = 12;   // Hitbox bem estreita
-    const bodyHeight = 35;   // Hitbox bem baixa (só os pés)
+    const config = PLAYER_HITBOX_CONFIG;
     
-    // Ajustar offset para compensar o deslocamento
-    const offsetX = 10;  // Movido mais para a esquerda (era 10)
-    const offsetY = FRAME_HEIGHT - bodyHeight;  // 64-8 = 56px do topo
-    
-    sprite.body.setSize(bodyWidth, bodyHeight);
-    sprite.body.setOffset(offsetX, offsetY);
-    console.log('[PlayerFactory] Hitbox size:', { 
-      bodyWidth, 
-      bodyHeight, 
-      offsetX, 
-      offsetY,
-      frameOriginal: `${FRAME_WIDTH}x${FRAME_HEIGHT}`
-    });
+    if (config.useCircle) {
+      // === HITBOX CIRCULAR ===
+      // Colisão circular permite "escorregar" pelas quinas
+      // tornando a movimentação mais fluida e orgânica
+      sprite.body.setCircle(
+        config.circleRadius,
+        (FRAME_WIDTH / 2) - config.circleRadius + config.circleOffsetX,  // Centralizar círculo
+        FRAME_HEIGHT - (config.circleRadius * 2) - 4 + config.circleOffsetY  // Base do sprite - offset ajustado para origin na base
+      );
+      
+      console.log('[PlayerFactory] Circular hitbox (feet):', {
+        radius: config.circleRadius,
+        offsetX: (FRAME_WIDTH / 2) - config.circleRadius + config.circleOffsetX,
+        offsetY: FRAME_HEIGHT - (config.circleRadius * 2) - 4 + config.circleOffsetY,
+        frameOriginal: `${FRAME_WIDTH}x${FRAME_HEIGHT}`,
+        pivotPoint: 'bottom-center'
+      });
+    } else {
+      // === HITBOX RETANGULAR (fallback) ===
+      // Hitbox pequena apenas nos pés do personagem
+      sprite.body.setSize(config.rectWidth, config.rectHeight);
+      sprite.body.setOffset(config.rectOffsetX, config.rectOffsetY);
+      
+      console.log('[PlayerFactory] Rectangular hitbox (feet):', {
+        width: config.rectWidth,
+        height: config.rectHeight,
+        offsetX: config.rectOffsetX,
+        offsetY: config.rectOffsetY,
+        frameOriginal: `${FRAME_WIDTH}x${FRAME_HEIGHT}`,
+        pivotPoint: 'bottom-center'
+      });
+    }
   }
 
   // Register animations

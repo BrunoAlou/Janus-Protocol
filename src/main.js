@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 
+// Gerenciador de cenas
+import SceneManager from "./managers/SceneManager.js";
+
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
 import UIScene from "./scenes/UIScene.js";
@@ -12,7 +15,7 @@ import ReceptionScene from "./scenes/map/ReceptionScene.js";
 import OfficeScene from "./scenes/map/OfficeScene.js";
 import LabScene from "./scenes/map/LabScene.js";
 import MeetingRoomScene from "./scenes/map/MeetingRoomScene.js";
-import HallwayScene from "./scenes/map/HallwayScene.js";
+import ArchiveRoomScene from "./scenes/map/HallwayScene.js";
 import ItRoomScene from "./scenes/map/ItRoomScene.js";
 import RhRoomScene from "./scenes/map/RhRoomScene.js";
 import ElevatorScene from "./scenes/map/ElevatorScene.js";
@@ -24,6 +27,9 @@ import PuzzleGame from "./scenes/minigames/PuzzleGame.js";
 import QuizGame from "./scenes/minigames/QuizGame.js";
 import MemoryGame from "./scenes/minigames/MemoryGame.js";
 import TypingGame from "./scenes/minigames/TypingGame.js";
+import WhackAMoleGame from "./scenes/minigames/WhackAMoleGame.js";
+import TetrisGame from "./scenes/minigames/TetrisGame.js";
+import SnakeGame from "./scenes/minigames/SnakeGame.js";
 
 // Player assets
 import loadPlayerAssets from './player/loadPlayerAssets.js';
@@ -50,32 +56,45 @@ const config = {
   scene: [
     // Sistema (ordem importa - LoginScene primeiro!)
     LoginScene,
-    UIScene,
-    DialogScene,
-    PauseMenuScene,
-    MinimapScene,
+
     
     // Mapas
     ReceptionScene,
     OfficeScene,
     LabScene,
     MeetingRoomScene,
-    HallwayScene,
+    ArchiveRoomScene,
     ItRoomScene,
     RhRoomScene,
     ElevatorScene,
     GardenScene,
     BossRoomScene,
     
+    MinimapScene,
+    UIScene,
+    DialogScene,
+    // PauseMenuScene,
     // Minigames
     PuzzleGame,
     QuizGame,
     MemoryGame,
-    TypingGame
+    TypingGame,
+    WhackAMoleGame,
+    TetrisGame,
+    SnakeGame
   ]
 };
 
 const game = new Phaser.Game(config);
+
+// Inicializar SceneManager global
+window.sceneManager = new SceneManager(game);
+
+// O Phaser já inicia LoginScene automaticamente (primeira da lista)
+// Apenas sincronizar o estado do SceneManager
+window.sceneManager.currentState.auth = 'LoginScene';
+
+console.log('[Main] Game initialized with SceneManager');
 
 // Garantir resize imediato e quando a janela for alterada
 window.addEventListener('resize', () => {

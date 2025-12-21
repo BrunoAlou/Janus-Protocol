@@ -10,6 +10,8 @@ export default class TypingGame extends BaseMinigame {
     this.wordsTyped = 0;
     this.errors = 0;
     this.currentInput = '';
+    this.speedMultiplier = 1; // Multiplicador de velocidade
+    this.promptMode = 'guided'; // 'guided' = digitação guiada para IA, 'free' = palavras aleatórias
   }
 
   create() {
@@ -50,17 +52,31 @@ export default class TypingGame extends BaseMinigame {
     
     this.statsContainer.add([this.wordsText, this.errorsText, this.wpmText]);
 
-    // Lista de palavras
-    this.words = [
-      'javascript', 'python', 'phaser', 'codigo', 'programa',
-      'desenvolvimento', 'software', 'algoritmo', 'funcao', 'variavel',
-      'classe', 'objeto', 'array', 'string', 'boolean',
-      'tecnologia', 'computador', 'teclado', 'mouse', 'monitor'
-    ];
+    // Lista de palavras (modo guided = argumentos persuasivos)
+    if (this.promptMode === 'guided') {
+      this.words = [
+        'eficiencia', 'otimizar', 'produtividade', 'inovacao', 'inteligencia',
+        'automatizar', 'performance', 'solucao', 'algoritmo', 'precisao',
+        'estrategia', 'analise', 'melhorar', 'tecnologia', 'processar',
+        'aprendizado', 'evolucao', 'adaptacao', 'resultado', 'objetivo',
+        'capacidade', 'potencial', 'desenvolvimento', 'implementar', 'sucesso'
+      ];
+    } else {
+      // Lista de palavras aleatórias
+      this.words = [
+        'javascript', 'python', 'phaser', 'codigo', 'programa',
+        'desenvolvimento', 'software', 'algoritmo', 'funcao', 'variavel',
+        'classe', 'objeto', 'array', 'string', 'boolean',
+        'tecnologia', 'computador', 'teclado', 'mouse', 'monitor'
+      ];
+    }
     
     // Embaralhar palavras
     this.words.sort(() => Math.random() - 0.5);
-    this.totalWords = 10; // Objetivo: digitar 10 palavras
+    this.totalWords = 15; // Objetivo: digitar 15 palavras (aumentado)
+    
+    // Aumentar velocidade progressivamente
+    this.speedIncreaseInterval = 5; // A cada 5 palavras, aumenta velocidade
 
     // Área da palavra atual
     this.targetWordText = this.add.text(width / 2, height / 2 - 50, '', {
@@ -105,8 +121,9 @@ export default class TypingGame extends BaseMinigame {
     // Mostrar primeira palavra
     this.showNextWord();
 
-    // Timer de 60 segundos
-    this.timeLimit = 60;
+    // Timer dinâmico baseado em velocidade
+    this.baseTimeLimit = 90; // 90 segundos base
+    this.timeLimit = this.baseTimeLimit;
     this.countdownTimer = this.time.addEvent({
       delay: 1000,
       callback: () => {
@@ -119,7 +136,10 @@ export default class TypingGame extends BaseMinigame {
       loop: true
     });
 
-    this.logTelemetry('typing_started', { totalWords: this.totalWords });
+    this.logTelemetry('typing_started', { 
+      totalWords: this.totalWords,
+      mode: this.promptMode
+    });
   }
 
   showNextWord() {
@@ -190,8 +210,15 @@ export default class TypingGame extends BaseMinigame {
       
       this.logTelemetry('word_correct', { 
         word: this.currentWord,
-        wordsTyped: this.wordsTyped 
+        wordsTyped: this.wordsTyped,
+        speedMultiplier: this.speedMultiplier
       });
+
+      // Aumentar velocidade a cada X palavras
+      if (this.wordsTyped % this.speedIncreaseInterval === 0) {
+        this.speedMultiplier += 0.2;
+        this.showSpeedUpFeedback();
+      }
 
       this.time.delayedCall(500, () => this.showNextWord());
     } else {
@@ -219,10 +246,36 @@ export default class TypingGame extends BaseMinigame {
   }
 
   updateWPM() {
-    // Calcular palavras por minuto
-    const elapsedMinutes = (60 - this.timeLimit) / 60;
+    // Calcular palavras por minuto considerando velocidade
+    const elapsedMinutes = (this.baseTimeLimit - this.timeLimit) / 60;
     const wpm = elapsedMinutes > 0 ? Math.round(this.wordsTyped / elapsedMinutes) : 0;
-    this.wpmText.setText(`WPM: ${wpm}`);
+    const adjustedWPM = Math.round(wpm * this.speedMultiplier);
+    this.wpmText.setText(`WPM: ${adjustedWPM} (${this.speedMultiplier.toFixed(1)}x)`);
+  }
+
+  showSpeedUpFeedback() {
+    const { width, height } = this.cameras.main;
+    const speedText = this.add.text(width / 2, height / 2 - 150, `VELOCIDADE ${this.speedMultiplier.toFixed(1)}x!`, {
+      fontSize: '32px',
+      color: '#ff8800',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5).setAlpha(0);
+
+    this.tweens.add({
+      targets: speedText,
+      alpha: 1,
+      y: height / 2 - 180,
+      duration: 500,
+      yoyo: true,
+      onComplete: () => speedText.destroy()
+    });
+
+    this.logTelemetry('speed_increased', {
+      newSpeed: this.speedMultiplier,
+      wordsTyped: this.wordsTyped
+    });
   }
 
   gameOver() {

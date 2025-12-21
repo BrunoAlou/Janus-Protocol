@@ -26,9 +26,19 @@ export default class GameScene extends Phaser.Scene {
 
 
   create() {
-    // Iniciar a cena da UI em paralelo
-    this.scene.launch('UIScene');
-    this.scene.launch('MinimapScene');
+    // Lançar cenas de UI apenas se não estiverem ativas
+    if (!this.scene.isActive('UIScene')) {
+      this.scene.launch('UIScene');
+    }
+    if (!this.scene.isActive('DialogScene')) {
+      this.scene.launch('DialogScene');
+    }
+    if (!this.scene.isActive('PauseMenuScene')) {
+      this.scene.launch('PauseMenuScene');
+    }
+    if (!this.scene.isActive('MinimapScene')) {
+      this.scene.launch('MinimapScene');
+    }
 
     // Notificar minimapa sobre a sala atual
     this.game.events.emit('room-changed', 'GameScene');

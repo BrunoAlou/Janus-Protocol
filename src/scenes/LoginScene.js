@@ -6,7 +6,7 @@ import AuthManager from '../auth/AuthManager.js';
  */
 export default class LoginScene extends Phaser.Scene {
   constructor() {
-    super('LoginScene');
+    super({ key: 'LoginScene', active: true }); // Primeira cena, inicia automaticamente
     this.authManager = new AuthManager();
   }
 
@@ -93,9 +93,13 @@ export default class LoginScene extends Phaser.Scene {
 
     // Hover effect
     bg.on('pointerover', () => {
-      bg.setFillStyle(Phaser.Display.Color.GetColor(
-        ...Phaser.Display.Color.IntegerToRGB(color).map(c => Math.min(255, c + 30))
-      ));
+      const rgb = Phaser.Display.Color.IntegerToRGB(color);
+      const hoverColor = Phaser.Display.Color.GetColor(
+        Math.min(255, rgb.r + 30),
+        Math.min(255, rgb.g + 30),
+        Math.min(255, rgb.b + 30)
+      );
+      bg.setFillStyle(hoverColor);
     });
     bg.on('pointerout', () => bg.setFillStyle(color));
 
@@ -125,6 +129,12 @@ export default class LoginScene extends Phaser.Scene {
 
   startGame() {
     console.log('[LoginScene] User authenticated:', this.authManager.getUser());
-    this.scene.start('ReceptionScene', { user: this.authManager.getUser() });
+    
+    const user = this.authManager.getUser();
+    
+    // Usar SceneManager para iniciar gameplay
+    window.sceneManager.startGameplay('ReceptionScene', { user });
+    
+    console.log('[LoginScene] Gameplay started via SceneManager');
   }
 }

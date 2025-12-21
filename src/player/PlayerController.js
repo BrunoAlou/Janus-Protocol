@@ -13,6 +13,7 @@ export default class PlayerController {
   constructor(scene, player, options = {}) {
     this.scene = scene;
     this.player = player;
+    this.enabled = true; // Controle de ativação do controller
 
     console.log('[PlayerController] Initialized with player:', {
       x: player.x,
@@ -58,6 +59,16 @@ export default class PlayerController {
 
   update(time, delta) {
     if (!this.player || !this.player.body) return;
+    
+    // Verificar se o controller está ativo
+    if (!this.enabled) {
+      // Parar movimento quando desabilitado
+      this.player.body.setVelocity(0, 0);
+      if (this.player.anims.isPlaying) {
+        this.player.anims.stop();
+      }
+      return;
+    }
 
     // Read input
     let dx = 0;

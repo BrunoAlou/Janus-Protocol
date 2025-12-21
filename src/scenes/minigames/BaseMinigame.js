@@ -130,10 +130,11 @@ export default class BaseMinigame extends Phaser.Scene {
     // Enviar telemetria para o servidor
     this.sendTelemetryToServer();
 
-    // Voltar para cena anterior
-    this.scene.start(this.previousScene, {
-      minigameCompleted: completed,
-      score: this.score
+    // Usar SceneManager para finalizar minigame
+    window.sceneManager.endMinigame({
+      completed,
+      score: this.score,
+      duration: Math.floor((Date.now() - this.startTime) / 1000)
     });
   }
 

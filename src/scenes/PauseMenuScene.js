@@ -153,11 +153,9 @@ export default class PauseMenuScene extends Phaser.Scene {
 
   quitGame() {
     if (confirm('Deseja realmente sair do jogo?')) {
-      // Voltar para tela de login
-      this.scene.stop('ReceptionScene');
-      this.scene.stop('PauseMenuScene');
-      this.scene.start('LoginScene');
-      console.log('[PauseMenuScene] Quit game');
+      // Voltar para tela de login usando SceneManager
+      window.sceneManager.switchToAuth('LoginScene');
+      console.log('[PauseMenuScene] Quit game via SceneManager');
     }
   }
 }
