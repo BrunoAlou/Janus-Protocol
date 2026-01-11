@@ -245,6 +245,6 @@ export default class BaseMapScene extends Phaser.Scene {
    * Transição para outra cena
    */
   transitionTo(sceneKey, data = {}) {
-    window.sceneManager.switchToMap(sceneKey, { ...data, user: this.user, previousScene: this.sceneKey });
+    window.sceneManager.goToMap(sceneKey, { ...data, user: this.user, previousScene: this.sceneKey });
   }
 }

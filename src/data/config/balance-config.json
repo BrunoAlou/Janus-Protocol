@@ -1,0 +1,491 @@
+{
+  "balanceConfig": {
+    "version": "1.0.0",
+    "description": "Configuração de balanceamento do sistema de avaliação de perfil"
+  },
+  "profileCalculation": {
+    "finalScore": {
+      "components": {
+        "interactions": {
+          "weight": 0.30,
+          "description": "30% do score final vem de interações e dilemas"
+        },
+        "journeys": {
+          "weight": 0.25,
+          "description": "25% do score final vem de jornadas completadas"
+        },
+        "performance": {
+          "weight": 0.25,
+          "description": "25% do score final vem de métricas de desempenho"
+        },
+        "objectives": {
+          "weight": 0.20,
+          "description": "20% do score final vem de objetivos escolhidos"
+        }
+      }
+    },
+    "journeyWeights": {
+      "main": {
+        "weight": 0.40,
+        "description": "Jornadas principais valem 40% do peso total de jornadas"
+      },
+      "side": {
+        "weight": 0.35,
+        "description": "Jornadas secundárias valem 35%"
+      },
+      "hidden": {
+        "weight": 0.25,
+        "description": "Jornadas ocultas valem 25% (bônus por descoberta)"
+      }
+    },
+    "objectiveWeights": {
+      "primary": {
+        "weight": 0.15,
+        "description": "Objetivo primário escolhido vale 15%"
+      },
+      "secondary": {
+        "weight": 0.10,
+        "description": "Cada objetivo secundário vale 10%"
+      },
+      "completionModifiers": {
+        "completed": 1.0,
+        "partial": 0.5,
+        "attempted": 0.25
+      }
+    }
+  },
+  "discDerivation": {
+    "description": "Fórmulas para derivar perfil DISC a partir do GPI",
+    "formulas": {
+      "D": {
+        "execution": 0.6,
+        "innovation": 0.3,
+        "resilience": 0.1,
+        "collaboration": 0.0
+      },
+      "I": {
+        "collaboration": 0.7,
+        "innovation": 0.2,
+        "resilience": 0.1,
+        "execution": 0.0
+      },
+      "S": {
+        "collaboration": 0.5,
+        "resilience": 0.3,
+        "execution": 0.2,
+        "innovation": 0.0
+      },
+      "C": {
+        "execution": 0.7,
+        "resilience": 0.2,
+        "collaboration": 0.1,
+        "innovation": 0.0
+      }
+    },
+    "normalization": "0-100 scale"
+  },
+  "bigFiveDerivation": {
+    "description": "Fórmulas para derivar perfil Big Five a partir do GPI e dados comportamentais",
+    "formulas": {
+      "O": {
+        "innovation": 0.8,
+        "collaboration": 0.2
+      },
+      "C": {
+        "execution": 0.9,
+        "resilience": 0.1
+      },
+      "E": {
+        "collaboration": 0.6,
+        "innovation": 0.3,
+        "resilience": 0.1
+      },
+      "A": {
+        "collaboration": 0.8,
+        "resilience": 0.2
+      },
+      "N": {
+        "description": "Escala invertida",
+        "resilience": -0.7,
+        "execution": -0.3
+      }
+    },
+    "normalization": "1-5 scale"
+  },
+  "balanceRequirements": {
+    "interactions": {
+      "perAxis": {
+        "minimum": 20,
+        "ideal": 30,
+        "current": {
+          "execution": 25,
+          "collaboration": 25,
+          "resilience": 22,
+          "innovation": 20
+        }
+      },
+      "variationTolerance": {
+        "maximum": 0.15,
+        "ideal": 0.05
+      }
+    },
+    "journeys": {
+      "mainPerAxis": {
+        "minimum": 1,
+        "current": {
+          "execution": 1,
+          "collaboration": 1,
+          "resilience": 1,
+          "innovation": 1
+        }
+      },
+      "sidePerAxis": {
+        "minimum": 2,
+        "current": {
+          "execution": 2,
+          "collaboration": 2,
+          "resilience": 1,
+          "innovation": 1
+        }
+      },
+      "hiddenPerAxis": {
+        "minimum": 1,
+        "current": {
+          "execution": 0,
+          "collaboration": 1,
+          "resilience": 1,
+          "innovation": 2
+        }
+      }
+    },
+    "npcs": {
+      "perDISCType": {
+        "minimum": 2,
+        "current": {
+          "D": 4,
+          "I": 3,
+          "S": 4,
+          "C": 2
+        }
+      },
+      "journeyParticipation": {
+        "minimum": 2,
+        "description": "Cada NPC deve participar de pelo menos 2 jornadas"
+      }
+    },
+    "tradeOffs": {
+      "uniqueCombinations": {
+        "minimum": 12,
+        "ideal": 16,
+        "current": 10
+      },
+      "coverage": {
+        "description": "Todos os pares de eixos devem ter trade-offs",
+        "required": [
+          ["execution", "collaboration"],
+          ["execution", "innovation"],
+          ["collaboration", "innovation"],
+          ["resilience", "execution"],
+          ["resilience", "collaboration"],
+          ["resilience", "innovation"],
+          ["innovation", "execution"],
+          ["innovation", "collaboration"]
+        ]
+      }
+    },
+    "analogPairs": {
+      "minimum": 8,
+      "ideal": 12,
+      "current": 2,
+      "description": "Pares de dilemas calm/crisis para análise de dissonância"
+    }
+  },
+  "validationChecks": {
+    "noNeutralChoices": {
+      "rule": "Toda escolha deve impactar pelo menos 2 eixos (1 positivo, 1 negativo)",
+      "enabled": true
+    },
+    "balancedDistribution": {
+      "rule": "Variação entre eixos deve ser < 15%",
+      "enabled": true
+    },
+    "journeyCoverage": {
+      "rule": "Cada eixo deve ter cobertura mínima em todas as categorias de jornada",
+      "enabled": true
+    },
+    "npcDistribution": {
+      "rule": "Mínimo 2 NPCs por perfil DISC primário",
+      "enabled": true
+    },
+    "tradeOffCoverage": {
+      "rule": "Todos os pares de eixos devem ter trade-offs definidos",
+      "enabled": true
+    }
+  },
+  "questionsIntegration": {
+    "disc": {
+      "source": "src/assets/DBQuestions/questions.json",
+      "totalQuestions": 119,
+      "distribution": {
+        "D": 30,
+        "I": 30,
+        "S": 30,
+        "C": 29
+      },
+      "usage": {
+        "directAssessment": false,
+        "behaviorValidation": true,
+        "description": "Questões DISC são usadas para validar comportamentos observados no jogo"
+      }
+    },
+    "bigFive": {
+      "source": "src/assets/DBQuestions/questions.ts",
+      "totalQuestions": 120,
+      "distribution": {
+        "O": 24,
+        "C": 24,
+        "E": 24,
+        "A": 24,
+        "N": 24
+      },
+      "facetsPerDomain": 6,
+      "itemsPerFacet": 4,
+      "usage": {
+        "directAssessment": false,
+        "traitValidation": true,
+        "description": "Questões Big Five são usadas para validar traços derivados do comportamento"
+      }
+    },
+    "crossValidation": {
+      "enabled": true,
+      "description": "Comparar perfis derivados com respostas diretas para validação",
+      "correlationThreshold": 0.6
+    }
+  },
+  "npcInteractionRules": {
+    "chemistryMatrix": {
+      "description": "Como diferentes perfis de jogador interagem com diferentes NPCs",
+      "rules": [
+        {
+          "playerHigh": "execution",
+          "npcType": "D",
+          "chemistry": "positive",
+          "relationModifier": 1
+        },
+        {
+          "playerHigh": "execution",
+          "npcType": "S",
+          "chemistry": "negative",
+          "relationModifier": -1
+        },
+        {
+          "playerHigh": "collaboration",
+          "npcType": "I",
+          "chemistry": "positive",
+          "relationModifier": 1
+        },
+        {
+          "playerHigh": "collaboration",
+          "npcType": "D",
+          "chemistry": "negative",
+          "relationModifier": -1
+        },
+        {
+          "playerHigh": "resilience",
+          "npcType": "S",
+          "chemistry": "positive",
+          "relationModifier": 1
+        },
+        {
+          "playerHigh": "innovation",
+          "npcType": "C",
+          "chemistry": "negative",
+          "relationModifier": -1
+        }
+      ]
+    },
+    "dialogImpact": {
+      "positiveChoice": {
+        "relationChange": [1, 2],
+        "gpiBonus": true
+      },
+      "negativeChoice": {
+        "relationChange": [-1, -2],
+        "gpiPenalty": true
+      },
+      "neutralChoice": {
+        "relationChange": [0],
+        "gpiImpact": "mixed"
+      }
+    }
+  },
+  "minigameBalance": {
+    "difficultyProgression": {
+      "act1": {
+        "difficulty": "easy",
+        "scoreMultiplier": 0.8
+      },
+      "act2_early": {
+        "difficulty": "medium",
+        "scoreMultiplier": 1.0
+      },
+      "act2_late": {
+        "difficulty": "hard",
+        "scoreMultiplier": 1.2
+      },
+      "crisis": {
+        "difficulty": "adaptive",
+        "scoreMultiplier": 1.5
+      }
+    },
+    "axisMapping": {
+      "QuizGame": {
+        "primary": "execution",
+        "weight": 1.2
+      },
+      "MemoryGame": {
+        "primary": "execution",
+        "secondary": "innovation",
+        "weight": 1.0
+      },
+      "PuzzleGame": {
+        "primary": "innovation",
+        "secondary": "execution",
+        "weight": 1.3
+      },
+      "TypingGame": {
+        "primary": "execution",
+        "secondary": "resilience",
+        "weight": 1.1
+      },
+      "SnakeGame": {
+        "primary": "resilience",
+        "weight": 1.0
+      },
+      "TetrisGame": {
+        "primary": "execution",
+        "secondary": "innovation",
+        "weight": 1.2
+      },
+      "WhackAMoleGame": {
+        "primary": "resilience",
+        "weight": 1.0
+      }
+    },
+    "minimumCoverage": {
+      "execution": 4,
+      "collaboration": 0,
+      "resilience": 3,
+      "innovation": 3
+    }
+  },
+  "dissonanceThresholds": {
+    "low": {
+      "range": [0, 20],
+      "interpretation": "Alta consistência comportamental",
+      "profileLabel": "Previsível"
+    },
+    "medium": {
+      "range": [21, 50],
+      "interpretation": "Adaptação situacional moderada",
+      "profileLabel": "Adaptável"
+    },
+    "high": {
+      "range": [51, 100],
+      "interpretation": "Mudança significativa sob pressão",
+      "profileLabel": "Reativo"
+    }
+  },
+  "qualityMetrics": {
+    "interactionsPerAxis": {
+      "minimum": 20,
+      "ideal": 30,
+      "status": "needs_improvement"
+    },
+    "variationBetweenAxes": {
+      "maximum": 0.15,
+      "ideal": 0.05,
+      "status": "acceptable"
+    },
+    "mainJourneys": {
+      "minimum": 4,
+      "ideal": 6,
+      "current": 4,
+      "status": "meets_minimum"
+    },
+    "sideJourneys": {
+      "minimum": 8,
+      "ideal": 12,
+      "current": 6,
+      "status": "needs_improvement"
+    },
+    "hiddenJourneys": {
+      "minimum": 4,
+      "ideal": 8,
+      "current": 4,
+      "status": "meets_minimum"
+    },
+    "mainNPCs": {
+      "minimum": 6,
+      "ideal": 8,
+      "current": 6,
+      "status": "meets_minimum"
+    },
+    "secondaryNPCs": {
+      "minimum": 6,
+      "ideal": 10,
+      "current": 6,
+      "status": "meets_minimum"
+    },
+    "uniqueTradeOffs": {
+      "minimum": 12,
+      "ideal": 16,
+      "current": 10,
+      "status": "needs_improvement"
+    },
+    "analogDilemmaPairs": {
+      "minimum": 8,
+      "ideal": 12,
+      "current": 2,
+      "status": "critical"
+    }
+  },
+  "nextSteps": {
+    "critical": [
+      {
+        "task": "Criar mais pares de dilemas análogos (calm/crisis)",
+        "current": 2,
+        "target": 8,
+        "priority": "high"
+      }
+    ],
+    "important": [
+      {
+        "task": "Adicionar mais jornadas secundárias",
+        "current": 6,
+        "target": 8,
+        "priority": "medium"
+      },
+      {
+        "task": "Expandir trade-offs únicos",
+        "current": 10,
+        "target": 12,
+        "priority": "medium"
+      }
+    ],
+    "improvements": [
+      {
+        "task": "Adicionar mais interações por eixo",
+        "current": "~23 média",
+        "target": 30,
+        "priority": "low"
+      },
+      {
+        "task": "Criar mais NPCs secundários",
+        "current": 6,
+        "target": 10,
+        "priority": "low"
+      }
+    ]
+  }
+}

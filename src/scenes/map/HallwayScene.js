@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * ArchiveRoomScene - Sala de Arquivos
  */
 export default class ArchiveRoomScene extends BaseMapScene {
   constructor() {
-    super('ArchiveRoomScene', 'hallway');
+    super(SCENE_NAMES.ARCHIVE_ROOM, 'hallway');
   }
 
   preload() {
@@ -16,14 +17,14 @@ export default class ArchiveRoomScene extends BaseMapScene {
     loadPlayerAssets(this);
     
     // Carregar tilesets (sempre, pois podem ter sido descartados)
-    this.load.image("1_generic_image", "./src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "./src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("generic_home_image", "./src/assets/Generic_Home_1_Layer_1_32x32.png");
-    this.load.image("condo_layer1_image", "./src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("condo_preview_image", "./src/assets/Condominium_Design_preview_32x32.png");
+    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
+    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
+    this.load.image("generic_home_image", "/src/assets/Generic_Home_1_Layer_1_32x32.png");
+    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
+    this.load.image("condo_preview_image", "/src/assets/Condominium_Design_preview_32x32.png");
     
     // Carregar mapa do hallway (usa arquivo .tsx externo)
-    this.load.tilemapTiledJSON("hallway", "./src/assets/hallway.json");
+    this.load.tilemapTiledJSON("hallway", "/src/assets/hallway.json");
     
     console.log('[ArchiveRoomScene] Preload finished - loading archive room map');
   }
@@ -149,7 +150,7 @@ export default class ArchiveRoomScene extends BaseMapScene {
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
       // Usar SceneManager para mudar de sala
-      window.sceneManager.switchToMap('ReceptionScene', {
+      window.sceneManager.goToMap(SCENE_NAMES.RECEPTION, {
         user: this.user,
         spawnPoint: 'fromArchiveRoom'
       });

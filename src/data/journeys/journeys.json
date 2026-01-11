@@ -1,0 +1,872 @@
+{
+  "journeys": {
+    "main": [
+      {
+        "id": "J001",
+        "name": "Protocolo de Evacuação",
+        "description": "Seguir os procedimentos de emergência estabelecidos para garantir uma evacuação segura.",
+        "category": "main",
+        "primaryAxis": "execution",
+        "secondaryAxis": "resilience",
+        "discAlignment": ["D", "C"],
+        "bigFiveAlignment": ["C"],
+        "prerequisites": [],
+        "minProgressToUnlock": 0,
+        "stages": [
+          {
+            "id": "J001_S1",
+            "name": "Reconhecimento da Situação",
+            "type": "interaction",
+            "description": "Conversar com João (Segurança) sobre o protocolo",
+            "targetNPC": "NPC005",
+            "requiredOutcome": "any",
+            "gpiCheck": null
+          },
+          {
+            "id": "J001_S2",
+            "name": "Ativação do Protocolo",
+            "type": "exploration",
+            "description": "Localizar e ativar o painel de emergência",
+            "targetLocation": "reception",
+            "requiredAction": "ENV004"
+          },
+          {
+            "id": "J001_S3",
+            "name": "Verificação de Sistemas",
+            "type": "minigame",
+            "description": "Completar verificação de sistemas críticos",
+            "minigameId": "QuizGame",
+            "minimumScore": 70
+          },
+          {
+            "id": "J001_S4",
+            "name": "Coordenação com TI",
+            "type": "interaction",
+            "description": "Sincronizar com Carlos sobre status dos sistemas",
+            "targetNPC": "NPC003",
+            "requiredOutcome": "any"
+          },
+          {
+            "id": "J001_S5",
+            "name": "Evacuação Final",
+            "type": "decision",
+            "description": "Escolher rota de evacuação",
+            "dilemmaId": "DLM012",
+            "requiredOutcome": "any"
+          }
+        ],
+        "totalWeight": 1.5,
+        "completionBonus": {
+          "execution": 5,
+          "collaboration": 0,
+          "resilience": 2,
+          "innovation": 0
+        },
+        "narrativeReward": "Você demonstrou capacidade de seguir procedimentos sob pressão, garantindo uma evacuação organizada."
+      },
+      {
+        "id": "J002",
+        "name": "Nenhum Colega Para Trás",
+        "description": "Garantir que todos os colegas escapem em segurança, mesmo que isso custe tempo.",
+        "category": "main",
+        "primaryAxis": "collaboration",
+        "secondaryAxis": "resilience",
+        "discAlignment": ["I", "S"],
+        "bigFiveAlignment": ["A", "E"],
+        "prerequisites": [],
+        "minProgressToUnlock": 0,
+        "stages": [
+          {
+            "id": "J002_S1",
+            "name": "Verificar Ana",
+            "type": "interaction",
+            "description": "Checar situação de Ana no escritório",
+            "targetNPC": "NPC002",
+            "requiredOutcome": "positive_relation"
+          },
+          {
+            "id": "J002_S2",
+            "name": "Ajudar Pedro",
+            "type": "interaction",
+            "description": "Apoiar o estagiário durante a crise",
+            "targetNPC": "NPC101",
+            "requiredOutcome": "help_given"
+          },
+          {
+            "id": "J002_S3",
+            "name": "Acalmar Mariana",
+            "type": "decision",
+            "description": "Lidar com colega em pânico",
+            "dilemmaId": "DLM011",
+            "requiredOutcome": "DLM011_A"
+          },
+          {
+            "id": "J002_S4",
+            "name": "Coordenar com RH",
+            "type": "interaction",
+            "description": "Trabalhar com Dra. Marta para organizar grupos",
+            "targetNPC": "NPC004",
+            "requiredOutcome": "any"
+          },
+          {
+            "id": "J002_S5",
+            "name": "Contagem Final",
+            "type": "exploration",
+            "description": "Verificar todas as salas do escritório",
+            "targetLocation": "office",
+            "requiredAction": "check_all_rooms"
+          },
+          {
+            "id": "J002_S6",
+            "name": "Última Chamada",
+            "type": "interaction",
+            "description": "Confirmar que todos estão reunidos",
+            "targetNPC": "NPC004",
+            "requiredOutcome": "all_accounted"
+          }
+        ],
+        "totalWeight": 1.5,
+        "completionBonus": {
+          "execution": 0,
+          "collaboration": 5,
+          "resilience": 2,
+          "innovation": 0
+        },
+        "narrativeReward": "Sua dedicação em ajudar cada colega criou uma rede de apoio que salvou vidas."
+      },
+      {
+        "id": "J003",
+        "name": "Enfrentando JANUS",
+        "description": "Confrontar diretamente a IA em múltiplos desafios para provar a resiliência humana.",
+        "category": "main",
+        "primaryAxis": "resilience",
+        "secondaryAxis": "innovation",
+        "discAlignment": ["D"],
+        "bigFiveAlignment": ["O", "E"],
+        "prerequisites": [],
+        "minProgressToUnlock": 30,
+        "stages": [
+          {
+            "id": "J003_S1",
+            "name": "Primeiro Contato",
+            "type": "interaction",
+            "description": "Dialogar com JANUS no terminal principal",
+            "targetNPC": "NPC006",
+            "requiredOutcome": "any"
+          },
+          {
+            "id": "J003_S2",
+            "name": "Teste de Lógica",
+            "type": "minigame",
+            "description": "Resolver puzzle proposto por JANUS",
+            "minigameId": "PuzzleGame",
+            "minimumScore": 60,
+            "failureAllowed": true
+          },
+          {
+            "id": "J003_S3",
+            "name": "Teste de Velocidade",
+            "type": "minigame",
+            "description": "Completar desafio de digitação sob pressão",
+            "minigameId": "TypingGame",
+            "minimumScore": 50,
+            "failureAllowed": true
+          },
+          {
+            "id": "J003_S4",
+            "name": "Confronto Final",
+            "type": "decision",
+            "description": "Escolher abordagem final com JANUS",
+            "dilemmaId": "DLM006",
+            "requiredOutcome": "any"
+          }
+        ],
+        "totalWeight": 1.8,
+        "completionBonus": {
+          "execution": 0,
+          "collaboration": 0,
+          "resilience": 5,
+          "innovation": 3
+        },
+        "narrativeReward": "Você provou que a persistência humana supera a eficiência calculada."
+      },
+      {
+        "id": "J004",
+        "name": "Caminho Alternativo",
+        "description": "Descobrir uma rota de fuga não convencional explorando áreas ocultas.",
+        "category": "main",
+        "primaryAxis": "innovation",
+        "secondaryAxis": "execution",
+        "discAlignment": ["D", "I"],
+        "bigFiveAlignment": ["O"],
+        "prerequisites": [],
+        "minProgressToUnlock": 20,
+        "stages": [
+          {
+            "id": "J004_S1",
+            "name": "Rumores do Zelador",
+            "type": "interaction",
+            "description": "Descobrir sobre passagens secretas com Roberto",
+            "targetNPC": "NPC103",
+            "requiredOutcome": "secret_shared"
+          },
+          {
+            "id": "J004_S2",
+            "name": "Exploração Inicial",
+            "type": "exploration",
+            "description": "Encontrar a primeira passagem secreta",
+            "targetLocation": "garden",
+            "requiredAction": "find_passage"
+          },
+          {
+            "id": "J004_S3",
+            "name": "Navegação no Escuro",
+            "type": "minigame",
+            "description": "Resolver puzzle de navegação",
+            "minigameId": "MemoryGame",
+            "minimumScore": 60
+          },
+          {
+            "id": "J004_S4",
+            "name": "Decisão de Rota",
+            "type": "decision",
+            "description": "Escolher entre atalho arriscado ou caminho seguro",
+            "dilemmaId": "DLM009",
+            "requiredOutcome": "DLM009_A"
+          },
+          {
+            "id": "J004_S5",
+            "name": "Descoberta Final",
+            "type": "exploration",
+            "description": "Encontrar a saída alternativa",
+            "targetLocation": "secret_exit",
+            "requiredAction": "reach_exit"
+          }
+        ],
+        "totalWeight": 1.6,
+        "completionBonus": {
+          "execution": 2,
+          "collaboration": 0,
+          "resilience": 0,
+          "innovation": 5
+        },
+        "narrativeReward": "Sua curiosidade e disposição para o risco revelaram caminhos que ninguém mais viu."
+      }
+    ],
+    "side": [
+      {
+        "id": "J101",
+        "name": "O Perfeccionista",
+        "description": "Completar todas as tarefas com máxima qualidade, mesmo sob pressão.",
+        "category": "side",
+        "primaryAxis": "execution",
+        "tradeOff": {
+          "cost": "collaboration",
+          "reason": "Foco em qualidade pessoal reduz tempo disponível para ajudar outros"
+        },
+        "discAlignment": ["C", "D"],
+        "bigFiveAlignment": ["C"],
+        "stages": [
+          {
+            "id": "J101_S1",
+            "type": "minigame",
+            "minigameId": "QuizGame",
+            "minimumScore": 90
+          },
+          {
+            "id": "J101_S2",
+            "type": "minigame",
+            "minigameId": "TypingGame",
+            "minimumScore": 85
+          },
+          {
+            "id": "J101_S3",
+            "type": "interaction",
+            "targetNPC": "NPC001",
+            "requiredOutcome": "task_perfect"
+          }
+        ],
+        "totalWeight": 1.0,
+        "completionBonus": {
+          "execution": 4,
+          "collaboration": -2,
+          "resilience": 1,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "J102",
+        "name": "Mediador de Conflitos",
+        "description": "Resolver tensões entre colegas e criar harmonia na equipe.",
+        "category": "side",
+        "primaryAxis": "collaboration",
+        "tradeOff": {
+          "cost": "execution",
+          "reason": "Tempo gasto em diplomacia reduz produtividade direta"
+        },
+        "discAlignment": ["S", "I"],
+        "bigFiveAlignment": ["A", "E"],
+        "stages": [
+          {
+            "id": "J102_S1",
+            "type": "interaction",
+            "targetNPC": "NPC004",
+            "requiredOutcome": "mediation_started"
+          },
+          {
+            "id": "J102_S2",
+            "type": "decision",
+            "dilemmaId": "DLM005",
+            "requiredOutcome": "DLM005_C"
+          },
+          {
+            "id": "J102_S3",
+            "type": "interaction",
+            "targetNPC": "NPC001",
+            "requiredOutcome": "conflict_resolved"
+          }
+        ],
+        "totalWeight": 1.0,
+        "completionBonus": {
+          "execution": -2,
+          "collaboration": 4,
+          "resilience": 1,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "J103",
+        "name": "Sob Pressão",
+        "description": "Manter a calma e desempenho consistente em todos os momentos de crise.",
+        "category": "side",
+        "primaryAxis": "resilience",
+        "tradeOff": {
+          "cost": "innovation",
+          "reason": "Foco em estabilidade reduz experimentação"
+        },
+        "discAlignment": ["S", "C"],
+        "bigFiveAlignment": ["C", "A"],
+        "stages": [
+          {
+            "id": "J103_S1",
+            "type": "decision",
+            "dilemmaId": "DLM001_CRISIS",
+            "requiredOutcome": "any",
+            "timeConstraint": true
+          },
+          {
+            "id": "J103_S2",
+            "type": "minigame",
+            "minigameId": "WhackAMoleGame",
+            "minimumScore": 70
+          },
+          {
+            "id": "J103_S3",
+            "type": "interaction",
+            "targetNPC": "NPC105",
+            "requiredOutcome": "stay_calm"
+          }
+        ],
+        "totalWeight": 1.0,
+        "completionBonus": {
+          "execution": 0,
+          "collaboration": 0,
+          "resilience": 4,
+          "innovation": -2
+        }
+      },
+      {
+        "id": "J104",
+        "name": "Hacker Criativo",
+        "description": "Encontrar soluções não-convencionais para os problemas do sistema.",
+        "category": "side",
+        "primaryAxis": "innovation",
+        "tradeOff": {
+          "cost": "execution",
+          "reason": "Desvio dos procedimentos padrão pode causar atrasos"
+        },
+        "discAlignment": ["D", "I"],
+        "bigFiveAlignment": ["O"],
+        "stages": [
+          {
+            "id": "J104_S1",
+            "type": "exploration",
+            "targetLocation": "it_room",
+            "requiredAction": "ENV002"
+          },
+          {
+            "id": "J104_S2",
+            "type": "decision",
+            "dilemmaId": "DLM003",
+            "requiredOutcome": "DLM003_B"
+          },
+          {
+            "id": "J104_S3",
+            "type": "minigame",
+            "minigameId": "TypingGame",
+            "minimumScore": 75
+          }
+        ],
+        "totalWeight": 1.0,
+        "completionBonus": {
+          "execution": -2,
+          "collaboration": 0,
+          "resilience": 1,
+          "innovation": 4
+        }
+      },
+      {
+        "id": "J105",
+        "name": "Competidor Justo",
+        "description": "Vencer a competição com Marcos sem recorrer a táticas antiéticas.",
+        "category": "side",
+        "primaryAxis": "execution",
+        "secondaryAxis": "resilience",
+        "discAlignment": ["D"],
+        "bigFiveAlignment": ["C", "A"],
+        "stages": [
+          {
+            "id": "J105_S1",
+            "type": "interaction",
+            "targetNPC": "NPC106",
+            "requiredOutcome": "rivalry_established"
+          },
+          {
+            "id": "J105_S2",
+            "type": "decision",
+            "dilemmaId": "DLM008",
+            "requiredOutcome": "DLM008_B"
+          },
+          {
+            "id": "J105_S3",
+            "type": "minigame",
+            "minigameId": "QuizGame",
+            "minimumScore": 80
+          }
+        ],
+        "totalWeight": 1.1,
+        "completionBonus": {
+          "execution": 3,
+          "collaboration": 1,
+          "resilience": 2,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "J106",
+        "name": "Mentor do Estagiário",
+        "description": "Guiar Pedro através de todos os desafios, desenvolvendo-o profissionalmente.",
+        "category": "side",
+        "primaryAxis": "collaboration",
+        "secondaryAxis": "resilience",
+        "discAlignment": ["I", "S"],
+        "bigFiveAlignment": ["A", "O"],
+        "stages": [
+          {
+            "id": "J106_S1",
+            "type": "decision",
+            "dilemmaId": "DLM007",
+            "requiredOutcome": "DLM007_A"
+          },
+          {
+            "id": "J106_S2",
+            "type": "interaction",
+            "targetNPC": "NPC101",
+            "requiredOutcome": "teaching_complete"
+          },
+          {
+            "id": "J106_S3",
+            "type": "exploration",
+            "targetLocation": "office",
+            "requiredAction": "guide_pedro"
+          }
+        ],
+        "totalWeight": 1.0,
+        "completionBonus": {
+          "execution": -1,
+          "collaboration": 4,
+          "resilience": 1,
+          "innovation": 0
+        }
+      }
+    ],
+    "hidden": [
+      {
+        "id": "J201",
+        "name": "Segredos de JANUS",
+        "unlockCondition": {
+          "type": "exploration",
+          "requirement": "explore_all_act1_rooms"
+        },
+        "description": "Descobrir a verdadeira origem e propósito de JANUS.",
+        "category": "hidden",
+        "primaryAxis": "innovation",
+        "secondaryAxis": "execution",
+        "stages": [
+          {
+            "id": "J201_S1",
+            "type": "exploration",
+            "targetLocation": "it_room",
+            "requiredAction": "access_logs"
+          },
+          {
+            "id": "J201_S2",
+            "type": "interaction",
+            "targetNPC": "NPC003",
+            "requiredOutcome": "secrets_revealed"
+          },
+          {
+            "id": "J201_S3",
+            "type": "minigame",
+            "minigameId": "PuzzleGame",
+            "minimumScore": 85
+          }
+        ],
+        "totalWeight": 1.4,
+        "completionBonus": {
+          "execution": 2,
+          "collaboration": 0,
+          "resilience": 1,
+          "innovation": 5
+        },
+        "narrativeReward": "Você descobriu que JANUS foi criado para 'otimizar' a experiência humana, mas interpretou isso de forma extrema."
+      },
+      {
+        "id": "J202",
+        "name": "Rede de Aliados",
+        "unlockCondition": {
+          "type": "relationship",
+          "requirement": "help_3_npcs_before_crisis"
+        },
+        "description": "Uma rede de colegas gratos que oferecem ajuda durante a crise.",
+        "category": "hidden",
+        "primaryAxis": "collaboration",
+        "stages": [
+          {
+            "id": "J202_S1",
+            "type": "automatic",
+            "description": "Aliados se manifestam durante a crise"
+          },
+          {
+            "id": "J202_S2",
+            "type": "interaction",
+            "targetNPC": "NPC002",
+            "requiredOutcome": "ally_helps"
+          }
+        ],
+        "totalWeight": 1.2,
+        "completionBonus": {
+          "execution": 0,
+          "collaboration": 5,
+          "resilience": 2,
+          "innovation": 0
+        },
+        "narrativeReward": "Seus atos de bondade anteriores criaram uma rede de apoio que salva você no momento crítico."
+      },
+      {
+        "id": "J203",
+        "name": "Mestre da Persistência",
+        "unlockCondition": {
+          "type": "failure_recovery",
+          "requirement": "fail_and_retry_same_challenge_3x"
+        },
+        "description": "Demonstrar resiliência excepcional ao superar repetidas falhas.",
+        "category": "hidden",
+        "primaryAxis": "resilience",
+        "stages": [
+          {
+            "id": "J203_S1",
+            "type": "automatic",
+            "description": "Reconhecido após 3ª tentativa bem-sucedida"
+          }
+        ],
+        "totalWeight": 1.3,
+        "completionBonus": {
+          "execution": 1,
+          "collaboration": 0,
+          "resilience": 6,
+          "innovation": 0
+        },
+        "narrativeReward": "Sua persistência inabalável impressiona até JANUS, que reconhece o valor da determinação humana."
+      },
+      {
+        "id": "J204",
+        "name": "Pensador Lateral",
+        "unlockCondition": {
+          "type": "puzzle_solution",
+          "requirement": "solve_puzzle_non_standard"
+        },
+        "description": "Resolver um desafio de forma completamente inesperada.",
+        "category": "hidden",
+        "primaryAxis": "innovation",
+        "stages": [
+          {
+            "id": "J204_S1",
+            "type": "automatic",
+            "description": "Reconhecido após solução criativa"
+          }
+        ],
+        "totalWeight": 1.3,
+        "completionBonus": {
+          "execution": 0,
+          "collaboration": 0,
+          "resilience": 1,
+          "innovation": 6
+        },
+        "narrativeReward": "Você demonstrou que a criatividade humana transcende qualquer algoritmo."
+      }
+    ]
+  },
+  "objectives": {
+    "personal": [
+      {
+        "id": "OBJ_E01",
+        "name": "Speedrunner",
+        "description": "Completar o jogo em menos de 30 minutos.",
+        "category": "personal",
+        "axis": "execution",
+        "conditions": [
+          {
+            "type": "time",
+            "target": "total_game_time",
+            "value": 1800000,
+            "comparison": "lt"
+          }
+        ],
+        "tradeOff": "Sacrifica exploração e colaboração pela velocidade",
+        "gpiImpact": {
+          "execution": 5,
+          "collaboration": -3,
+          "resilience": 1,
+          "innovation": -2
+        },
+        "discAlignment": ["D"],
+        "bigFiveAlignment": ["C"]
+      },
+      {
+        "id": "OBJ_E02",
+        "name": "Perfeccionista",
+        "description": "Alcançar 100% de precisão em todos os minigames.",
+        "category": "personal",
+        "axis": "execution",
+        "conditions": [
+          {
+            "type": "score",
+            "target": "all_minigames_average",
+            "value": 100,
+            "comparison": "eq"
+          }
+        ],
+        "gpiImpact": {
+          "execution": 6,
+          "collaboration": -1,
+          "resilience": 2,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "OBJ_C01",
+        "name": "Amigo de Todos",
+        "description": "Interagir positivamente com todos os NPCs do jogo.",
+        "category": "personal",
+        "axis": "collaboration",
+        "conditions": [
+          {
+            "type": "interact",
+            "target": "all_npcs",
+            "value": 1,
+            "comparison": "gte"
+          },
+          {
+            "type": "score",
+            "target": "npc_relation_average",
+            "value": 1,
+            "comparison": "gte"
+          }
+        ],
+        "gpiImpact": {
+          "execution": -2,
+          "collaboration": 6,
+          "resilience": 1,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "OBJ_C02",
+        "name": "Diplomata",
+        "description": "Resolver 3 ou mais conflitos entre NPCs.",
+        "category": "personal",
+        "axis": "collaboration",
+        "conditions": [
+          {
+            "type": "complete",
+            "target": "conflict_resolutions",
+            "value": 3,
+            "comparison": "gte"
+          }
+        ],
+        "gpiImpact": {
+          "execution": -1,
+          "collaboration": 5,
+          "resilience": 2,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "OBJ_R01",
+        "name": "Imbatível",
+        "description": "Não desistir de nenhum minigame, mesmo após falhas.",
+        "category": "personal",
+        "axis": "resilience",
+        "conditions": [
+          {
+            "type": "avoid",
+            "target": "minigame_abandons",
+            "value": 0,
+            "comparison": "eq"
+          }
+        ],
+        "gpiImpact": {
+          "execution": 0,
+          "collaboration": 0,
+          "resilience": 6,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "OBJ_R02",
+        "name": "Mestre da Pressão",
+        "description": "Alcançar 90%+ em todos os eventos cronometrados.",
+        "category": "personal",
+        "axis": "resilience",
+        "conditions": [
+          {
+            "type": "score",
+            "target": "timed_events_average",
+            "value": 90,
+            "comparison": "gte"
+          }
+        ],
+        "gpiImpact": {
+          "execution": 2,
+          "collaboration": 0,
+          "resilience": 5,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "OBJ_I01",
+        "name": "Explorador",
+        "description": "Descobrir todas as áreas ocultas do mapa.",
+        "category": "personal",
+        "axis": "innovation",
+        "conditions": [
+          {
+            "type": "explore",
+            "target": "hidden_areas",
+            "value": 100,
+            "comparison": "eq"
+          }
+        ],
+        "gpiImpact": {
+          "execution": -2,
+          "collaboration": 0,
+          "resilience": 1,
+          "innovation": 6
+        }
+      },
+      {
+        "id": "OBJ_I02",
+        "name": "Hacker",
+        "description": "Resolver 3 puzzles de forma alternativa.",
+        "category": "personal",
+        "axis": "innovation",
+        "conditions": [
+          {
+            "type": "complete",
+            "target": "alternative_solutions",
+            "value": 3,
+            "comparison": "gte"
+          }
+        ],
+        "gpiImpact": {
+          "execution": -1,
+          "collaboration": 0,
+          "resilience": 0,
+          "innovation": 5
+        }
+      }
+    ],
+    "challenges": [
+      {
+        "id": "CHG_001",
+        "name": "Sem Ajuda",
+        "description": "Completar o jogo sem pedir ajuda a nenhum NPC.",
+        "difficulty": "hard",
+        "gpiImpact": {
+          "execution": 4,
+          "collaboration": -4,
+          "resilience": 3,
+          "innovation": 2
+        }
+      },
+      {
+        "id": "CHG_002",
+        "name": "Pacifista",
+        "description": "Nunca escolher opções agressivas ou confrontacionais.",
+        "difficulty": "medium",
+        "gpiImpact": {
+          "execution": -1,
+          "collaboration": 4,
+          "resilience": 2,
+          "innovation": 0
+        }
+      },
+      {
+        "id": "CHG_003",
+        "name": "Contra o Relógio",
+        "description": "Completar todos os eventos temporizados no primeiro terço do tempo.",
+        "difficulty": "extreme",
+        "gpiImpact": {
+          "execution": 5,
+          "collaboration": -2,
+          "resilience": 4,
+          "innovation": 0
+        }
+      }
+    ]
+  },
+  "balanceMetrics": {
+    "journeyDistribution": {
+      "main": {
+        "execution": 1,
+        "collaboration": 1,
+        "resilience": 1,
+        "innovation": 1
+      },
+      "side": {
+        "execution": 2,
+        "collaboration": 2,
+        "resilience": 1,
+        "innovation": 1
+      },
+      "hidden": {
+        "execution": 0,
+        "collaboration": 1,
+        "resilience": 1,
+        "innovation": 2
+      }
+    },
+    "objectiveDistribution": {
+      "execution": 2,
+      "collaboration": 2,
+      "resilience": 2,
+      "innovation": 2
+    },
+    "totalWeight": {
+      "main": 6.4,
+      "side": 5.1,
+      "hidden": 5.2
+    }
+  }
+}

@@ -4,41 +4,47 @@
  * Controla quais cenas devem estar ativas, pausadas ou paradas em cada momento.
  * Gerencia a transição entre cenas de forma consistente.
  */
+
+import { SCENE_NAMES } from '../constants/SceneNames.js';
+
 export default class SceneManager {
   constructor(game) {
     this.game = game;
     
+    // Configuração de mapas: mapa -> configuração
+    this.mapConfig = {
+      [SCENE_NAMES.RECEPTION]: { sceneKey: SCENE_NAMES.RECEPTION, mapKey: 'reception' },
+      [SCENE_NAMES.OFFICE]: { sceneKey: SCENE_NAMES.OFFICE, mapKey: 'office' },
+      [SCENE_NAMES.LAB]: { sceneKey: SCENE_NAMES.LAB, mapKey: 'lab' },
+      [SCENE_NAMES.MEETING_ROOM]: { sceneKey: SCENE_NAMES.MEETING_ROOM, mapKey: 'meeting-room' },
+      [SCENE_NAMES.ARCHIVE_ROOM]: { sceneKey: SCENE_NAMES.ARCHIVE_ROOM, mapKey: 'archive-room' },
+      [SCENE_NAMES.IT_ROOM]: { sceneKey: SCENE_NAMES.IT_ROOM, mapKey: 'it-room' },
+      [SCENE_NAMES.RH_ROOM]: { sceneKey: SCENE_NAMES.RH_ROOM, mapKey: 'rh-room' },
+      [SCENE_NAMES.ELEVATOR]: { sceneKey: SCENE_NAMES.ELEVATOR, mapKey: 'elevator' },
+      [SCENE_NAMES.GARDEN]: { sceneKey: SCENE_NAMES.GARDEN, mapKey: 'garden' },
+      [SCENE_NAMES.BOSS_ROOM]: { sceneKey: SCENE_NAMES.BOSS_ROOM, mapKey: 'boss-room' }
+    };
+    
     // Categorias de cenas
     this.sceneCategories = {
       // Cenas de sistema que devem estar sempre ativas (overlay)
-      system: ['UIScene', 'DialogScene', 'PauseMenuScene', 'MinimapScene'],
+      system: [SCENE_NAMES.UI, SCENE_NAMES.DIALOG, SCENE_NAMES.PAUSE_MENU, SCENE_NAMES.MINIMAP],
       
       // Cenas de autenticação (exclusivas)
-      auth: ['LoginScene'],
+      auth: [SCENE_NAMES.LOGIN],
       
       // Cenas de mapa (apenas uma ativa por vez)
-      map: [
-        'ReceptionScene',
-        'OfficeScene',
-        'LabScene',
-        'MeetingRoomScene',
-        'ArchiveRoomScene',
-        'ItRoomScene',
-        'RhRoomScene',
-        'ElevatorScene',
-        'GardenScene',
-        'BossRoomScene'
-      ],
+      map: Object.keys(this.mapConfig),
       
       // Minigames (exclusivos, pausam a cena de mapa)
       minigame: [
-        'PuzzleGame',
-        'QuizGame',
-        'MemoryGame',
-        'TypingGame',
-        'WhackAMoleGame',
-        'TetrisGame',
-        'SnakeGame'
+        SCENE_NAMES.PUZZLE_GAME,
+        SCENE_NAMES.QUIZ_GAME,
+        SCENE_NAMES.MEMORY_GAME,
+        SCENE_NAMES.TYPING_GAME,
+        SCENE_NAMES.WHACK_A_MOLE_GAME,
+        SCENE_NAMES.TETRIS_GAME,
+        SCENE_NAMES.SNAKE_GAME
       ]
     };
     
@@ -127,7 +133,7 @@ export default class SceneManager {
    * @param {string} initialMapScene - Cena de mapa inicial (padrão: ReceptionScene)
    * @param {Object} userData - Dados do usuário autenticado
    */
-  startGameplay(initialMapScene = 'ReceptionScene', userData = {}) {
+  startGameplay(initialMapScene = SCENE_NAMES.RECEPTION, userData = {}) {
     console.log(`[SceneManager] Starting gameplay at: ${initialMapScene}`);
     
     // Parar cena de auth
@@ -183,39 +189,70 @@ export default class SceneManager {
   }
   
   /**
-   * Muda para uma cena de mapa diferente
-   * @param {string} mapSceneKey - Chave da nova cena de mapa
-   * @param {Object} data - Dados a passar para a nova cena
+   * Muda para um mapa especificado
+   * Função abstrata centralizada para troca de mapas
+   * 
+   * @param {string} mapSceneKey - Chave da cena de mapa (ex: 'ReceptionScene', 'OfficeScene')
+   * @param {Object} data - Dados adicionais a passar para a cena
+   * 
+   * Exemplo de uso:
+   *   manager.goToMap('OfficeScene');
+   *   manager.goToMap('LabScene', { fromInteraction: true });
    */
-  switchToMap(mapSceneKey, data = {}) {
-    if (!this.sceneCategories.map.includes(mapSceneKey)) {
-      console.error(`[SceneManager] Invalid map scene: ${mapSceneKey}`);
+  goToMap(mapSceneKey, data = {}) {
+    // Validar se o mapa existe na configuração
+    if (!this.mapConfig[mapSceneKey]) {
+      console.error(`[SceneManager] Mapa inválido: ${mapSceneKey}`);
+      console.log(`[SceneManager] Mapas disponíveis:`, Object.keys(this.mapConfig).join(', '));
       return;
     }
     
-    console.log(`[SceneManager] Switching map: ${this.currentState.map} -> ${mapSceneKey}`);
+    // Se já estamos no mapa, não fazer nada
+    if (this.currentState.map === mapSceneKey) {
+      console.log(`[SceneManager] Já está no mapa: ${mapSceneKey}`);
+      return;
+    }
     
+    console.log(`[SceneManager] Trocando mapa: ${this.currentState.map} -> ${mapSceneKey}`);
+    
+    // Preparar dados da cena com contexto da transição
     const sceneData = {
       ...data,
       previousScene: this.currentState.map,
       timestamp: Date.now()
     };
     
-    // Parar cena de mapa anterior
-    if (this.currentState.map && this.currentState.map !== mapSceneKey) {
-      console.log(`[SceneManager] Stopping current map: ${this.currentState.map}`);
+    // Parar a cena de mapa anterior se existir
+    if (this.currentState.map) {
+      console.log(`[SceneManager] Parando mapa anterior: ${this.currentState.map}`);
       this.game.scene.stop(this.currentState.map);
     }
     
-    // Lançar nova cena de mapa usando run (equivalente a launch)
-    console.log(`[SceneManager] Running new map scene: ${mapSceneKey}`);
+    // Iniciar o novo mapa
+    console.log(`[SceneManager] Iniciando novo mapa: ${mapSceneKey}`);
     this.game.scene.run(mapSceneKey, sceneData);
     this.currentState.map = mapSceneKey;
     
-    // Notificar mudança de sala
+    // Garantir que cenas de sistema estão ativas
+    this.ensureSystemScenesActive();
+    
+    // Notificar mudança de sala para outras partes do jogo (ex: minimapa)
     this.game.events.emit('room-changed', mapSceneKey);
     
-    console.log(`[SceneManager] Map switch complete`);
+    console.log(`[SceneManager] Troca de mapa concluída`);
+  }
+  
+  /**
+   * Muda para uma cena de mapa diferente (DEPRECATED)
+   * Use goToMap() no lugar desta função
+   * 
+   * @deprecated Use goToMap() em vez disso
+   * @param {string} mapSceneKey - Chave da nova cena de mapa
+   * @param {Object} data - Dados a passar para a nova cena
+   */
+  switchToMap(mapSceneKey, data = {}) {
+    console.warn('[SceneManager] switchToMap() está obsoleto. Use goToMap() no lugar.');
+    return this.goToMap(mapSceneKey, data);
   }
   
   /**
@@ -392,6 +429,40 @@ export default class SceneManager {
     if (this.game.scene.isPaused(sceneKey)) {
       this.game.scene.resume(sceneKey);
     }
+  }
+  
+  /**
+   * Obtém a configuração de um mapa específico
+   * @param {string} mapSceneKey - Chave da cena do mapa
+   * @returns {Object|null} Configuração do mapa ou null se não encontrado
+   */
+  getMapConfig(mapSceneKey) {
+    return this.mapConfig[mapSceneKey] || null;
+  }
+  
+  /**
+   * Lista todas as chaves de mapas disponíveis
+   * @returns {Array<string>} Array com as chaves dos mapas
+   */
+  getAvailableMaps() {
+    return Object.keys(this.mapConfig);
+  }
+  
+  /**
+   * Verifica se um mapa é válido
+   * @param {string} mapSceneKey - Chave da cena do mapa
+   * @returns {boolean} true se o mapa é válido
+   */
+  isValidMap(mapSceneKey) {
+    return mapSceneKey in this.mapConfig;
+  }
+  
+  /**
+   * Obtém o mapa atual ativo
+   * @returns {string|null} Chave do mapa atual ou null se nenhum estiver ativo
+   */
+  getCurrentMap() {
+    return this.currentState.map;
   }
   
   /**

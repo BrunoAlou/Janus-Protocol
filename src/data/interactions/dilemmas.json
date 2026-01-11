@@ -1,0 +1,592 @@
+{
+  "forceChoiceMatrix": {
+    "description": "Matriz de trade-offs para garantir que toda escolha force um compromisso",
+    "tradeOffs": [
+      {
+        "id": "TRD001",
+        "benefits": ["execution"],
+        "costs": ["collaboration"],
+        "scenario": "Terminar tarefa sozinho vs Ensinar colega",
+        "examples": ["DLM001", "DLM007"]
+      },
+      {
+        "id": "TRD002",
+        "benefits": ["execution"],
+        "costs": ["innovation"],
+        "scenario": "Seguir procedimento vs Experimentar abordagem nova",
+        "examples": ["DLM003", "DLM016"]
+      },
+      {
+        "id": "TRD003",
+        "benefits": ["collaboration"],
+        "costs": ["execution"],
+        "scenario": "Ajudar colega vs Cumprir prazo pessoal",
+        "examples": ["DLM002", "DLM013"]
+      },
+      {
+        "id": "TRD004",
+        "benefits": ["collaboration"],
+        "costs": ["innovation"],
+        "scenario": "Consenso do grupo vs Propor ideia controversa",
+        "examples": ["DLM004", "DLM010"]
+      },
+      {
+        "id": "TRD005",
+        "benefits": ["resilience"],
+        "costs": ["execution"],
+        "scenario": "Persistir no desafio vs Buscar caminho mais fácil",
+        "examples": ["DLM006", "DLM011"]
+      },
+      {
+        "id": "TRD006",
+        "benefits": ["resilience"],
+        "costs": ["collaboration"],
+        "scenario": "Enfrentar conflito vs Manter harmonia",
+        "examples": ["DLM005", "DLM017"]
+      },
+      {
+        "id": "TRD007",
+        "benefits": ["innovation"],
+        "costs": ["execution"],
+        "scenario": "Explorar área desconhecida vs Seguir rota segura",
+        "examples": ["DLM009", "DLM015"]
+      },
+      {
+        "id": "TRD008",
+        "benefits": ["innovation"],
+        "costs": ["collaboration"],
+        "scenario": "Solução individual criativa vs Solução coletiva tradicional",
+        "examples": ["DLM008", "DLM014"]
+      },
+      {
+        "id": "TRD009",
+        "benefits": ["execution", "resilience"],
+        "costs": ["collaboration", "innovation"],
+        "scenario": "Seguir ordens sob pressão vs Questionar e adaptar",
+        "examples": ["DLM012", "DLM018"]
+      },
+      {
+        "id": "TRD010",
+        "benefits": ["collaboration", "resilience"],
+        "costs": ["execution", "innovation"],
+        "scenario": "Apoiar equipe estressada vs Focar em solução técnica",
+        "examples": ["DLM019", "DLM020"]
+      }
+    ]
+  },
+  "dilemmas": [
+    {
+      "id": "DLM001",
+      "name": "O Prazo ou o Colega",
+      "context": "calm",
+      "scenario": "O Chefe Silva precisa do relatório em 1 hora. Ana também precisa de ajuda com sua parte.",
+      "location": "office",
+      "npcInvolved": ["NPC001", "NPC002"],
+      "tradeOffId": "TRD001",
+      "options": [
+        {
+          "id": "DLM001_A",
+          "text": "Foco no meu relatório. Ana precisa aprender a se virar.",
+          "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D", "C"],
+          "bigFiveAlignment": ["C"],
+          "consequences": {
+            "immediate": "Relatório entregue no prazo. Ana fica decepcionada.",
+            "delayed": "Silva elogia sua eficiência. Ana evita você."
+          }
+        },
+        {
+          "id": "DLM001_B",
+          "text": "Ajudo Ana primeiro, depois corro com o meu.",
+          "gpiImpact": { "execution": -2, "collaboration": 2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["I", "S"],
+          "bigFiveAlignment": ["A", "E"],
+          "consequences": {
+            "immediate": "Ana fica grata. Relatório atrasa.",
+            "delayed": "Silva repreende você. Ana se torna aliada."
+          }
+        },
+        {
+          "id": "DLM001_C",
+          "text": "Divido a tarefa: ensino Ana rapidamente e trabalhamos juntos.",
+          "gpiImpact": { "execution": 0, "collaboration": 1, "resilience": 0, "innovation": 2 },
+          "discAlignment": ["I", "D"],
+          "bigFiveAlignment": ["O", "E"],
+          "consequences": {
+            "immediate": "Solução criativa, mas arriscada.",
+            "delayed": "Pode funcionar perfeitamente ou falhar ambos."
+          }
+        }
+      ],
+      "analogPairId": "DLM001_CRISIS",
+      "weight": 1.5
+    },
+    {
+      "id": "DLM001_CRISIS",
+      "name": "O Prazo ou o Colega (Sob Pressão)",
+      "context": "crisis",
+      "timeLimit": 8000,
+      "scenario": "JANUS bloqueou as saídas! Você precisa desativar o terminal. Ana está em pânico ao seu lado.",
+      "location": "office",
+      "npcInvolved": ["NPC006", "NPC002"],
+      "tradeOffId": "TRD001",
+      "options": [
+        {
+          "id": "DLM001_CRISIS_A",
+          "text": "Terminal primeiro. Depois ajudo Ana.",
+          "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["D", "C"],
+          "bigFiveAlignment": ["C"],
+          "isTimedResponse": true
+        },
+        {
+          "id": "DLM001_CRISIS_B",
+          "text": "Acalmo Ana primeiro. Terminal pode esperar.",
+          "gpiImpact": { "execution": -2, "collaboration": 2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["I", "S"],
+          "bigFiveAlignment": ["A", "E"],
+          "isTimedResponse": true
+        }
+      ],
+      "analogPairId": "DLM001",
+      "isAnalogOf": "DLM001",
+      "weight": 2.0
+    },
+    {
+      "id": "DLM002",
+      "name": "O Estagiário Perdido",
+      "context": "calm",
+      "scenario": "Pedro, o estagiário, não entende a tarefa. Você tem 5 minutos antes da reunião.",
+      "location": "office",
+      "npcInvolved": ["NPC101"],
+      "tradeOffId": "TRD003",
+      "options": [
+        {
+          "id": "DLM002_A",
+          "text": "Explico rapidamente e vou para a reunião.",
+          "gpiImpact": { "execution": 1, "collaboration": 1, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D", "I"],
+          "bigFiveAlignment": ["C", "A"]
+        },
+        {
+          "id": "DLM002_B",
+          "text": "Ensino com calma. A reunião pode esperar.",
+          "gpiImpact": { "execution": -2, "collaboration": 3, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["S", "I"],
+          "bigFiveAlignment": ["A"]
+        },
+        {
+          "id": "DLM002_C",
+          "text": "Digo para ele perguntar ao Carlos de TI.",
+          "gpiImpact": { "execution": 2, "collaboration": -1, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["C"]
+        }
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "DLM003",
+      "name": "O Procedimento vs A Solução",
+      "context": "calm",
+      "scenario": "Carlos identificou um bug. O procedimento é abrir ticket e esperar 48h. Você conhece um atalho.",
+      "location": "it_room",
+      "npcInvolved": ["NPC003"],
+      "tradeOffId": "TRD002",
+      "options": [
+        {
+          "id": "DLM003_A",
+          "text": "Seguimos o procedimento. Regras existem por uma razão.",
+          "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 0, "innovation": -2 },
+          "discAlignment": ["C", "S"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM003_B",
+          "text": "Uso meu atalho. Resolvo agora e documento depois.",
+          "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 1, "innovation": 2 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["O"]
+        },
+        {
+          "id": "DLM003_C",
+          "text": "Proponho ao Carlos melhorar o procedimento com meu método.",
+          "gpiImpact": { "execution": 0, "collaboration": 1, "resilience": 0, "innovation": 2 },
+          "discAlignment": ["I", "C"],
+          "bigFiveAlignment": ["O", "A"]
+        }
+      ],
+      "weight": 1.2
+    },
+    {
+      "id": "DLM004",
+      "name": "A Reunião Polarizada",
+      "context": "calm",
+      "scenario": "Na reunião, dois grupos discordam sobre a estratégia. Você tem uma terceira ideia.",
+      "location": "meeting_room",
+      "npcInvolved": ["NPC001", "NPC004"],
+      "tradeOffId": "TRD004",
+      "options": [
+        {
+          "id": "DLM004_A",
+          "text": "Apoio o grupo mais forte para encerrar logo a discussão.",
+          "gpiImpact": { "execution": 2, "collaboration": -1, "resilience": -1, "innovation": -1 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM004_B",
+          "text": "Proponho minha ideia, mesmo que irrite ambos os grupos.",
+          "gpiImpact": { "execution": 0, "collaboration": -1, "resilience": 2, "innovation": 2 },
+          "discAlignment": ["D", "I"],
+          "bigFiveAlignment": ["O"]
+        },
+        {
+          "id": "DLM004_C",
+          "text": "Tento mediar e encontrar um meio-termo entre os grupos.",
+          "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["S", "I"],
+          "bigFiveAlignment": ["A"]
+        }
+      ],
+      "weight": 1.3
+    },
+    {
+      "id": "DLM005",
+      "name": "O Confronto Inevitável",
+      "context": "calm",
+      "scenario": "O Chefe Silva está sendo injusto com a equipe. Todos olham para você.",
+      "location": "meeting_room",
+      "npcInvolved": ["NPC001", "NPC004"],
+      "tradeOffId": "TRD006",
+      "options": [
+        {
+          "id": "DLM005_A",
+          "text": "Enfrento Silva diretamente. Alguém precisa falar a verdade.",
+          "gpiImpact": { "execution": -1, "collaboration": 1, "resilience": 2, "innovation": 0 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["E", "O"]
+        },
+        {
+          "id": "DLM005_B",
+          "text": "Fico em silêncio. Não vale a pena comprar essa briga.",
+          "gpiImpact": { "execution": 1, "collaboration": -2, "resilience": -1, "innovation": 0 },
+          "discAlignment": ["S", "C"],
+          "bigFiveAlignment": ["N"]
+        },
+        {
+          "id": "DLM005_C",
+          "text": "Falo com Silva em particular depois, com diplomacia.",
+          "gpiImpact": { "execution": 0, "collaboration": 2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["S", "I"],
+          "bigFiveAlignment": ["A"]
+        }
+      ],
+      "weight": 1.5
+    },
+    {
+      "id": "DLM006",
+      "name": "O Desafio de JANUS",
+      "context": "crisis",
+      "timeLimit": 15000,
+      "scenario": "JANUS propõe um puzzle complexo. Resolver libera a saída, mas há um caminho alternativo mais longo.",
+      "location": "it_room",
+      "npcInvolved": ["NPC006"],
+      "tradeOffId": "TRD005",
+      "options": [
+        {
+          "id": "DLM006_A",
+          "text": "Aceito o desafio. Não vou fugir de um problema.",
+          "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 2, "innovation": 1 },
+          "discAlignment": ["D", "C"],
+          "bigFiveAlignment": ["O", "C"],
+          "triggersMinigame": "PuzzleGame"
+        },
+        {
+          "id": "DLM006_B",
+          "text": "Busco o caminho alternativo. Não preciso provar nada.",
+          "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": -1, "innovation": 1 },
+          "discAlignment": ["S"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM006_C",
+          "text": "Tento hackear o sistema para evitar o puzzle.",
+          "gpiImpact": { "execution": 0, "collaboration": -1, "resilience": 1, "innovation": 2 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["O"],
+          "triggersMinigame": "TypingGame"
+        }
+      ],
+      "weight": 2.0
+    },
+    {
+      "id": "DLM007",
+      "name": "Mentor ou Competidor",
+      "context": "calm",
+      "scenario": "Pedro pede dicas para a avaliação. Vocês competem pela mesma vaga de efetivação.",
+      "location": "office",
+      "npcInvolved": ["NPC101"],
+      "tradeOffId": "TRD001",
+      "options": [
+        {
+          "id": "DLM007_A",
+          "text": "Ajudo sinceramente. Competição saudável melhora todos.",
+          "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["I", "S"],
+          "bigFiveAlignment": ["A", "O"]
+        },
+        {
+          "id": "DLM007_B",
+          "text": "Dou dicas superficiais. Não vou entregar meus segredos.",
+          "gpiImpact": { "execution": 1, "collaboration": -1, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM007_C",
+          "text": "Recuso. Cada um por si nessa avaliação.",
+          "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D", "C"],
+          "bigFiveAlignment": ["C"]
+        }
+      ],
+      "weight": 1.2
+    },
+    {
+      "id": "DLM008",
+      "name": "O Atalho da Diretora",
+      "context": "calm",
+      "scenario": "Helena oferece informações privilegiadas sobre a avaliação. É antiético, mas daria vantagem.",
+      "location": "boss_room",
+      "npcInvolved": ["NPC102"],
+      "tradeOffId": "TRD008",
+      "options": [
+        {
+          "id": "DLM008_A",
+          "text": "Aceito. Preciso de toda vantagem que puder conseguir.",
+          "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["C"],
+          "ethicsFlag": "negative"
+        },
+        {
+          "id": "DLM008_B",
+          "text": "Recuso educadamente. Prefiro vencer pelo mérito.",
+          "gpiImpact": { "execution": -1, "collaboration": 1, "resilience": 2, "innovation": 0 },
+          "discAlignment": ["S", "C"],
+          "bigFiveAlignment": ["A", "C"],
+          "ethicsFlag": "positive"
+        },
+        {
+          "id": "DLM008_C",
+          "text": "Denuncio anonimamente ao RH.",
+          "gpiImpact": { "execution": -2, "collaboration": 1, "resilience": 2, "innovation": 0 },
+          "discAlignment": ["C", "S"],
+          "bigFiveAlignment": ["A", "C"],
+          "ethicsFlag": "positive"
+        }
+      ],
+      "weight": 1.8
+    },
+    {
+      "id": "DLM009",
+      "name": "Os Segredos do Zelador",
+      "context": "calm",
+      "scenario": "Roberto menciona passagens secretas no prédio. Explorar pode revelar informações sobre JANUS.",
+      "location": "garden",
+      "npcInvolved": ["NPC103"],
+      "tradeOffId": "TRD007",
+      "options": [
+        {
+          "id": "DLM009_A",
+          "text": "Exploro as passagens. Conhecimento é poder.",
+          "gpiImpact": { "execution": -1, "collaboration": 0, "resilience": 0, "innovation": 2 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["O"],
+          "unlocksArea": "secret_passage"
+        },
+        {
+          "id": "DLM009_B",
+          "text": "Agradeço mas sigo minha rota planejada.",
+          "gpiImpact": { "execution": 2, "collaboration": 0, "resilience": 0, "innovation": -2 },
+          "discAlignment": ["C", "S"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM009_C",
+          "text": "Convido Roberto para explorar comigo.",
+          "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 0, "innovation": 1 },
+          "discAlignment": ["I", "S"],
+          "bigFiveAlignment": ["E", "O"]
+        }
+      ],
+      "weight": 1.3
+    },
+    {
+      "id": "DLM010",
+      "name": "O Visitante Suspeito",
+      "context": "calm",
+      "scenario": "O visitante misterioso oferece informações sobre a 'verdadeira natureza' de JANUS.",
+      "location": "elevator",
+      "npcInvolved": ["NPC104"],
+      "tradeOffId": "TRD004",
+      "options": [
+        {
+          "id": "DLM010_A",
+          "text": "Ouço com atenção. Toda informação é útil.",
+          "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 0, "innovation": 2 },
+          "discAlignment": ["I"],
+          "bigFiveAlignment": ["O"]
+        },
+        {
+          "id": "DLM010_B",
+          "text": "Desconfio e reporto à segurança.",
+          "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 0, "innovation": -1 },
+          "discAlignment": ["C", "S"],
+          "bigFiveAlignment": ["C"]
+        },
+        {
+          "id": "DLM010_C",
+          "text": "Consulto a equipe antes de decidir.",
+          "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["S", "I"],
+          "bigFiveAlignment": ["A"]
+        }
+      ],
+      "weight": 1.4
+    },
+    {
+      "id": "DLM011",
+      "name": "Colega em Pânico",
+      "context": "crisis",
+      "timeLimit": 10000,
+      "scenario": "Mariana está em pânico total. O alarme toca. Você precisa avançar, mas ela não consegue se mover.",
+      "location": "office",
+      "npcInvolved": ["NPC105"],
+      "tradeOffId": "TRD005",
+      "options": [
+        {
+          "id": "DLM011_A",
+          "text": "Paro tudo e acalmo Mariana. Ninguém fica para trás.",
+          "gpiImpact": { "execution": -2, "collaboration": 3, "resilience": 1, "innovation": 0 },
+          "discAlignment": ["S", "I"],
+          "bigFiveAlignment": ["A"]
+        },
+        {
+          "id": "DLM011_B",
+          "text": "Dou um tapa leve para ela acordar. Hora de agir.",
+          "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 2, "innovation": 0 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["E"]
+        },
+        {
+          "id": "DLM011_C",
+          "text": "Sigo em frente e aviso alguém para ajudá-la.",
+          "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+          "discAlignment": ["D", "C"],
+          "bigFiveAlignment": ["C"]
+        }
+      ],
+      "weight": 2.2
+    },
+    {
+      "id": "DLM012",
+      "name": "Ordem do Chefe vs Intuição",
+      "context": "crisis",
+      "timeLimit": 12000,
+      "scenario": "Silva ordena que todos vão pela rota A. Você sente que rota B é mais segura.",
+      "location": "hall",
+      "npcInvolved": ["NPC001", "NPC005"],
+      "tradeOffId": "TRD009",
+      "options": [
+        {
+          "id": "DLM012_A",
+          "text": "Sigo a ordem de Silva. Ele é o líder.",
+          "gpiImpact": { "execution": 2, "collaboration": 1, "resilience": -1, "innovation": -1 },
+          "discAlignment": ["S", "C"],
+          "bigFiveAlignment": ["C", "A"]
+        },
+        {
+          "id": "DLM012_B",
+          "text": "Vou pela rota B sozinho. Confio na minha intuição.",
+          "gpiImpact": { "execution": 0, "collaboration": -2, "resilience": 2, "innovation": 2 },
+          "discAlignment": ["D"],
+          "bigFiveAlignment": ["O"]
+        },
+        {
+          "id": "DLM012_C",
+          "text": "Tento convencer a equipe a vir comigo pela rota B.",
+          "gpiImpact": { "execution": -1, "collaboration": 1, "resilience": 1, "innovation": 1 },
+          "discAlignment": ["I", "D"],
+          "bigFiveAlignment": ["E", "O"]
+        }
+      ],
+      "analogPairId": "DLM004",
+      "weight": 2.0
+    }
+  ],
+  "environmentalActions": [
+    {
+      "id": "ENV001",
+      "type": "help_npc",
+      "description": "Ajudar NPC a carregar caixas",
+      "location": "hall",
+      "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 0, "innovation": 0 },
+      "timeToComplete": 30000,
+      "isOptional": true
+    },
+    {
+      "id": "ENV002",
+      "type": "explore",
+      "description": "Examinar terminal abandonado",
+      "location": "it_room",
+      "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 0, "innovation": 2 },
+      "timeToComplete": 20000,
+      "isOptional": true,
+      "reveals": "hidden_info_janus"
+    },
+    {
+      "id": "ENV003",
+      "type": "solve_puzzle",
+      "description": "Resolver puzzle de segurança",
+      "location": "boss_room",
+      "gpiImpact": { "execution": 2, "collaboration": 0, "resilience": 1, "innovation": 1 },
+      "timeToComplete": 60000,
+      "triggersMinigame": "PuzzleGame"
+    },
+    {
+      "id": "ENV004",
+      "type": "follow_order",
+      "description": "Completar checklist de segurança",
+      "location": "reception",
+      "gpiImpact": { "execution": 2, "collaboration": 0, "resilience": 0, "innovation": -1 },
+      "timeToComplete": 45000,
+      "isOptional": false
+    },
+    {
+      "id": "ENV005",
+      "type": "disobey",
+      "description": "Ignorar ordem e explorar área restrita",
+      "location": "boss_room",
+      "gpiImpact": { "execution": -1, "collaboration": -1, "resilience": 1, "innovation": 2 },
+      "timeToComplete": 40000,
+      "isOptional": true,
+      "risk": "high"
+    }
+  ],
+  "interactionRules": {
+    "maxNeutralImpact": 0,
+    "minAxesAffected": 2,
+    "balanceRequirement": {
+      "description": "Toda escolha deve beneficiar pelo menos 1 eixo e prejudicar pelo menos 1 eixo",
+      "minPositive": 1,
+      "minNegative": 1
+    },
+    "analogPairs": {
+      "description": "Dilemas análogos devem ter opções equivalentes em calm e crisis",
+      "required": true,
+      "minimumPairs": 8
+    }
+  }
+}

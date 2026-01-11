@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * BossRoomScene - Sala do Chefe / Diretor
  */
 export default class BossRoomScene extends BaseMapScene {
   constructor() {
-    super('BossRoomScene', 'boss_room');
+    super(SCENE_NAMES.BOSS_ROOM, 'boss_room');
   }
 
   getSpawnX() {

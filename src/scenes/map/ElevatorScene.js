@@ -1,11 +1,12 @@
 import BaseMapScene from './BaseMapScene.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * ElevatorScene - Elevador (transição entre andares)
  */
 export default class ElevatorScene extends BaseMapScene {
   constructor() {
-    super('ElevatorScene', 'elevator');
+    super(SCENE_NAMES.ELEVATOR, 'elevator');
   }
 
   create() {

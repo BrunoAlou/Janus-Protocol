@@ -1,13 +1,14 @@
 import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * ItRoomScene - Sala de TI / Informática
  */
 export default class ItRoomScene extends BaseMapScene {
   constructor() {
-    super('ItRoomScene', 'ti_map');
+    super(SCENE_NAMES.IT_ROOM, 'ti_map');
   }
 
   preload() {
@@ -17,13 +18,13 @@ export default class ItRoomScene extends BaseMapScene {
     loadPlayerAssets(this);
     
     // Carregar tilesets
-    this.load.image("1_generic_image", "./src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "./src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("condo_layer1_image", "./src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("modern_office_image", "./src/assets/Modern_Office_Shadowless_16x16.png");
+    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
+    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
+    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
+    this.load.image("modern_office_image", "/src/assets/Modern_Office_Shadowless_16x16.png");
     
     // Carregar mapa da sala de TI
-    this.load.tilemapTiledJSON("ti_map", "./src/assets/Ti.json");
+    this.load.tilemapTiledJSON("ti_map", "/src/assets/Ti.json");
     
     console.log('[ItRoomScene] Preload finished');
   }
@@ -209,7 +210,7 @@ export default class ItRoomScene extends BaseMapScene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      window.sceneManager.switchToMap('ReceptionScene', {
+      window.sceneManager.goToMap(SCENE_NAMES.RECEPTION, {
         user: this.user,
         spawnPoint: 'fromItRoom'
       });

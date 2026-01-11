@@ -1,8 +1,9 @@
 import Phaser from "phaser";
+import { SCENE_NAMES } from '../constants/SceneNames.js';
 
 export default class UIScene extends Phaser.Scene {
   constructor() {
-    super({ key: "UIScene", active: false });
+    super({ key: SCENE_NAMES.UI, active: false });
     this.minigamesMenuOpen = false;
   }
 

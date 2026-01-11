@@ -8,9 +8,28 @@ const path = require('path');
 const crypto = require('crypto');
 const { URL } = require('url');
 
+// Load .env file manually (without dotenv dependency)
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        process.env[key.trim()] = valueParts.join('=').trim();
+      }
+    }
+  });
+}
+
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'events.json');
 const PORT = process.env.PORT || 3000;
+
+// LinkedIn OAuth config (client secret should be in environment variable)
+const LINKEDIN_CLIENT_ID = '77vels5rgzs1ki';
+const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XXXXXXXX'; // Substitua pelo seu client secret
 
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -199,6 +218,119 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', backend: 'janus-protocol', port: PORT }));
+    return;
+  }
+
+  // OAuth token exchange endpoint
+  if (req.method === 'POST' && req.url === '/api/auth/token') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      try {
+        const { code, provider } = JSON.parse(body || '{}');
+        
+        if (!code) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Missing authorization code' }));
+          return;
+        }
+
+        if (provider === 'linkedin' || !provider) {
+          // Determine redirect_uri based on referer or use default
+          const referer = req.headers.referer || req.headers.origin || 'http://localhost:5173';
+          const origin = new URL(referer).origin;
+          const redirectUri = origin + '/auth/callback';
+
+          // Exchange code for access token
+          const tokenParams = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+            client_id: LINKEDIN_CLIENT_ID,
+            client_secret: LINKEDIN_CLIENT_SECRET
+          });
+
+          const https = require('https');
+          
+          const tokenResponse = await new Promise((resolve, reject) => {
+            const tokenReq = https.request({
+              hostname: 'www.linkedin.com',
+              path: '/oauth/v2/accessToken',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            }, (tokenRes) => {
+              let data = '';
+              tokenRes.on('data', chunk => data += chunk);
+              tokenRes.on('end', () => {
+                try {
+                  resolve(JSON.parse(data));
+                } catch (e) {
+                  reject(new Error('Invalid token response'));
+                }
+              });
+            });
+            tokenReq.on('error', reject);
+            tokenReq.write(tokenParams.toString());
+            tokenReq.end();
+          });
+
+          if (tokenResponse.error) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: tokenResponse.error_description || tokenResponse.error }));
+            return;
+          }
+
+          const accessToken = tokenResponse.access_token;
+
+          // Get user profile using OpenID Connect userinfo endpoint
+          const userInfo = await new Promise((resolve, reject) => {
+            const userReq = https.request({
+              hostname: 'api.linkedin.com',
+              path: '/v2/userinfo',
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`
+              }
+            }, (userRes) => {
+              let data = '';
+              userRes.on('data', chunk => data += chunk);
+              userRes.on('end', () => {
+                try {
+                  resolve(JSON.parse(data));
+                } catch (e) {
+                  reject(new Error('Invalid user response'));
+                }
+              });
+            });
+            userReq.on('error', reject);
+            userReq.end();
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            access_token: accessToken,
+            user: {
+              id: userInfo.sub,
+              name: userInfo.name,
+              email: userInfo.email,
+              picture: userInfo.picture,
+              provider: 'linkedin'
+            }
+          }));
+          return;
+        }
+
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Unsupported provider' }));
+      } catch (e) {
+        console.error('[Auth] Token exchange error:', e);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
     return;
   }
 

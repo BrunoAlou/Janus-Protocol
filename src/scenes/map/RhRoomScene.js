@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * RhRoomScene - Sala de RH / Recursos Humanos
  */
 export default class RhRoomScene extends BaseMapScene {
   constructor() {
-    super('RhRoomScene', 'rh_room');
+    super(SCENE_NAMES.RH_ROOM, 'rh_room');
   }
 
   getSpawnX() {

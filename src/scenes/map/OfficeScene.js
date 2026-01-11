@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * OfficeScene - Exemplo de cena de escritório
  */
 export default class OfficeScene extends BaseMapScene {
   constructor() {
-    super('OfficeScene', 'office'); // key da cena, key do mapa
+    super(SCENE_NAMES.OFFICE, 'office'); // key da cena, key do mapa
   }
 
   getSpawnX() {

@@ -1,5 +1,6 @@
 import { createPlayerAnimations } from './playerAnimations.js';
 import { PLAYER_TEXTURE_KEY, FRAME_WIDTH, FRAME_HEIGHT } from './loadPlayerAssets.js';
+import { Player } from '../entities/Player.js';
 
 /**
  * Configurações da hitbox do player
@@ -275,4 +276,57 @@ export function attachFrameInspector(scene, player) {
     showFrameGrid,
     hideFrameGrid
   };
+}
+
+/**
+ * Cria uma entidade Player encapsulada (versão OOP melhorada)
+ * 
+ * Esta função cria o sprite usando createPlayer() e retorna uma
+ * instância da classe Player que encapsula o sprite e adiciona
+ * funcionalidades extras de forma organizada.
+ * 
+ * @param {Phaser.Scene} scene - A cena onde o player será criado
+ * @param {number} x - Posição X inicial
+ * @param {number} y - Posição Y inicial
+ * @param {Object} config - Configurações adicionais do player
+ * @param {string} [config.id] - ID único do player
+ * @param {string} [config.name] - Nome do player
+ * @param {number} [config.maxHealth] - Vida máxima
+ * @param {number} [config.speed] - Velocidade de movimento
+ * @returns {Player} Instância da classe Player
+ * 
+ * @example
+ * // Uso básico
+ * const player = createPlayerEntity(this, 100, 200);
+ * 
+ * // Com configuração
+ * const player = createPlayerEntity(this, 100, 200, {
+ *   id: 'player_1',
+ *   name: 'Jogador',
+ *   speed: 180
+ * });
+ * 
+ * // Na update:
+ * player.setVelocity(velocityX, velocityY);
+ */
+export function createPlayerEntity(scene, x, y, config = {}) {
+  // Usar a factory existente para criar o sprite
+  const sprite = createPlayer(scene, x, y);
+  
+  // Criar e retornar a entidade wrapper
+  const playerEntity = new Player(scene, sprite, {
+    id: config.id || `player_${Date.now()}`,
+    name: config.name || 'Jogador',
+    maxHealth: config.maxHealth || 100,
+    speed: config.speed || 160,
+    ...config
+  });
+  
+  console.log('[PlayerFactory] Created Player entity:', {
+    id: playerEntity.getId(),
+    name: playerEntity.getName(),
+    position: playerEntity.getPosition()
+  });
+  
+  return playerEntity;
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * BaseMinigame - Classe base para todos os minigames
@@ -16,7 +17,7 @@ export default class BaseMinigame extends Phaser.Scene {
   }
 
   init(data) {
-    this.previousScene = data.previousScene || 'ReceptionScene';
+    this.previousScene = data.previousScene || SCENE_NAMES.RECEPTION;
     this.user = data.user;
     this.difficulty = data.difficulty || 'normal';
   }

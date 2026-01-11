@@ -73,7 +73,7 @@ const config = {
     MinimapScene,
     UIScene,
     DialogScene,
-    // PauseMenuScene,
+    PauseMenuScene,
     // Minigames
     PuzzleGame,
     QuizGame,

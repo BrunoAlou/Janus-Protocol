@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * LabScene - Laboratório / Sala de Tecnologia
  */
 export default class LabScene extends BaseMapScene {
   constructor() {
-    super('LabScene', 'lab');
+    super(SCENE_NAMES.LAB, 'lab');
   }
 
   getSpawnX() {

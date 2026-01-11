@@ -1,13 +1,14 @@
 import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * ReceptionScene - Cena da recepção (antiga GameScene)
  */
 export default class ReceptionScene extends BaseMapScene {
   constructor() {
-    super('ReceptionScene', 'reception');
+    super(SCENE_NAMES.RECEPTION, 'reception');
   }
 
   preload() {
@@ -17,14 +18,14 @@ export default class ReceptionScene extends BaseMapScene {
     loadPlayerAssets(this);
     
     // Carregar tilesets (sempre, pois podem ter sido descartados)
-    this.load.image("1_generic_image", "./src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "./src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("generic_home_image", "./src/assets/Generic_Home_1_Layer_1_32x32.png");
-    this.load.image("condo_layer1_image", "./src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("condo_preview_image", "./src/assets/Condominium_Design_preview_32x32.png");
+    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
+    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
+    this.load.image("generic_home_image", "/src/assets/Generic_Home_1_Layer_1_32x32.png");
+    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
+    this.load.image("condo_preview_image", "/src/assets/Condominium_Design_preview_32x32.png");
     
     // Carregar mapa da reception
-    this.load.tilemapTiledJSON("reception", "./src/assets/reception.json");
+    this.load.tilemapTiledJSON("reception", "/src/assets/reception.json");
     
     console.log('[ReceptionScene] Preload finished - loading reception map');
   }
@@ -178,7 +179,7 @@ export default class ReceptionScene extends BaseMapScene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      window.sceneManager.switchToMap('ArchiveRoomScene', {
+      window.sceneManager.goToMap(SCENE_NAMES.ARCHIVE_ROOM, {
         user: this.user,
         spawnPoint: 'fromReception'
       });
@@ -194,7 +195,7 @@ export default class ReceptionScene extends BaseMapScene {
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      window.sceneManager.switchToMap('ItRoomScene', {
+      window.sceneManager.goToMap(SCENE_NAMES.IT_ROOM, {
         user: this.user,
         spawnPoint: 'fromReception'
       });

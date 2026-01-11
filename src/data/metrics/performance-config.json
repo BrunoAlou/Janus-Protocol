@@ -1,0 +1,498 @@
+{
+  "performanceConfig": {
+    "description": "Configuração do sistema de métricas de desempenho para o Janus Protocol",
+    "version": "1.0.0"
+  },
+  "metrics": {
+    "decisionTime": {
+      "description": "Tempo de resposta em decisões e dilemas",
+      "measurements": {
+        "averageDecisionTime": {
+          "unit": "milliseconds",
+          "optimalRange": { "min": 2000, "max": 8000 },
+          "interpretation": {
+            "tooFast": "< 2000ms pode indicar impulsividade ou falta de consideração",
+            "optimal": "2000-8000ms indica análise adequada",
+            "tooSlow": "> 15000ms pode indicar indecisão ou ansiedade"
+          }
+        },
+        "decisionTimeUnderPressure": {
+          "unit": "milliseconds",
+          "context": "crisis",
+          "optimalRange": { "min": 1000, "max": 5000 }
+        },
+        "decisionTimeCalm": {
+          "unit": "milliseconds",
+          "context": "calm",
+          "optimalRange": { "min": 3000, "max": 10000 }
+        },
+        "timeConsistency": {
+          "unit": "standard_deviation",
+          "interpretation": {
+            "low": "< 2000ms SD indica consistência alta",
+            "medium": "2000-5000ms SD indica variação normal",
+            "high": "> 5000ms SD indica inconsistência significativa"
+          }
+        }
+      },
+      "gpiMapping": {
+        "execution": {
+          "weight": 0.4,
+          "calculation": "Decisões rápidas e consistentes = alta execução"
+        },
+        "resilience": {
+          "weight": 0.3,
+          "calculation": "Baixa variação entre calm e crisis = alta resiliência"
+        }
+      }
+    },
+    "decisions": {
+      "description": "Análise qualitativa das decisões tomadas",
+      "measurements": {
+        "totalDecisions": {
+          "description": "Número total de decisões tomadas no jogo"
+        },
+        "decisionsReversed": {
+          "description": "Número de vezes que o jogador mudou de ideia",
+          "interpretation": {
+            "low": "< 5% indica firmeza nas decisões",
+            "medium": "5-15% indica flexibilidade",
+            "high": "> 15% pode indicar insegurança"
+          }
+        },
+        "decisionsSkipped": {
+          "description": "Decisões não tomadas (timeout ou skip)",
+          "penalty": true
+        },
+        "decisionConfidence": {
+          "description": "% de decisões tomadas de forma firme (sem hesitação)",
+          "calculation": "(total - reversed - skipped) / total * 100"
+        },
+        "ethicalDecisions": {
+          "description": "Decisões marcadas com flag ética positiva",
+          "gpiBonus": {
+            "collaboration": 1,
+            "resilience": 1
+          }
+        }
+      },
+      "gpiMapping": {
+        "execution": {
+          "weight": 0.3,
+          "factors": ["decisionConfidence", "decisionsReversed"]
+        },
+        "collaboration": {
+          "weight": 0.2,
+          "factors": ["ethicalDecisions"]
+        },
+        "resilience": {
+          "weight": 0.3,
+          "factors": ["decisionsSkipped", "decisionConfidence"]
+        }
+      }
+    },
+    "minigames": {
+      "description": "Performance em minigames",
+      "measurements": {
+        "minigamesCompleted": {
+          "description": "Minigames finalizados com sucesso"
+        },
+        "minigamesAttempted": {
+          "description": "Minigames iniciados"
+        },
+        "minigameAverageScore": {
+          "description": "Média de pontuação em todos os minigames",
+          "scale": "0-100"
+        },
+        "minigameRetryRate": {
+          "description": "% de tentativas após primeira falha",
+          "calculation": "retries / failures * 100"
+        },
+        "minigameAbandonRate": {
+          "description": "% de minigames abandonados sem completar",
+          "penalty": true
+        }
+      },
+      "minigameSpecificMetrics": {
+        "QuizGame": {
+          "primaryAxis": "execution",
+          "metrics": ["accuracy", "speed", "streaks"],
+          "weight": 1.2
+        },
+        "MemoryGame": {
+          "primaryAxis": "execution",
+          "secondaryAxis": "innovation",
+          "metrics": ["accuracy", "patternRecognition"],
+          "weight": 1.0
+        },
+        "PuzzleGame": {
+          "primaryAxis": "innovation",
+          "secondaryAxis": "execution",
+          "metrics": ["solutionPath", "hintUsage", "alternativeSolutions"],
+          "weight": 1.3
+        },
+        "TypingGame": {
+          "primaryAxis": "execution",
+          "secondaryAxis": "resilience",
+          "metrics": ["wpm", "accuracy", "consistencyUnderPressure"],
+          "weight": 1.1
+        },
+        "SnakeGame": {
+          "primaryAxis": "resilience",
+          "metrics": ["survivalTime", "recoveryAfterMistake"],
+          "weight": 1.0
+        },
+        "TetrisGame": {
+          "primaryAxis": "execution",
+          "secondaryAxis": "innovation",
+          "metrics": ["linesCleared", "adaptability", "planning"],
+          "weight": 1.2
+        },
+        "WhackAMoleGame": {
+          "primaryAxis": "resilience",
+          "metrics": ["reactionTime", "accuracyUnderSpeed"],
+          "weight": 1.0
+        }
+      },
+      "gpiMapping": {
+        "execution": {
+          "weight": 0.4,
+          "factors": ["averageScore", "completionRate"]
+        },
+        "resilience": {
+          "weight": 0.4,
+          "factors": ["retryRate", "abandonRate"]
+        },
+        "innovation": {
+          "weight": 0.2,
+          "factors": ["alternativeSolutions"]
+        }
+      }
+    },
+    "exploration": {
+      "description": "Padrões de exploração do mapa",
+      "measurements": {
+        "areasExplored": {
+          "description": "Número de áreas distintas visitadas"
+        },
+        "totalAreas": {
+          "description": "Número total de áreas no mapa",
+          "value": 12
+        },
+        "hiddenAreasFound": {
+          "description": "Áreas secretas descobertas",
+          "maxValue": 4
+        },
+        "explorationEfficiency": {
+          "description": "% de exploração que resultou em descobertas úteis",
+          "calculation": "useful_discoveries / areas_explored * 100"
+        },
+        "backtrackingRate": {
+          "description": "% de áreas revisitadas sem necessidade",
+          "interpretation": {
+            "low": "< 10% indica foco e eficiência",
+            "medium": "10-25% indica exploração saudável",
+            "high": "> 25% pode indicar desorientação"
+          }
+        },
+        "secretsWithoutHints": {
+          "description": "Segredos encontrados sem dicas de NPCs",
+          "bonus": true
+        }
+      },
+      "gpiMapping": {
+        "innovation": {
+          "weight": 0.6,
+          "factors": ["hiddenAreasFound", "secretsWithoutHints"]
+        },
+        "execution": {
+          "weight": 0.2,
+          "factors": ["explorationEfficiency", "backtrackingRate"]
+        }
+      }
+    },
+    "npcInteractions": {
+      "description": "Qualidade das interações com NPCs",
+      "measurements": {
+        "totalInteractions": {
+          "description": "Número total de interações com NPCs"
+        },
+        "positiveRelations": {
+          "description": "NPCs com relação positiva (>= 1)"
+        },
+        "negativeRelations": {
+          "description": "NPCs com relação negativa (<= -1)"
+        },
+        "neutralRelations": {
+          "description": "NPCs com relação neutra (0)"
+        },
+        "conflictsResolved": {
+          "description": "Conflitos mediados com sucesso"
+        },
+        "helpGiven": {
+          "description": "Vezes que ajudou NPCs voluntariamente"
+        },
+        "helpReceived": {
+          "description": "Vezes que aceitou ajuda de NPCs"
+        }
+      },
+      "gpiMapping": {
+        "collaboration": {
+          "weight": 0.7,
+          "factors": ["positiveRelations", "conflictsResolved", "helpGiven"]
+        },
+        "resilience": {
+          "weight": 0.2,
+          "factors": ["negativeRelations", "conflictsResolved"]
+        },
+        "execution": {
+          "weight": 0.1,
+          "factors": ["totalInteractions"]
+        }
+      }
+    }
+  },
+  "dissonanceAnalysis": {
+    "description": "Análise da diferença entre comportamento sob pressão e sem pressão",
+    "analogPairs": {
+      "description": "Pares de dilemas análogos para comparação calm vs crisis",
+      "minimumPairs": 8,
+      "currentPairs": [
+        { "calm": "DLM001", "crisis": "DLM001_CRISIS" },
+        { "calm": "DLM004", "crisis": "DLM012" }
+      ]
+    },
+    "calculation": {
+      "method": "euclidean_distance",
+      "formula": "sqrt((E_calm - E_crisis)² + (C_calm - C_crisis)² + (R_calm - R_crisis)² + (I_calm - I_crisis)²)",
+      "normalization": "0-100 scale"
+    },
+    "interpretation": {
+      "low": {
+        "range": "0-20",
+        "meaning": "Alta consistência - comportamento estável sob pressão",
+        "profile": "Predictable"
+      },
+      "medium": {
+        "range": "21-50",
+        "meaning": "Variação moderada - adaptação situacional",
+        "profile": "Adaptive"
+      },
+      "high": {
+        "range": "51-100",
+        "meaning": "Alta variação - mudança significativa sob pressão",
+        "profile": "Reactive"
+      }
+    },
+    "axisSpecificDissonance": {
+      "description": "Dissonância calculada por eixo individualmente",
+      "significance": {
+        "execution": "Mudança na capacidade de foco e completude",
+        "collaboration": "Mudança na disposição para ajudar outros",
+        "resilience": "Paradoxo - mede a própria resiliência",
+        "innovation": "Mudança na disposição para experimentar"
+      }
+    }
+  },
+  "scoring": {
+    "weights": {
+      "description": "Pesos para cálculo do score final de desempenho",
+      "decisionTime": 0.15,
+      "decisions": 0.25,
+      "minigames": 0.30,
+      "exploration": 0.15,
+      "npcInteractions": 0.15
+    },
+    "normalization": {
+      "method": "min-max",
+      "outputRange": { "min": 0, "max": 100 }
+    },
+    "bonuses": {
+      "allMinigamesCompleted": 5,
+      "noDecisionsSkipped": 3,
+      "allHiddenAreasFound": 5,
+      "allNPCsPositive": 5,
+      "perfectMinigameScore": 3,
+      "noMinigameAbandons": 4
+    },
+    "penalties": {
+      "decisionSkip": -2,
+      "minigameAbandon": -3,
+      "extremeTimeVariation": -2,
+      "negativeEthics": -5
+    }
+  },
+  "gpiCalculation": {
+    "execution": {
+      "description": "Capacidade de focar, planejar e concluir tarefas",
+      "components": {
+        "decisionSpeed": 0.20,
+        "decisionConfidence": 0.20,
+        "minigameAccuracy": 0.25,
+        "minigameCompletion": 0.15,
+        "explorationEfficiency": 0.10,
+        "taskCompletion": 0.10
+      },
+      "discCorrelation": { "D": 0.6, "C": 0.9 },
+      "bigFiveCorrelation": { "C": 0.9 }
+    },
+    "collaboration": {
+      "description": "Habilidade de se comunicar, ter empatia e trabalhar em equipe",
+      "components": {
+        "positiveNPCRelations": 0.30,
+        "helpGiven": 0.25,
+        "conflictsResolved": 0.20,
+        "teamDecisions": 0.15,
+        "ethicalChoices": 0.10
+      },
+      "discCorrelation": { "I": 0.9, "S": 0.7 },
+      "bigFiveCorrelation": { "A": 0.9, "E": 0.6 }
+    },
+    "resilience": {
+      "description": "Aptidão para gerenciar estresse, persistir e se adaptar",
+      "components": {
+        "pressureAdaptation": 0.30,
+        "minigameRetryRate": 0.25,
+        "noAbandonments": 0.20,
+        "consistentPerformance": 0.15,
+        "recoveryAfterFailure": 0.10
+      },
+      "discCorrelation": { "S": 0.4, "D": 0.3 },
+      "bigFiveCorrelation": { "N_inverse": 0.9 }
+    },
+    "innovation": {
+      "description": "Tendência a explorar, ser criativo e encontrar soluções não convencionais",
+      "components": {
+        "hiddenAreasFound": 0.30,
+        "alternativeSolutions": 0.25,
+        "explorationBreadth": 0.20,
+        "creativeChoices": 0.15,
+        "riskTaking": 0.10
+      },
+      "discCorrelation": { "D": 0.4, "I": 0.2 },
+      "bigFiveCorrelation": { "O": 0.9 }
+    }
+  },
+  "dataCollection": {
+    "events": [
+      {
+        "eventType": "DECISION_MADE",
+        "data": {
+          "dilemmaId": "string",
+          "choiceId": "string",
+          "responseTime": "number",
+          "context": "calm | crisis",
+          "gpiImpact": "GPIImpact",
+          "isAnalogPair": "boolean",
+          "analogPairId": "string | null"
+        }
+      },
+      {
+        "eventType": "MINIGAME_COMPLETED",
+        "data": {
+          "minigameId": "string",
+          "score": "number",
+          "attempts": "number",
+          "timeSpent": "number",
+          "hintsUsed": "number",
+          "alternativeSolution": "boolean"
+        }
+      },
+      {
+        "eventType": "MINIGAME_ABANDONED",
+        "data": {
+          "minigameId": "string",
+          "attempts": "number",
+          "timeSpent": "number",
+          "lastScore": "number"
+        }
+      },
+      {
+        "eventType": "AREA_EXPLORED",
+        "data": {
+          "areaId": "string",
+          "isHidden": "boolean",
+          "timeSpent": "number",
+          "discoveryMethod": "exploration | npc_hint | accident"
+        }
+      },
+      {
+        "eventType": "NPC_INTERACTION",
+        "data": {
+          "npcId": "string",
+          "interactionType": "dialog | help | conflict",
+          "outcome": "positive | negative | neutral",
+          "relationChange": "number",
+          "dialogChoiceId": "string"
+        }
+      },
+      {
+        "eventType": "JOURNEY_PROGRESS",
+        "data": {
+          "journeyId": "string",
+          "stageId": "string",
+          "status": "started | completed | failed",
+          "timeSpent": "number"
+        }
+      },
+      {
+        "eventType": "OBJECTIVE_PROGRESS",
+        "data": {
+          "objectiveId": "string",
+          "progress": "number",
+          "isCompleted": "boolean"
+        }
+      }
+    ],
+    "sessionData": {
+      "sessionId": "string",
+      "startTime": "timestamp",
+      "endTime": "timestamp",
+      "totalPlayTime": "number",
+      "checkpoints": ["string"],
+      "context": {
+        "platform": "string",
+        "screenSize": "string",
+        "deviceType": "string"
+      }
+    }
+  },
+  "reportGeneration": {
+    "sections": [
+      {
+        "name": "Perfil GPI",
+        "type": "radar_chart",
+        "data": ["execution", "collaboration", "resilience", "innovation"]
+      },
+      {
+        "name": "Perfil DISC Derivado",
+        "type": "bar_chart",
+        "data": ["D", "I", "S", "C"]
+      },
+      {
+        "name": "Perfil Big Five Derivado",
+        "type": "bar_chart",
+        "data": ["O", "C", "E", "A", "N"]
+      },
+      {
+        "name": "Análise de Dissonância",
+        "type": "comparison_chart",
+        "data": {
+          "planned": "GPIScore",
+          "instinctive": "GPIScore",
+          "dissonanceScore": "number"
+        }
+      },
+      {
+        "name": "Jornadas Completadas",
+        "type": "list",
+        "data": "Journey[]"
+      },
+      {
+        "name": "Métricas de Desempenho",
+        "type": "table",
+        "data": "PerformanceMetrics"
+      }
+    ]
+  }
+}

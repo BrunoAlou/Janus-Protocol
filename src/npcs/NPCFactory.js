@@ -2,6 +2,8 @@
  * NPCFactory - Criar e configurar NPCs
  */
 
+import { NPC } from '../entities/NPC.js';
+
 export default class NPCFactory {
   /**
    * Cria um NPC na cena
@@ -129,4 +131,66 @@ export default class NPCFactory {
       canMove: false
     }
   };
+
+  /**
+   * Cria uma entidade NPC encapsulada (versão OOP melhorada)
+   * 
+   * Esta função cria o sprite usando create() e retorna uma
+   * instância da classe NPC que encapsula o sprite com melhor
+   * organização e funcionalidades extras.
+   * 
+   * @param {Phaser.Scene} scene - A cena onde o NPC será criado
+   * @param {number} x - Posição X inicial
+   * @param {number} y - Posição Y inicial
+   * @param {Object} config - Configuração do NPC (mesma do create())
+   * @returns {NPC} Instância da classe NPC wrapper
+   * 
+   * @example
+   * const npc = NPCFactory.createEntity(scene, 100, 200, {
+   *   id: 'receptionist_1',
+   *   name: 'Maria',
+   *   dialogues: [
+   *     { text: 'Bem-vindo!', emotion: 'happy' }
+   *   ]
+   * });
+   * 
+   * // Usar métodos da entidade
+   * npc.showInteractionIndicator();
+   * const dialogue = npc.getNextDialogue();
+   */
+  static createEntity(scene, x, y, config = {}) {
+    // Criar sprite usando o método existente
+    const sprite = this.create(scene, x, y, config);
+    
+    // Criar entidade wrapper
+    const npcEntity = new NPC(scene, sprite, {
+      id: config.id || sprite.npcId,
+      name: config.name || sprite.npcName,
+      dialogues: config.dialogues || [],
+      canMove: config.canMove || false,
+      patrol: config.patrol || null,
+      interactionRadius: config.interactionRadius || 32,
+      ...config
+    });
+    
+    console.log('[NPCFactory] Created NPC entity:', {
+      id: npcEntity.getId(),
+      name: npcEntity.getName(),
+      position: npcEntity.getPosition()
+    });
+    
+    return npcEntity;
+  }
+
+  /**
+   * Cria múltiplas entidades NPC a partir de um array
+   * @param {Phaser.Scene} scene 
+   * @param {Array} npcsConfig - Array de configurações
+   * @returns {NPC[]} Array de entidades NPC
+   */
+  static createMultipleEntities(scene, npcsConfig) {
+    return npcsConfig.map(config => 
+      NPCFactory.createEntity(scene, config.x, config.y, config)
+    );
+  }
 }

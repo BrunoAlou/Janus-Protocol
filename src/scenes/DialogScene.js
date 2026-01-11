@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { SCENE_NAMES } from '../constants/SceneNames.js';
 
 /**
  * DialogScene - Hub de conversas na parte inferior
  */
 export default class DialogScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'DialogScene', active: false });
+    super({ key: SCENE_NAMES.DIALOG, active: false });
     this.currentDialogue = null;
     this.dialogueIndex = 0;
     this.isTyping = false;

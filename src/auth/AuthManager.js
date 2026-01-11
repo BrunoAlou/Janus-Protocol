@@ -12,9 +12,9 @@ export default class AuthManager {
     // Configurações OAuth (substitua com suas credenciais)
     this.config = {
       linkedin: {
-        clientId: 'SEU_LINKEDIN_CLIENT_ID',
+        clientId: '77vels5rgzs1ki',
         redirectUri: window.location.origin + '/auth/callback',
-        scope: 'r_liteprofile r_emailaddress',
+        scope: 'openid profile email',
         authUrl: 'https://www.linkedin.com/oauth/v2/authorization'
       },
       google: {

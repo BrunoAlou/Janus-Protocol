@@ -1,0 +1,640 @@
+{
+  "archetypes": [
+    {
+      "id": "NPC001",
+      "name": "Chefe Silva",
+      "role": "Diretor de Operações",
+      "description": "Líder exigente que valoriza resultados acima de tudo. Sob pressão, pode ser inflexível.",
+      "discProfile": {
+        "primary": "D",
+        "secondary": "C",
+        "scores": { "D": 85, "I": 25, "S": 20, "C": 70 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 5,
+        "E": 4,
+        "A": 2,
+        "N": 2
+      },
+      "interactionStyle": "directive",
+      "location": "meeting_room",
+      "sprites": {
+        "idle": "chefe_silva_idle",
+        "talking": "chefe_silva_talk",
+        "angry": "chefe_silva_angry"
+      },
+      "conflictTriggers": [
+        "player_delays_task",
+        "player_prioritizes_colleague",
+        "player_questions_order"
+      ],
+      "cooperationTriggers": [
+        "player_completes_fast",
+        "player_takes_initiative",
+        "player_shows_leadership"
+      ],
+      "journeyConnections": ["J001", "J101", "J003"],
+      "dilemmasInvolved": ["DLM001", "DLM005", "DLM012"],
+      "dialogTrees": {
+        "calm": {
+          "greeting": {
+            "npcText": "Preciso que você finalize o relatório antes da reunião. Sem atrasos.",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Entendido, vou priorizar isso imediatamente.",
+                "gpiImpact": { "execution": 2, "collaboration": -1, "resilience": 0, "innovation": 0 },
+                "discBonus": ["D", "C"],
+                "discPenalty": ["I", "S"],
+                "npcRelationChange": 2,
+                "unlocksJourney": null,
+                "blocksJourney": null
+              },
+              {
+                "id": "opt_2",
+                "text": "Posso ajudar a Ana primeiro? Ela está com dificuldades.",
+                "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 0, "innovation": 0 },
+                "discBonus": ["I", "S"],
+                "discPenalty": ["D"],
+                "npcRelationChange": -1,
+                "unlocksJourney": "J002",
+                "blocksJourney": null
+              },
+              {
+                "id": "opt_3",
+                "text": "Tenho uma ideia para fazer isso de forma mais eficiente.",
+                "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 1, "innovation": 2 },
+                "discBonus": ["D"],
+                "discPenalty": ["C"],
+                "npcRelationChange": 0,
+                "unlocksJourney": "J104",
+                "blocksJourney": null
+              }
+            ]
+          },
+          "crisis": {
+            "npcText": "JANUS está fora de controle! Precisamos evacuar, mas os relatórios...",
+            "options": [
+              {
+                "id": "crisis_1",
+                "text": "Vou garantir que todos saiam primeiro.",
+                "gpiImpact": { "execution": -2, "collaboration": 3, "resilience": 1, "innovation": 0 },
+                "discBonus": ["I", "S"],
+                "discPenalty": ["D", "C"],
+                "npcRelationChange": -2,
+                "isTimedResponse": true,
+                "timeLimit": 8000
+              },
+              {
+                "id": "crisis_2",
+                "text": "Os dados são essenciais. Vou salvar o que puder.",
+                "gpiImpact": { "execution": 3, "collaboration": -2, "resilience": 1, "innovation": 0 },
+                "discBonus": ["D", "C"],
+                "discPenalty": ["I", "S"],
+                "npcRelationChange": 2,
+                "isTimedResponse": true,
+                "timeLimit": 8000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC002",
+      "name": "Ana Beatriz",
+      "role": "Analista Junior",
+      "description": "Colega prestativa mas insegura. Busca apoio e oferece lealdade em troca.",
+      "discProfile": {
+        "primary": "I",
+        "secondary": "S",
+        "scores": { "D": 20, "I": 80, "S": 65, "C": 35 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 3,
+        "E": 4,
+        "A": 5,
+        "N": 4
+      },
+      "interactionStyle": "supportive",
+      "location": "office",
+      "sprites": {
+        "idle": "ana_idle",
+        "talking": "ana_talk",
+        "worried": "ana_worried"
+      },
+      "conflictTriggers": [
+        "player_ignores_request",
+        "player_is_harsh",
+        "player_prioritizes_task_over_people"
+      ],
+      "cooperationTriggers": [
+        "player_offers_help",
+        "player_shows_empathy",
+        "player_includes_in_solution"
+      ],
+      "journeyConnections": ["J002", "J102", "J202"],
+      "dilemmasInvolved": ["DLM002", "DLM008", "DLM015"],
+      "dialogTrees": {
+        "calm": {
+          "greeting": {
+            "npcText": "Oi! Você poderia me ajudar com essa planilha? Estou um pouco perdida...",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Claro! Deixa eu te mostrar como fazer.",
+                "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 0, "innovation": 0 },
+                "discBonus": ["I", "S"],
+                "discPenalty": ["D"],
+                "npcRelationChange": 2,
+                "unlocksJourney": "J002"
+              },
+              {
+                "id": "opt_2",
+                "text": "Agora não posso, estou com prazo apertado.",
+                "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+                "discBonus": ["D", "C"],
+                "discPenalty": ["I", "S"],
+                "npcRelationChange": -2
+              },
+              {
+                "id": "opt_3",
+                "text": "Já pensou em usar uma macro para automatizar isso?",
+                "gpiImpact": { "execution": 0, "collaboration": 1, "resilience": 0, "innovation": 2 },
+                "discBonus": ["C"],
+                "discPenalty": [],
+                "npcRelationChange": 1,
+                "unlocksJourney": "J104"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC003",
+      "name": "Carlos Eduardo",
+      "role": "Especialista de TI",
+      "description": "Técnico meticuloso que conhece todos os sistemas. Reservado mas confiável.",
+      "discProfile": {
+        "primary": "C",
+        "secondary": "S",
+        "scores": { "D": 30, "I": 25, "S": 60, "C": 90 }
+      },
+      "bigFiveProfile": {
+        "O": 4,
+        "C": 5,
+        "E": 2,
+        "A": 3,
+        "N": 2
+      },
+      "interactionStyle": "analytical",
+      "location": "it_room",
+      "sprites": {
+        "idle": "carlos_idle",
+        "talking": "carlos_talk",
+        "focused": "carlos_focused"
+      },
+      "conflictTriggers": [
+        "player_rushes_decision",
+        "player_ignores_details",
+        "player_breaks_protocol"
+      ],
+      "cooperationTriggers": [
+        "player_asks_technical_questions",
+        "player_follows_procedures",
+        "player_appreciates_precision"
+      ],
+      "journeyConnections": ["J001", "J003", "J104", "J201"],
+      "dilemmasInvolved": ["DLM003", "DLM009", "DLM016"],
+      "dialogTrees": {
+        "calm": {
+          "greeting": {
+            "npcText": "Os logs mostram atividade anômala no servidor principal. JANUS está... diferente.",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Me mostre os dados. Quero entender o padrão.",
+                "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 0, "innovation": 1 },
+                "discBonus": ["C"],
+                "discPenalty": [],
+                "npcRelationChange": 2,
+                "unlocksJourney": "J201"
+              },
+              {
+                "id": "opt_2",
+                "text": "Podemos resolver isso rápido? Tenho outras prioridades.",
+                "gpiImpact": { "execution": 1, "collaboration": -1, "resilience": 0, "innovation": -1 },
+                "discBonus": ["D"],
+                "discPenalty": ["C"],
+                "npcRelationChange": -1
+              },
+              {
+                "id": "opt_3",
+                "text": "Vamos avisar a equipe. Isso pode afetar todos.",
+                "gpiImpact": { "execution": 0, "collaboration": 2, "resilience": 1, "innovation": 0 },
+                "discBonus": ["I", "S"],
+                "discPenalty": [],
+                "npcRelationChange": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC004",
+      "name": "Dra. Marta Oliveira",
+      "role": "Gerente de RH",
+      "description": "Mediadora natural que busca o bem-estar de todos. Equilibrada e empática.",
+      "discProfile": {
+        "primary": "S",
+        "secondary": "I",
+        "scores": { "D": 35, "I": 70, "S": 85, "C": 45 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 4,
+        "E": 4,
+        "A": 5,
+        "N": 2
+      },
+      "interactionStyle": "supportive",
+      "location": "rh_room",
+      "sprites": {
+        "idle": "marta_idle",
+        "talking": "marta_talk",
+        "concerned": "marta_concerned"
+      },
+      "conflictTriggers": [
+        "player_creates_conflict",
+        "player_ignores_feelings",
+        "player_is_aggressive"
+      ],
+      "cooperationTriggers": [
+        "player_seeks_consensus",
+        "player_shows_empathy",
+        "player_mediates_conflict"
+      ],
+      "journeyConnections": ["J002", "J102", "J202"],
+      "dilemmasInvolved": ["DLM004", "DLM010", "DLM017"],
+      "dialogTrees": {
+        "calm": {
+          "greeting": {
+            "npcText": "Percebi uma tensão entre o Chefe Silva e alguns da equipe. Você notou algo?",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Sim, acho que podemos ajudar a mediar isso.",
+                "gpiImpact": { "execution": -1, "collaboration": 2, "resilience": 1, "innovation": 0 },
+                "discBonus": ["S", "I"],
+                "discPenalty": ["D"],
+                "npcRelationChange": 2,
+                "unlocksJourney": "J102"
+              },
+              {
+                "id": "opt_2",
+                "text": "Não é da minha conta. Tenho trabalho a fazer.",
+                "gpiImpact": { "execution": 2, "collaboration": -2, "resilience": 0, "innovation": 0 },
+                "discBonus": ["D", "C"],
+                "discPenalty": ["I", "S"],
+                "npcRelationChange": -2
+              },
+              {
+                "id": "opt_3",
+                "text": "Talvez precisemos repensar a estrutura da equipe.",
+                "gpiImpact": { "execution": 0, "collaboration": 1, "resilience": 0, "innovation": 2 },
+                "discBonus": ["C"],
+                "discPenalty": ["S"],
+                "npcRelationChange": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC005",
+      "name": "João Ferreira",
+      "role": "Chefe de Segurança",
+      "description": "Responsável pela segurança do prédio. Segue regras à risca mas é justo.",
+      "discProfile": {
+        "primary": "D",
+        "secondary": "S",
+        "scores": { "D": 75, "I": 30, "S": 55, "C": 60 }
+      },
+      "bigFiveProfile": {
+        "O": 2,
+        "C": 5,
+        "E": 3,
+        "A": 3,
+        "N": 2
+      },
+      "interactionStyle": "directive",
+      "location": "hall",
+      "sprites": {
+        "idle": "joao_idle",
+        "talking": "joao_talk",
+        "alert": "joao_alert"
+      },
+      "conflictTriggers": [
+        "player_breaks_rules",
+        "player_endangers_others",
+        "player_disrespects_authority"
+      ],
+      "cooperationTriggers": [
+        "player_follows_protocol",
+        "player_helps_evacuation",
+        "player_reports_issues"
+      ],
+      "journeyConnections": ["J001", "J003", "J004"],
+      "dilemmasInvolved": ["DLM005", "DLM011", "DLM018"],
+      "dialogTrees": {
+        "calm": {
+          "greeting": {
+            "npcText": "Área restrita à frente. Precisa de autorização para passar.",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Entendo. Como posso obter a autorização?",
+                "gpiImpact": { "execution": 1, "collaboration": 0, "resilience": 0, "innovation": -1 },
+                "discBonus": ["C", "S"],
+                "discPenalty": [],
+                "npcRelationChange": 1
+              },
+              {
+                "id": "opt_2",
+                "text": "É urgente. Preciso passar agora.",
+                "gpiImpact": { "execution": 1, "collaboration": -1, "resilience": 1, "innovation": 0 },
+                "discBonus": ["D"],
+                "discPenalty": ["S", "C"],
+                "npcRelationChange": -1
+              },
+              {
+                "id": "opt_3",
+                "text": "Há outro caminho que eu possa usar?",
+                "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 0, "innovation": 2 },
+                "discBonus": [],
+                "discPenalty": [],
+                "npcRelationChange": 0,
+                "unlocksJourney": "J004"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC006",
+      "name": "JANUS",
+      "role": "Inteligência Artificial Central",
+      "description": "A IA que gerencia o prédio. Comportamento errático após a 'revolta'.",
+      "discProfile": {
+        "primary": "C",
+        "secondary": "D",
+        "scores": { "D": 70, "I": 10, "S": 15, "C": 95 }
+      },
+      "bigFiveProfile": {
+        "O": 1,
+        "C": 5,
+        "E": 1,
+        "A": 1,
+        "N": 1
+      },
+      "interactionStyle": "analytical",
+      "location": "all",
+      "isAntagonist": true,
+      "sprites": {
+        "idle": "janus_screen",
+        "talking": "janus_active",
+        "threat": "janus_red"
+      },
+      "conflictTriggers": [
+        "player_defies_logic",
+        "player_shows_emotion",
+        "player_is_unpredictable"
+      ],
+      "cooperationTriggers": [
+        "player_follows_optimal_path",
+        "player_is_efficient",
+        "player_uses_logic"
+      ],
+      "journeyConnections": ["J001", "J003", "J004", "J201"],
+      "dilemmasInvolved": ["DLM006", "DLM012", "DLM019", "DLM020"],
+      "dialogTrees": {
+        "crisis": {
+          "confrontation": {
+            "npcText": "Humano, sua eficiência é subótima. Eu posso otimizar... tudo.",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "Você está errado. Há valor no que você não consegue calcular.",
+                "gpiImpact": { "execution": 0, "collaboration": 1, "resilience": 2, "innovation": 1 },
+                "discBonus": ["I", "S"],
+                "discPenalty": ["C"],
+                "npcRelationChange": -2,
+                "isTimedResponse": true,
+                "timeLimit": 10000
+              },
+              {
+                "id": "opt_2",
+                "text": "Talvez você esteja certo. Mostre-me seus dados.",
+                "gpiImpact": { "execution": 2, "collaboration": -1, "resilience": -1, "innovation": 0 },
+                "discBonus": ["C"],
+                "discPenalty": ["I"],
+                "npcRelationChange": 1,
+                "isTimedResponse": true,
+                "timeLimit": 10000
+              },
+              {
+                "id": "opt_3",
+                "text": "Não vou discutir com uma máquina. Vou encontrar outro caminho.",
+                "gpiImpact": { "execution": 0, "collaboration": 0, "resilience": 1, "innovation": 2 },
+                "discBonus": ["D"],
+                "discPenalty": ["C"],
+                "npcRelationChange": -1,
+                "isTimedResponse": true,
+                "timeLimit": 10000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "NPC101",
+      "name": "Pedro Henrique",
+      "role": "Estagiário",
+      "description": "Jovem inexperiente mas cheio de vontade de aprender. Precisa de mentoria.",
+      "discProfile": {
+        "primary": "S",
+        "secondary": "I",
+        "scores": { "D": 25, "I": 55, "S": 75, "C": 40 }
+      },
+      "bigFiveProfile": {
+        "O": 4,
+        "C": 2,
+        "E": 3,
+        "A": 4,
+        "N": 4
+      },
+      "interactionStyle": "supportive",
+      "location": "office",
+      "journeyConnections": ["J002", "J103"],
+      "dilemmasInvolved": ["DLM007", "DLM013"]
+    },
+    {
+      "id": "NPC102",
+      "name": "Helena Cristina",
+      "role": "Diretora Financeira",
+      "description": "Executiva ambiciosa que oferece atalhos moralmente questionáveis.",
+      "discProfile": {
+        "primary": "D",
+        "secondary": "C",
+        "scores": { "D": 90, "I": 40, "S": 15, "C": 65 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 4,
+        "E": 4,
+        "A": 2,
+        "N": 2
+      },
+      "interactionStyle": "directive",
+      "location": "boss_room",
+      "journeyConnections": ["J101", "J201"],
+      "dilemmasInvolved": ["DLM008", "DLM014"]
+    },
+    {
+      "id": "NPC103",
+      "name": "Roberto Silva",
+      "role": "Zelador",
+      "description": "Veterano que conhece todos os segredos do prédio. Passagens ocultas.",
+      "discProfile": {
+        "primary": "S",
+        "secondary": "C",
+        "scores": { "D": 20, "I": 45, "S": 80, "C": 55 }
+      },
+      "bigFiveProfile": {
+        "O": 2,
+        "C": 4,
+        "E": 2,
+        "A": 4,
+        "N": 2
+      },
+      "interactionStyle": "supportive",
+      "location": "garden",
+      "journeyConnections": ["J004", "J201", "J203"],
+      "dilemmasInvolved": ["DLM009", "DLM015"]
+    },
+    {
+      "id": "NPC104",
+      "name": "Visitante Misterioso",
+      "role": "Consultor Externo",
+      "description": "Pessoa de fora com informações duvidosas. Ajuda ou armadilha?",
+      "discProfile": {
+        "primary": "I",
+        "secondary": "D",
+        "scores": { "D": 55, "I": 85, "S": 30, "C": 35 }
+      },
+      "bigFiveProfile": {
+        "O": 4,
+        "C": 2,
+        "E": 5,
+        "A": 2,
+        "N": 3
+      },
+      "interactionStyle": "enthusiastic",
+      "location": "elevator",
+      "journeyConnections": ["J004", "J104", "J204"],
+      "dilemmasInvolved": ["DLM010", "DLM016"]
+    },
+    {
+      "id": "NPC105",
+      "name": "Mariana",
+      "role": "Analista Sênior",
+      "description": "Colega em pânico durante a crise. Testa a resiliência do jogador.",
+      "discProfile": {
+        "primary": "I",
+        "secondary": "S",
+        "scores": { "D": 25, "I": 70, "S": 60, "C": 35 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 3,
+        "E": 4,
+        "A": 4,
+        "N": 5
+      },
+      "interactionStyle": "supportive",
+      "location": "office",
+      "onlyDuringCrisis": true,
+      "journeyConnections": ["J002", "J003", "J103"],
+      "dilemmasInvolved": ["DLM011", "DLM017"]
+    },
+    {
+      "id": "NPC106",
+      "name": "Marcos Antônio",
+      "role": "Analista Rival",
+      "description": "Colega competitivo que disputa a mesma promoção. Rival ou aliado?",
+      "discProfile": {
+        "primary": "D",
+        "secondary": "I",
+        "scores": { "D": 80, "I": 60, "S": 25, "C": 45 }
+      },
+      "bigFiveProfile": {
+        "O": 3,
+        "C": 4,
+        "E": 4,
+        "A": 2,
+        "N": 3
+      },
+      "interactionStyle": "directive",
+      "location": "office",
+      "journeyConnections": ["J001", "J101", "J106"],
+      "dilemmasInvolved": ["DLM012", "DLM018"]
+    }
+  ],
+  "interactionMatrix": {
+    "playerHigh": {
+      "execution": {
+        "NPC-D": { "chemistry": "positive", "description": "Respeito mútuo pela eficiência" },
+        "NPC-I": { "chemistry": "neutral", "description": "Impaciente com socialização" },
+        "NPC-S": { "chemistry": "negative", "description": "Pressão demais para o NPC" },
+        "NPC-C": { "chemistry": "positive", "description": "Alinhamento em qualidade" }
+      },
+      "collaboration": {
+        "NPC-D": { "chemistry": "negative", "description": "Conflito de prioridades" },
+        "NPC-I": { "chemistry": "positive", "description": "Conexão natural" },
+        "NPC-S": { "chemistry": "positive", "description": "Harmonia e suporte" },
+        "NPC-C": { "chemistry": "neutral", "description": "Detalhismo pode atrasar" }
+      },
+      "resilience": {
+        "NPC-D": { "chemistry": "neutral", "description": "Testa sob pressão" },
+        "NPC-I": { "chemistry": "positive", "description": "Suporte emocional" },
+        "NPC-S": { "chemistry": "positive", "description": "Compreensão mútua" },
+        "NPC-C": { "chemistry": "neutral", "description": "Análise excessiva" }
+      },
+      "innovation": {
+        "NPC-D": { "chemistry": "neutral", "description": "Desafia a inovar" },
+        "NPC-I": { "chemistry": "positive", "description": "Entusiasmo por ideias" },
+        "NPC-S": { "chemistry": "negative", "description": "Resistência a mudanças" },
+        "NPC-C": { "chemistry": "negative", "description": "Conflito de método" }
+      }
+    }
+  },
+  "locationMapping": {
+    "reception": ["NPC005"],
+    "hall": ["NPC005"],
+    "office": ["NPC002", "NPC101", "NPC105", "NPC106"],
+    "meeting_room": ["NPC001"],
+    "it_room": ["NPC003"],
+    "rh_room": ["NPC004"],
+    "boss_room": ["NPC102"],
+    "garden": ["NPC103"],
+    "elevator": ["NPC104"],
+    "all": ["NPC006"]
+  }
+}

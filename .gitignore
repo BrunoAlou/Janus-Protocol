@@ -1,5 +1,9 @@
 # Ignore node_modules directory
 node_modules/
 
+# Environment variables
+.env
+backend/.env
+
 *ai.md
 *md.ai

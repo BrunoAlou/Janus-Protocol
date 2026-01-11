@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { SCENE_NAMES } from '../constants/SceneNames.js';
 
 /**
  * PauseMenuScene - Menu de configurações (ESC)
  */
 export default class PauseMenuScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'PauseMenuScene', active: false });
+    super({ key: SCENE_NAMES.PAUSE_MENU, active: false });
   }
 
   create() {
@@ -110,10 +111,13 @@ export default class PauseMenuScene extends Phaser.Scene {
   }
 
   pauseGame() {
-    // Pausar cena principal
-    const mainScene = this.game.scene.getScene('ReceptionScene');
-    if (mainScene) {
-      this.scene.pause('ReceptionScene');
+    // Pausar cena principal - usa a cena atual do SceneManager
+    const currentMap = window.sceneManager?.currentState?.map;
+    if (currentMap) {
+      const mainScene = this.game.scene.getScene(currentMap);
+      if (mainScene) {
+        this.scene.pause(currentMap);
+      }
     }
     console.log('[PauseMenuScene] Game paused');
   }
@@ -121,10 +125,13 @@ export default class PauseMenuScene extends Phaser.Scene {
   resumeGame() {
     this.setVisible(false);
     
-    // Retomar cena principal
-    const mainScene = this.game.scene.getScene('ReceptionScene');
-    if (mainScene) {
-      this.scene.resume('ReceptionScene');
+    // Retomar cena principal - usa a cena atual do SceneManager
+    const currentMap = window.sceneManager?.currentState?.map;
+    if (currentMap) {
+      const mainScene = this.game.scene.getScene(currentMap);
+      if (mainScene) {
+        this.scene.resume(currentMap);
+      }
     }
     console.log('[PauseMenuScene] Game resumed');
   }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SCENE_NAMES } from '../constants/SceneNames.js';
 
 /**
  * MinimapScene - Minimapa exibido no canto da tela
@@ -6,8 +7,8 @@ import Phaser from 'phaser';
  */
 export default class MinimapScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'MinimapScene', active: false }); // Será gerenciada pelo SceneManager
-    this.currentRoom = 'ReceptionScene';
+    super({ key: SCENE_NAMES.MINIMAP, active: false }); // Será gerenciada pelo SceneManager
+    this.currentRoom = SCENE_NAMES.RECEPTION;
   }
 
   create() {
@@ -39,15 +40,15 @@ export default class MinimapScene extends Phaser.Scene {
     
     // Grade de salas (3x3)
     this.rooms = {
-      'BossRoomScene': { x: -45, y: -45, name: 'Chefe' },
+      [SCENE_NAMES.BOSS_ROOM]: { x: -45, y: -45, name: 'Chefe' },
       'RoofTopScene': { x: 0, y: -45, name: 'Terraço' },
-      'MeetingRoomScene': { x: 45, y: -45, name: 'Café' },
+      [SCENE_NAMES.MEETING_ROOM]: { x: 45, y: -45, name: 'Café' },
       
-      'ElevatorScene': { x: 0, y: 0, name: 'Elevad.' },
+      [SCENE_NAMES.ELEVATOR]: { x: 0, y: 0, name: 'Elevad.' },
       
-      'iTRoomScene': { x: -45, y: 45, name: 'TI' },
-      'ReceptionScene': { x: 0, y: 45, name: 'Recep.' },
-      'ArchiveRoomScene': { x: 45, y: 45, name: 'Arquivo' }
+      [SCENE_NAMES.IT_ROOM]: { x: -45, y: 45, name: 'TI' },
+      [SCENE_NAMES.RECEPTION]: { x: 0, y: 45, name: 'Recep.' },
+      [SCENE_NAMES.ARCHIVE_ROOM]: { x: 45, y: 45, name: 'Arquivo' }
     };
     
     // Criar células do minimapa (elementos diretos)
@@ -80,9 +81,9 @@ export default class MinimapScene extends Phaser.Scene {
     this.currentRoom = null;
     
     // Atualizar posição inicial para ReceptionScene
-    this.updateCurrentRoom('ReceptionScene');
+    this.updateCurrentRoom(SCENE_NAMES.RECEPTION);
     
-    console.log('[MinimapScene] Initialized with ReceptionScene at', this.rooms['ReceptionScene']);
+    console.log('[MinimapScene] Initialized with ReceptionScene at', this.rooms[SCENE_NAMES.RECEPTION]);
     
     // Escutar mudanças de sala
     this.game.events.on('room-changed', (roomKey) => {

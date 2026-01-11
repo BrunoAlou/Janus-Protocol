@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * GardenScene - Jardim / Área Externa
  */
 export default class GardenScene extends BaseMapScene {
   constructor() {
-    super('GardenScene', 'garden');
+    super(SCENE_NAMES.GARDEN, 'garden');
   }
 
   getSpawnX() {

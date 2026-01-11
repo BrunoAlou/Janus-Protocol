@@ -1,12 +1,13 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
+import { SCENE_NAMES } from '../../constants/SceneNames.js';
 
 /**
  * MeetingRoomScene - Sala de Reuniões
  */
 export default class MeetingRoomScene extends BaseMapScene {
   constructor() {
-    super('MeetingRoomScene', 'meeting_room');
+    super(SCENE_NAMES.MEETING_ROOM, 'meeting_room');
   }
 
   getSpawnX() {

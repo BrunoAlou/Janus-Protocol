@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import AuthManager from '../auth/AuthManager.js';
+import { SCENE_NAMES } from '../constants/SceneNames.js';
 
 /**
  * LoginScene - Tela de login com OAuth
  */
 export default class LoginScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'LoginScene', active: true }); // Primeira cena, inicia automaticamente
+    super({ key: SCENE_NAMES.LOGIN, active: true }); // Primeira cena, inicia automaticamente
     this.authManager = new AuthManager();
   }
 
@@ -118,12 +119,14 @@ export default class LoginScene extends Phaser.Scene {
     
     if (result.success) {
       loadingText.setText('Login realizado! Carregando...');
+      // Limpar URL ANTES de iniciar o jogo (importante para os assets carregarem corretamente)
+      window.history.replaceState({}, document.title, '/');
       this.time.delayedCall(1000, () => this.startGame());
     } else {
       loadingText.setText('Erro no login: ' + result.error);
       loadingText.setColor('#ff0000');
       // Limpar URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, '/');
     }
   }
 
@@ -133,7 +136,7 @@ export default class LoginScene extends Phaser.Scene {
     const user = this.authManager.getUser();
     
     // Usar SceneManager para iniciar gameplay
-    window.sceneManager.startGameplay('ReceptionScene', { user });
+    window.sceneManager.startGameplay(SCENE_NAMES.RECEPTION, { user });
     
     console.log('[LoginScene] Gameplay started via SceneManager');
   }
