@@ -23,6 +23,7 @@ export default class ReceptionScene extends BaseMapScene {
     this.load.image("generic_home_image", "/src/assets/Generic_Home_1_Layer_1_32x32.png");
     this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
     this.load.image("condo_preview_image", "/src/assets/Condominium_Design_preview_32x32.png");
+    this.load.image("modern_office_image", "/src/assets/Modern_Office_Shadowless_32x32.png");
     
     // Carregar mapa da reception
     this.load.tilemapTiledJSON("reception", "/src/assets/reception.json");
@@ -210,7 +211,7 @@ export default class ReceptionScene extends BaseMapScene {
     if (this.spawnPoint === 'fromItRoom') {
       return 50; // Próximo à porta esquerda
     }
-    return 320; // Posição inicial (default)
+    return 336; // Posição inicial (default)
   }
 
   getSpawnY() {
@@ -220,7 +221,7 @@ export default class ReceptionScene extends BaseMapScene {
     if (this.spawnPoint === 'fromItRoom') {
       return 240; // Meio da porta esquerda
     }
-    return 450; // Posição inicial na recepção (default)
+    return 469; // Posição inicial na recepção (default)
   }
 
   setupNPCs() {

@@ -71,8 +71,17 @@ export default class InteractionManager {
    * Processa interação quando tecla E é pressionada
    */
   handleInteraction() {
+    // Verificar primeiro se ElementManager processou a interação
+    if (this.scene.elementManager?.currentInteractable) {
+      // ElementManager tem algo para interagir, deixar ele processar
+      return;
+    }
+
     if (!this.currentInteractable) {
-      console.log('[InteractionManager] No interactable nearby');
+      // Só logar se não houver nada em nenhum dos sistemas
+      if (!this.scene.elementManager || this.scene.elementManager.elements.size === 0) {
+        console.log('[InteractionManager] No interactable nearby');
+      }
       return;
     }
 

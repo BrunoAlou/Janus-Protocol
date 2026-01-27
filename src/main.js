@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 
-// Gerenciador de cenas
+// Gerenciadores
 import SceneManager from "./managers/SceneManager.js";
+import MinigameManager from "./managers/MinigameManager.js";
 
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
@@ -9,6 +10,7 @@ import UIScene from "./scenes/UIScene.js";
 import DialogScene from "./scenes/DialogScene.js";
 import PauseMenuScene from "./scenes/PauseMenuScene.js";
 import MinimapScene from "./scenes/MinimapScene.js";
+import MinigameMenuScene from "./scenes/MinigameMenuScene.js";
 
 // Cenas de mapa
 import ReceptionScene from "./scenes/map/ReceptionScene.js";
@@ -50,7 +52,7 @@ const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: true // Ativar para ver hitboxes e identificar problemas visuais
+      debug: false // Debug desativado por padrão - ativar via menu ESC
     }
   },
   scene: [
@@ -74,6 +76,8 @@ const config = {
     UIScene,
     DialogScene,
     PauseMenuScene,
+    MinigameMenuScene,
+    
     // Minigames
     PuzzleGame,
     QuizGame,
@@ -87,6 +91,9 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// Inicializar MinigameManager global
+window.minigameManager = new MinigameManager();
+
 // Inicializar SceneManager global
 window.sceneManager = new SceneManager(game);
 
@@ -94,7 +101,7 @@ window.sceneManager = new SceneManager(game);
 // Apenas sincronizar o estado do SceneManager
 window.sceneManager.currentState.auth = 'LoginScene';
 
-console.log('[Main] Game initialized with SceneManager');
+console.log('[Main] Game initialized with SceneManager and MinigameManager');
 
 // Garantir resize imediato e quando a janela for alterada
 window.addEventListener('resize', () => {

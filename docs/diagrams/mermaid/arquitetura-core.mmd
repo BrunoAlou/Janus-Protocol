@@ -1,0 +1,138 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#00d9ff', 'primaryTextColor': '#fff', 'primaryBorderColor': '#00d9ff', 'lineColor': '#00d9ff', 'secondaryColor': '#1a1a2e', 'tertiaryColor': '#2a2a3e'}}}%%
+
+flowchart TB
+    subgraph CORE["🎮 CORE - Núcleo do Sistema"]
+        direction TB
+        MAIN["main.js<br/>Ponto de Entrada"]
+        BOOTSTRAP["bootstrap.js<br/>Inicialização"]
+        
+        subgraph MANAGERS["📦 Managers"]
+            SM["SceneManager<br/>Gerenciamento de Cenas"]
+            MM["MinigameManager<br/>Gerenciamento de Minigames"]
+        end
+        
+        subgraph SERVICES["🔧 Services"]
+            SC["ServiceContainer<br/>Injeção de Dependências"]
+        end
+        
+        subgraph STATE["💾 State"]
+            GSM["GameStateManager<br/>Estado Global do Jogo"]
+        end
+    end
+    
+    subgraph SCENES["🎬 Sistema de Cenas"]
+        direction TB
+        
+        subgraph AUTH["🔐 Autenticação"]
+            LOGIN["LoginScene"]
+        end
+        
+        subgraph MAPS["🗺️ Mapas"]
+            RECEPTION["ReceptionScene"]
+            OFFICE["OfficeScene"]
+            LAB["LabScene"]
+            IT["ItRoomScene"]
+            RH["RhRoomScene"]
+            GARDEN["GardenScene"]
+            BOSS["BossRoomScene"]
+        end
+        
+        subgraph UI_SYSTEM["🖥️ UI System"]
+            UI["UIScene"]
+            DIALOG["DialogScene"]
+            PAUSE["PauseMenuScene"]
+            MINIMAP["MinimapScene"]
+        end
+    end
+    
+    subgraph PLAYER_SYSTEM["👤 Sistema do Player"]
+        PF["PlayerFactory<br/>Criação do Player"]
+        PC["PlayerController<br/>Input & Movimento"]
+        PA["playerAnimations<br/>Sistema de Animações"]
+    end
+    
+    subgraph ELEMENTS["🎯 Elementos Interativos"]
+        EM["ElementManager<br/>Gerenciador de Elementos"]
+        IE["InteractiveElement<br/>Classe Base"]
+        IM["InteractionManager<br/>Gerenciador de Interações"]
+    end
+    
+    subgraph ENTITIES["👥 Entidades"]
+        NPC["NPC<br/>Personagens"]
+        NPCF["NPCFactory<br/>Fábrica de NPCs"]
+        PLAYER["Player<br/>Jogador"]
+    end
+    
+    subgraph TELEMETRY["📊 Telemetria"]
+        direction TB
+        TEL["telemetry.js<br/>Módulo Principal"]
+        
+        subgraph TEL_FUNCS["Funções Principais"]
+            ENRICH["enrichEvent()<br/>Enriquecimento de Dados"]
+            LOG["logAction()<br/>Registro de Ações"]
+            BATCH["Batched Sender<br/>Envio em Lote"]
+        end
+        
+        subgraph TEL_DATA["Dados Coletados"]
+            SID["session_id<br/>ID da Sessão"]
+            ANON["user_anon_id<br/>ID Anônimo"]
+            SEQ["seq_in_session<br/>Sequência"]
+            CONSENT["consent<br/>Consentimento"]
+        end
+        
+        subgraph TEL_STORAGE["Armazenamento"]
+            MEM["MEM_QUEUE<br/>Fila em Memória"]
+            LS["localStorage<br/>Fallback Local"]
+            BACKEND["Backend API<br/>/api/events"]
+        end
+    end
+    
+    %% Conexões principais
+    MAIN --> BOOTSTRAP
+    BOOTSTRAP --> SM
+    BOOTSTRAP --> MM
+    SM --> MAPS
+    SM --> UI_SYSTEM
+    SM --> AUTH
+    
+    MAPS --> PF
+    PF --> PC
+    PF --> PA
+    PF --> PLAYER
+    
+    MAPS --> EM
+    EM --> IE
+    EM --> IM
+    
+    MAPS --> NPCF
+    NPCF --> NPC
+    
+    %% Telemetria
+    PC --> TEL
+    IM --> TEL
+    IE --> TEL
+    GSM --> TEL
+    
+    TEL --> ENRICH
+    TEL --> LOG
+    LOG --> BATCH
+    
+    ENRICH --> SID
+    ENRICH --> ANON
+    ENRICH --> SEQ
+    ENRICH --> CONSENT
+    
+    BATCH --> MEM
+    MEM --> LS
+    MEM --> BACKEND
+    
+    %% Estilos
+    classDef core fill:#1a1a2e,stroke:#00d9ff,stroke-width:2px,color:#fff
+    classDef manager fill:#2a2a3e,stroke:#00d9ff,stroke-width:1px,color:#fff
+    classDef scene fill:#3a3a4e,stroke:#00ffff,stroke-width:1px,color:#fff
+    classDef telemetry fill:#2a3a2e,stroke:#00ff00,stroke-width:1px,color:#fff
+    
+    class MAIN,BOOTSTRAP core
+    class SM,MM,SC,GSM manager
+    class LOGIN,RECEPTION,OFFICE,UI,DIALOG scene
+    class TEL,ENRICH,LOG,BATCH telemetry

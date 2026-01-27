@@ -38,13 +38,13 @@ export default class SceneManager {
       
       // Minigames (exclusivos, pausam a cena de mapa)
       minigame: [
-        SCENE_NAMES.PUZZLE_GAME,
-        SCENE_NAMES.QUIZ_GAME,
-        SCENE_NAMES.MEMORY_GAME,
-        SCENE_NAMES.TYPING_GAME,
-        SCENE_NAMES.WHACK_A_MOLE_GAME,
-        SCENE_NAMES.TETRIS_GAME,
-        SCENE_NAMES.SNAKE_GAME
+        SCENE_NAMES.PUZZLE,
+        SCENE_NAMES.QUIZ,
+        SCENE_NAMES.MEMORY,
+        SCENE_NAMES.TYPING,
+        SCENE_NAMES.WHACK_A_MOLE,
+        SCENE_NAMES.TETRIS,
+        SCENE_NAMES.SNAKE
       ]
     };
     
@@ -113,19 +113,35 @@ export default class SceneManager {
   switchToAuth(authSceneKey) {
     console.log(`[SceneManager] Switching to auth: ${authSceneKey}`);
     
-    // Parar todas as cenas
-    this.game.scene.getScenes(true).forEach(scene => {
-      if (scene.scene.key !== authSceneKey) {
-        this.game.scene.stop(scene.scene.key);
+    // Coletar todas as cenas ativas primeiro (evitar modificar durante iteração)
+    const activeScenes = this.game.scene.getScenes(true).map(scene => scene.scene.key);
+    console.log(`[SceneManager] Active scenes to stop:`, activeScenes);
+    
+    // Parar todas as cenas ativas
+    activeScenes.forEach(sceneKey => {
+      if (sceneKey !== authSceneKey) {
+        console.log(`[SceneManager] Stopping scene: ${sceneKey}`);
+        this.game.scene.stop(sceneKey);
       }
     });
     
-    // Iniciar cena de auth
+    // Parar a cena de auth também se estiver ativa (para garantir reset)
+    if (activeScenes.includes(authSceneKey)) {
+      this.game.scene.stop(authSceneKey);
+    }
+    
+    // Iniciar a cena de auth
     this.game.scene.start(authSceneKey);
+    
+    // Trazer a cena para frente
+    this.game.scene.bringToTop(authSceneKey);
+    
     this.currentState.auth = authSceneKey;
     this.currentState.map = null;
     this.currentState.minigame = null;
     this.currentState.system = [];
+    
+    console.log(`[SceneManager] Auth scene ${authSceneKey} started and brought to top`);
   }
   
   /**

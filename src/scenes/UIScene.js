@@ -266,12 +266,5 @@ export default class UIScene extends Phaser.Scene {
     if (this.minigamesButton) {
       this.minigamesButton.setVisible(true);
     }
-    
-    // Debug ocasional (a cada segundo)
-    if (this.game.loop.frame % 60 === 0) {
-      console.log('[UIScene UPDATE] Active:', this.scene.isActive('UIScene'), 
-                  'Visible:', this.scene.isVisible('UIScene'),
-                  'MenuBg:', this.menuBackground?.visible);
-    }
   }
 }

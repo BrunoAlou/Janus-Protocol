@@ -92,7 +92,9 @@
       }
     },
     "minigames": {
-      "description": "Performance em minigames",
+      "description": "Performance em minigames - NÃO afeta GPI, apresentado separadamente para RH",
+      "excludeFromGPI": true,
+      "presentationMode": "standalone",
       "measurements": {
         "minigamesCompleted": {
           "description": "Minigames finalizados com sucesso"
@@ -109,63 +111,75 @@
           "calculation": "retries / failures * 100"
         },
         "minigameAbandonRate": {
-          "description": "% de minigames abandonados sem completar",
-          "penalty": true
+          "description": "% de minigames abandonados sem completar"
         }
       },
       "minigameSpecificMetrics": {
         "QuizGame": {
-          "primaryAxis": "execution",
           "metrics": ["accuracy", "speed", "streaks"],
-          "weight": 1.2
+          "reportLabels": {
+            "accuracy": "Taxa de acerto",
+            "speed": "Velocidade de resposta",
+            "streaks": "Sequências corretas"
+          }
         },
         "MemoryGame": {
-          "primaryAxis": "execution",
-          "secondaryAxis": "innovation",
-          "metrics": ["accuracy", "patternRecognition"],
-          "weight": 1.0
+          "metrics": ["accuracy", "patternRecognition", "attempts"],
+          "reportLabels": {
+            "accuracy": "Taxa de acerto",
+            "patternRecognition": "Reconhecimento de padrões",
+            "attempts": "Tentativas até conclusão"
+          }
         },
         "PuzzleGame": {
-          "primaryAxis": "innovation",
-          "secondaryAxis": "execution",
-          "metrics": ["solutionPath", "hintUsage", "alternativeSolutions"],
-          "weight": 1.3
+          "metrics": ["completionTime", "hintUsage", "movesCount"],
+          "reportLabels": {
+            "completionTime": "Tempo de conclusão",
+            "hintUsage": "Uso de dicas",
+            "movesCount": "Número de movimentos"
+          }
         },
         "TypingGame": {
-          "primaryAxis": "execution",
-          "secondaryAxis": "resilience",
-          "metrics": ["wpm", "accuracy", "consistencyUnderPressure"],
-          "weight": 1.1
+          "metrics": ["wpm", "accuracy", "consistency"],
+          "reportLabels": {
+            "wpm": "Palavras por minuto",
+            "accuracy": "Precisão",
+            "consistency": "Consistência"
+          }
         },
         "SnakeGame": {
-          "primaryAxis": "resilience",
-          "metrics": ["survivalTime", "recoveryAfterMistake"],
-          "weight": 1.0
+          "metrics": ["survivalTime", "maxScore", "recoveries"],
+          "reportLabels": {
+            "survivalTime": "Tempo de sobrevivência",
+            "maxScore": "Pontuação máxima",
+            "recoveries": "Recuperações após erro"
+          }
         },
         "TetrisGame": {
-          "primaryAxis": "execution",
-          "secondaryAxis": "innovation",
-          "metrics": ["linesCleared", "adaptability", "planning"],
-          "weight": 1.2
+          "metrics": ["linesCleared", "level", "efficiency"],
+          "reportLabels": {
+            "linesCleared": "Linhas completadas",
+            "level": "Nível alcançado",
+            "efficiency": "Eficiência de peças"
+          }
         },
         "WhackAMoleGame": {
-          "primaryAxis": "resilience",
-          "metrics": ["reactionTime", "accuracyUnderSpeed"],
-          "weight": 1.0
+          "metrics": ["reactionTime", "accuracy", "totalHits"],
+          "reportLabels": {
+            "reactionTime": "Tempo de reação médio",
+            "accuracy": "Precisão",
+            "totalHits": "Total de acertos"
+          }
         }
       },
-      "gpiMapping": {
-        "execution": {
-          "weight": 0.4,
-          "factors": ["averageScore", "completionRate"]
-        },
-        "resilience": {
-          "weight": 0.4,
-          "factors": ["retryRate", "abandonRate"]
-        },
-        "innovation": {
-          "weight": 0.2,
-          "factors": ["alternativeSolutions"]
+      "comparativeAnalysis": {
+        "enabled": true,
+        "showPercentile": true,
+        "positiveFramingOnly": true,
+        "thresholds": {
+          "excellent": 90,
+          "good": 70,
+          "average": 50
         }
       }
     },
@@ -296,28 +310,24 @@
   },
   "scoring": {
     "weights": {
-      "description": "Pesos para cálculo do score final de desempenho",
-      "decisionTime": 0.15,
-      "decisions": 0.25,
-      "minigames": 0.30,
-      "exploration": 0.15,
-      "npcInteractions": 0.15
+      "description": "Pesos para cálculo do score final de desempenho (minigames excluídos)",
+      "decisionTime": 0.20,
+      "decisions": 0.35,
+      "exploration": 0.20,
+      "npcInteractions": 0.25
     },
     "normalization": {
       "method": "min-max",
       "outputRange": { "min": 0, "max": 100 }
     },
     "bonuses": {
-      "allMinigamesCompleted": 5,
-      "noDecisionsSkipped": 3,
+      "noDecisionsSkipped": 5,
       "allHiddenAreasFound": 5,
       "allNPCsPositive": 5,
-      "perfectMinigameScore": 3,
-      "noMinigameAbandons": 4
+      "consistentDecisionTime": 3
     },
     "penalties": {
-      "decisionSkip": -2,
-      "minigameAbandon": -3,
+      "decisionSkip": -3,
       "extremeTimeVariation": -2,
       "negativeEthics": -5
     }
@@ -326,12 +336,10 @@
     "execution": {
       "description": "Capacidade de focar, planejar e concluir tarefas",
       "components": {
-        "decisionSpeed": 0.20,
-        "decisionConfidence": 0.20,
-        "minigameAccuracy": 0.25,
-        "minigameCompletion": 0.15,
-        "explorationEfficiency": 0.10,
-        "taskCompletion": 0.10
+        "decisionSpeed": 0.30,
+        "decisionConfidence": 0.30,
+        "explorationEfficiency": 0.20,
+        "taskCompletion": 0.20
       },
       "discCorrelation": { "D": 0.6, "C": 0.9 },
       "bigFiveCorrelation": { "C": 0.9 }
@@ -351,11 +359,9 @@
     "resilience": {
       "description": "Aptidão para gerenciar estresse, persistir e se adaptar",
       "components": {
-        "pressureAdaptation": 0.30,
-        "minigameRetryRate": 0.25,
-        "noAbandonments": 0.20,
-        "consistentPerformance": 0.15,
-        "recoveryAfterFailure": 0.10
+        "pressureAdaptation": 0.40,
+        "consistentPerformance": 0.30,
+        "recoveryAfterFailure": 0.30
       },
       "discCorrelation": { "S": 0.4, "D": 0.3 },
       "bigFiveCorrelation": { "N_inverse": 0.9 }

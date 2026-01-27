@@ -21,7 +21,7 @@ export default class PauseMenuScene extends Phaser.Scene {
     this.menuContainer.setDepth(1000);
 
     // Painel do menu
-    const menuBg = this.add.rectangle(0, 0, 400, 500, 0x1a1a2e, 1);
+    const menuBg = this.add.rectangle(0, 0, 400, 550, 0x1a1a2e, 1);
     menuBg.setStrokeStyle(3, 0x00d9ff);
 
     // Título
@@ -33,18 +33,23 @@ export default class PauseMenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Opções
-    const resumeBtn = this.createMenuItem(0, -120, 'Continuar');
-    const soundBtn = this.createMenuItem(0, -40, 'Som: Ligado');
-    const musicBtn = this.createMenuItem(0, 40, 'Música: Ligada');
-    const controlsBtn = this.createMenuItem(0, 120, 'Controles');
-    const quitBtn = this.createMenuItem(0, 200, 'Sair do Jogo', 0xff0000);
+    const resumeBtn = this.createMenuItem(0, -140, 'Continuar');
+    const soundBtn = this.createMenuItem(0, -70, 'Som: Ligado');
+    const musicBtn = this.createMenuItem(0, 0, 'Música: Ligada');
+    const debugBtn = this.createMenuItem(0, 70, 'Debug: Desligado');
+    const controlsBtn = this.createMenuItem(0, 140, 'Controles');
+    const quitBtn = this.createMenuItem(0, 210, 'Sair do Jogo', 0xff0000);
 
-    // Eventos dos botões
-    resumeBtn.on('pointerdown', () => this.resumeGame());
-    soundBtn.on('pointerdown', () => this.toggleSound(soundBtn));
-    musicBtn.on('pointerdown', () => this.toggleMusic(musicBtn));
-    controlsBtn.on('pointerdown', () => this.showControls());
-    quitBtn.on('pointerdown', () => this.quitGame());
+    // Guardar referência ao botão de debug para atualizar texto
+    this.debugBtn = debugBtn;
+
+    // Eventos dos botões (usando o bg interno do container)
+    resumeBtn.bg.on('pointerdown', () => this.resumeGame());
+    soundBtn.bg.on('pointerdown', () => this.toggleSound(soundBtn));
+    musicBtn.bg.on('pointerdown', () => this.toggleMusic(musicBtn));
+    debugBtn.bg.on('pointerdown', () => this.toggleDebug(debugBtn));
+    controlsBtn.bg.on('pointerdown', () => this.showControls());
+    quitBtn.bg.on('pointerdown', () => this.quitGame());
 
     this.menuContainer.add([
       menuBg,
@@ -52,6 +57,7 @@ export default class PauseMenuScene extends Phaser.Scene {
       resumeBtn,
       soundBtn,
       musicBtn,
+      debugBtn,
       controlsBtn,
       quitBtn
     ]);
@@ -61,9 +67,28 @@ export default class PauseMenuScene extends Phaser.Scene {
 
     // Tecla ESC para abrir/fechar
     this.escKey = this.input.keyboard.addKey('ESC');
-    this.escKey.on('down', () => this.toggleMenu());
+    this.escKey.on('down', () => this.handleEscKey());
 
     console.log('[PauseMenuScene] Created');
+  }
+
+  /**
+   * Processa a tecla ESC - verifica se DialogScene está ativo antes de abrir menu
+   */
+  handleEscKey() {
+    // Verificar se o DialogScene consumiu o ESC
+    const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
+    if (dialogScene) {
+      // Verificar se diálogo está aberto OU se ESC foi consumido recentemente
+      if (dialogScene.isDialogOpen?.() || dialogScene._escConsumed) {
+        // DialogScene vai processar o ESC, não fazer nada aqui
+        console.log('[PauseMenuScene] ESC ignorado - DialogScene está ativo');
+        return;
+      }
+    }
+
+    // Nenhum diálogo aberto, processar normalmente
+    this.toggleMenu();
   }
 
   createMenuItem(x, y, text, color = 0xffffff) {
@@ -91,7 +116,11 @@ export default class PauseMenuScene extends Phaser.Scene {
       container.setScale(1);
     });
 
-    return bg;
+    // Guardar referência ao label no container para acesso posterior
+    container.label = label;
+    container.bg = bg;
+
+    return container;
   }
 
   toggleMenu() {
@@ -141,28 +170,94 @@ export default class PauseMenuScene extends Phaser.Scene {
     const soundEnabled = this.game.sound.mute;
     this.game.sound.mute = !soundEnabled;
     
-    const label = button.list[1]; // Pegar texto do botão
-    label.setText(soundEnabled ? 'Som: Ligado' : 'Som: Desligado');
+    // Pegar texto do botão via referência direta
+    button.label.setText(soundEnabled ? 'Som: Ligado' : 'Som: Desligado');
     
     console.log('[PauseMenuScene] Sound:', soundEnabled ? 'ON' : 'OFF');
   }
 
   toggleMusic(button) {
     // Implementar lógica de música
-    // Similar ao toggleSound
-    console.log('[PauseMenuScene] Music toggled');
+    // Usar uma propriedade customizada para rastrear estado da música
+    if (this.musicEnabled === undefined) {
+      this.musicEnabled = true;
+    }
+    this.musicEnabled = !this.musicEnabled;
+    
+    button.label.setText(this.musicEnabled ? 'Música: Ligada' : 'Música: Desligada');
+    
+    console.log('[PauseMenuScene] Music:', this.musicEnabled ? 'ON' : 'OFF');
+  }
+
+  toggleDebug(button) {
+    // Buscar a cena de mapa atual para acessar o collisionDebugger
+    const currentMap = window.sceneManager?.currentState?.map;
+    if (currentMap) {
+      const mapScene = this.game.scene.getScene(currentMap);
+      if (mapScene && mapScene.collisionDebugger) {
+        // Toggle apenas o CollisionDebugger (nosso sistema customizado)
+        mapScene.collisionDebugger.toggle();
+        const isEnabled = mapScene.collisionDebugger.isEnabled();
+        button.label.setText(isEnabled ? 'Debug: Ligado' : 'Debug: Desligado');
+        window.debugEnabled = isEnabled;
+        
+        // Atualizar visibilidade dos debug boxes dos elementos
+        if (mapScene.elementManager) {
+          mapScene.elementManager.setDebugVisible(isEnabled);
+        }
+        
+        console.log('[PauseMenuScene] Debug:', isEnabled ? 'ON' : 'OFF');
+        return;
+      }
+    }
+    
+    // Fallback: tentar acessar via estado global
+    const debugEnabled = window.debugEnabled || false;
+    window.debugEnabled = !debugEnabled;
+    button.label.setText(window.debugEnabled ? 'Debug: Ligado' : 'Debug: Desligado');
+    console.log('[PauseMenuScene] Debug (global):', window.debugEnabled ? 'ON' : 'OFF');
   }
 
   showControls() {
     // Mostrar tela de controles
-    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo');
+    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nP - Toggle Debug');
   }
 
   quitGame() {
     if (confirm('Deseja realmente sair do jogo?')) {
-      // Voltar para tela de login usando SceneManager
-      window.sceneManager.switchToAuth('LoginScene');
-      console.log('[PauseMenuScene] Quit game via SceneManager');
+      // Limpar sessão local
+      if (window.authManager) {
+        window.authManager.logout();
+      } else {
+        // Fallback: limpar manualmente se authManager não estiver disponível
+        localStorage.removeItem('janus_session');
+        localStorage.removeItem('janus_oauth_state');
+      }
+      
+      // Fechar menu de pausa
+      this.setVisible(false);
+      
+      console.log('[PauseMenuScene] Session cleared, redirecting to login...');
+      
+      // Voltar para tela de login
+      if (window.sceneManager) {
+        window.sceneManager.switchToAuth(SCENE_NAMES.LOGIN);
+      } else {
+        // Fallback: usar Phaser diretamente
+        // Coletar cenas ativas primeiro
+        const activeScenes = this.game.scene.getScenes(true).map(s => s.scene.key);
+        
+        // Parar todas as cenas
+        activeScenes.forEach(sceneKey => {
+          this.game.scene.stop(sceneKey);
+        });
+        
+        // Iniciar LoginScene e trazer para frente
+        this.game.scene.start(SCENE_NAMES.LOGIN);
+        this.game.scene.bringToTop(SCENE_NAMES.LOGIN);
+      }
+      
+      console.log('[PauseMenuScene] Redirected to login');
     }
   }
 }

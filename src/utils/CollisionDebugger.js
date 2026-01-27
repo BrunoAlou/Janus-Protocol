@@ -1,6 +1,7 @@
 /**
  * CollisionDebugger - Sistema de debug para visualizar colisões
  * Inclui visualização da hitbox do player com suporte a hitbox circular
+ * e visualização das áreas de colisão das camadas do mapa
  */
 
 export default class CollisionDebugger {
@@ -9,15 +10,35 @@ export default class CollisionDebugger {
     this.player = player;
     this.activeCollisions = new Set();
     this.collisionText = null;
-    this.enabled = true;
+    this.enabled = false; // Desabilitado por padrão
     
     // Gráficos para visualização da hitbox
     this.hitboxGraphics = null;
     this.hitboxInfoText = null;
     
+    // Gráficos para visualização das colisões das camadas
+    this.layerCollisionGraphics = null;
+    this.layerLegendText = null;
+    
+    // Debug de posição (para definir elementos)
+    this.positionDebugText = null;
+    this.positionMarker = null;
+    this.clickedPositions = []; // Histórico de posições clicadas
+    
+    // Cores para cada camada de colisão
+    this.layerColors = {
+      'Paredes': 0xff0000,      // Vermelho
+      'paredes2': 0xff6600,     // Laranja
+      'Objetos': 0x0066ff,      // Azul
+      'Portas': 0x00ff00,       // Verde
+      'default': 0xff00ff       // Magenta (fallback)
+    };
+    
     this.createDebugUI();
     this.createHitboxVisualization();
-    console.log('[CollisionDebugger] Initialized with hitbox visualization');
+    this.createLayerCollisionVisualization();
+    this.createPositionDebugUI();
+    console.log('[CollisionDebugger] Initialized with hitbox, layer collision and position debug');
   }
 
   createDebugUI() {
@@ -31,6 +52,9 @@ export default class CollisionDebugger {
       padding: { x: 10, y: 5 },
       align: 'center'
     }).setOrigin(0.5, 0).setDepth(10000).setScrollFactor(0);
+    
+    // Esconder por padrão (debug desativado)
+    this.collisionText.setVisible(false);
   }
   
   /**
@@ -49,6 +73,289 @@ export default class CollisionDebugger {
       padding: { x: 8, y: 4 },
       fontFamily: 'monospace'
     }).setDepth(10000).setScrollFactor(0);
+    
+    // Esconder por padrão
+    this.hitboxInfoText.setVisible(false);
+  }
+  
+  /**
+   * Cria a visualização das áreas de colisão das camadas do mapa
+   */
+  createLayerCollisionVisualization() {
+    // Gráficos para desenhar as áreas de colisão (abaixo do player mas acima do mapa)
+    this.layerCollisionGraphics = this.scene.add.graphics();
+    this.layerCollisionGraphics.setDepth(50); // Abaixo do player (depth ~100+)
+    
+    // Texto de legenda das cores
+    const { height } = this.scene.cameras.main;
+    this.layerLegendText = this.scene.add.text(10, height - 120, '', {
+      fontSize: '11px',
+      color: '#ffffff',
+      backgroundColor: '#000000cc',
+      padding: { x: 8, y: 6 },
+      fontFamily: 'monospace',
+      lineSpacing: 4
+    }).setDepth(10000).setScrollFactor(0);
+    
+    this.layerLegendText.setVisible(false);
+  }
+  
+  /**
+   * Desenha as áreas de colisão de todas as camadas com colisão
+   */
+  drawLayerCollisions() {
+    if (!this.layerCollisionGraphics || !this.enabled) {
+      this.layerCollisionGraphics?.clear();
+      this.layerLegendText?.setVisible(false);
+      return;
+    }
+    
+    this.layerCollisionGraphics.clear();
+    
+    // Obter as camadas da cena
+    const layers = this.scene.layers;
+    if (!layers) {
+      console.warn('[CollisionDebugger] No layers found in scene');
+      return;
+    }
+    
+    const legendLines = ['=== COLISÕES DAS CAMADAS ==='];
+    let totalCollisionTiles = 0;
+    
+    // Iterar pelas camadas que têm colisão
+    const collisionLayers = ['walls', 'walls2', 'objects', 'doors'];
+    const layerNameMap = {
+      'walls': 'Paredes',
+      'walls2': 'paredes2',
+      'objects': 'Objetos',
+      'doors': 'Portas'
+    };
+    
+    collisionLayers.forEach(layerKey => {
+      const layer = layers[layerKey];
+      if (!layer || !layer.layer) return;
+      
+      const layerName = layerNameMap[layerKey] || layerKey;
+      const color = this.layerColors[layerName] || this.layerColors.default;
+      const colorHex = '#' + color.toString(16).padStart(6, '0');
+      
+      let tileCount = 0;
+      
+      // Iterar por todos os tiles da camada
+      const tileWidth = layer.layer.tileWidth;
+      const tileHeight = layer.layer.tileHeight;
+      
+      layer.layer.data.forEach((row, y) => {
+        row.forEach((tile, x) => {
+          // Verificar se o tile tem colisão (index > -1 significa que tem um tile)
+          if (tile && tile.index !== -1 && tile.collides) {
+            const worldX = x * tileWidth;
+            const worldY = y * tileHeight;
+            
+            // Desenhar retângulo semi-transparente
+            this.layerCollisionGraphics.fillStyle(color, 0.3);
+            this.layerCollisionGraphics.fillRect(worldX, worldY, tileWidth, tileHeight);
+            
+            // Contorno
+            this.layerCollisionGraphics.lineStyle(1, color, 0.8);
+            this.layerCollisionGraphics.strokeRect(worldX, worldY, tileWidth, tileHeight);
+            
+            tileCount++;
+          }
+        });
+      });
+      
+      if (tileCount > 0) {
+        legendLines.push(`■ ${layerName}: ${tileCount} tiles (${colorHex})`);
+        totalCollisionTiles += tileCount;
+      }
+    });
+    
+    legendLines.push(`─────────────────`);
+    legendLines.push(`Total: ${totalCollisionTiles} tiles com colisão`);
+    
+    // Atualizar legenda
+    this.layerLegendText.setText(legendLines.join('\n'));
+    this.layerLegendText.setVisible(true);
+    
+    console.log('[CollisionDebugger] Layer collisions drawn:', totalCollisionTiles, 'tiles');
+  }
+  
+  /**
+   * Cria a UI de debug de posição (mouse + player + clique para copiar)
+   */
+  createPositionDebugUI() {
+    const { width, height } = this.scene.cameras.main;
+    
+    // Texto no canto inferior direito com posições
+    this.positionDebugText = this.scene.add.text(width - 10, height - 10, '', {
+      fontSize: '12px',
+      color: '#00ff00',
+      backgroundColor: '#000000cc',
+      padding: { x: 8, y: 6 },
+      fontFamily: 'monospace',
+      align: 'right'
+    }).setOrigin(1, 1).setDepth(10001).setScrollFactor(0);
+    this.positionDebugText.setVisible(false);
+    
+    // Gráficos para marcadores de posição
+    this.positionMarker = this.scene.add.graphics();
+    this.positionMarker.setDepth(99998);
+    
+    // Container para marcadores de posição clicados
+    this.clickedMarkersContainer = this.scene.add.container(0, 0);
+    this.clickedMarkersContainer.setDepth(99997);
+    
+    // Listener de clique para marcar posições
+    this.scene.input.on('pointerdown', (pointer) => {
+      if (!this.enabled) return;
+      
+      // Converter para coordenadas do mundo (considerando câmera)
+      const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      const x = Math.round(worldPoint.x);
+      const y = Math.round(worldPoint.y);
+      
+      // Adicionar ao histórico
+      this.addClickedPosition(x, y);
+      
+      // Copiar para clipboard
+      const coordText = `"x": ${x},\n"y": ${y}`;
+      this.copyToClipboard(coordText);
+      
+      // Feedback visual
+      this.showCopiedFeedback(x, y);
+    });
+  }
+  
+  /**
+   * Adiciona uma posição clicada ao histórico visual
+   */
+  addClickedPosition(x, y) {
+    // Limitar histórico a 10 posições
+    if (this.clickedPositions.length >= 10) {
+      const oldest = this.clickedPositions.shift();
+      oldest.marker?.destroy();
+      oldest.text?.destroy();
+    }
+    
+    // Criar marcador visual
+    const marker = this.scene.add.graphics();
+    marker.fillStyle(0xff00ff, 0.5);
+    marker.fillCircle(x, y, 8);
+    marker.lineStyle(2, 0xff00ff, 1);
+    marker.strokeCircle(x, y, 8);
+    // Cruz no centro
+    marker.lineStyle(1, 0xffffff, 1);
+    marker.lineBetween(x - 12, y, x + 12, y);
+    marker.lineBetween(x, y - 12, x, y + 12);
+    marker.setDepth(99997);
+    
+    // Texto com coordenadas
+    const text = this.scene.add.text(x + 12, y - 8, `(${x}, ${y})`, {
+      fontSize: '10px',
+      color: '#ff00ff',
+      backgroundColor: '#000000cc',
+      padding: { x: 3, y: 2 }
+    }).setDepth(99998);
+    
+    this.clickedPositions.push({ x, y, marker, text });
+  }
+  
+  /**
+   * Mostra feedback visual de "copiado"
+   */
+  showCopiedFeedback(x, y) {
+    const worldPoint = { x, y };
+    const screenPoint = this.scene.cameras.main.worldToScreen(worldPoint.x, worldPoint.y);
+    
+    const feedback = this.scene.add.text(screenPoint.x, screenPoint.y - 30, '📋 Copiado!', {
+      fontSize: '14px',
+      color: '#00ff00',
+      backgroundColor: '#000000',
+      padding: { x: 6, y: 3 }
+    }).setOrigin(0.5).setDepth(10002).setScrollFactor(0);
+    
+    this.scene.tweens.add({
+      targets: feedback,
+      y: feedback.y - 20,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => feedback.destroy()
+    });
+    
+    console.log(`[PositionDebug] Posição copiada: x=${x}, y=${y}`);
+  }
+  
+  /**
+   * Copia texto para o clipboard
+   */
+  copyToClipboard(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(err => {
+        console.warn('[PositionDebug] Falha ao copiar:', err);
+      });
+    }
+  }
+  
+  /**
+   * Atualiza o texto de debug de posição
+   */
+  updatePositionDebug() {
+    if (!this.positionDebugText || !this.enabled) {
+      this.positionDebugText?.setVisible(false);
+      this.positionMarker?.clear();
+      return;
+    }
+    
+    this.positionDebugText.setVisible(true);
+    
+    // Posição do mouse no mundo
+    const pointer = this.scene.input.activePointer;
+    const worldPoint = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const mouseX = Math.round(worldPoint.x);
+    const mouseY = Math.round(worldPoint.y);
+    
+    // Posição do player
+    const playerX = Math.round(this.player.x);
+    const playerY = Math.round(this.player.y);
+    
+    // Tile atual do mouse (assumindo tiles de 16px)
+    const tileSize = this.scene.map?.tileWidth || 16;
+    const tileX = Math.floor(mouseX / tileSize);
+    const tileY = Math.floor(mouseY / tileSize);
+    
+    // Atualizar texto
+    this.positionDebugText.setText([
+      '=== POSITION DEBUG (P) ===',
+      `🖱️ Mouse: (${mouseX}, ${mouseY})`,
+      `📍 Tile: [${tileX}, ${tileY}]`,
+      `🧍 Player: (${playerX}, ${playerY})`,
+      ``,
+      `💡 Clique para copiar posição`,
+      `   Posições marcadas: ${this.clickedPositions.length}`
+    ].join('\n'));
+    
+    // Desenhar crosshair no mouse
+    this.positionMarker.clear();
+    this.positionMarker.lineStyle(1, 0x00ffff, 0.8);
+    this.positionMarker.lineBetween(mouseX - 20, mouseY, mouseX + 20, mouseY);
+    this.positionMarker.lineBetween(mouseX, mouseY - 20, mouseX, mouseY + 20);
+    
+    // Círculo no ponto
+    this.positionMarker.lineStyle(2, 0x00ffff, 1);
+    this.positionMarker.strokeCircle(mouseX, mouseY, 5);
+  }
+  
+  /**
+   * Limpa todos os marcadores de posição
+   */
+  clearPositionMarkers() {
+    this.clickedPositions.forEach(pos => {
+      pos.marker?.destroy();
+      pos.text?.destroy();
+    });
+    this.clickedPositions = [];
+    console.log('[PositionDebug] Marcadores limpos');
   }
 
   /**
@@ -59,6 +366,8 @@ export default class CollisionDebugger {
 
     // Callback quando começa a colidir
     collider.collideCallback = (player, tile) => {
+      if (!this.enabled) return; // Não executar se debug desativado
+      
       const collisionKey = `${layerName}_${tile.x}_${tile.y}`;
       
       if (!this.activeCollisions.has(collisionKey)) {
@@ -82,6 +391,8 @@ export default class CollisionDebugger {
     if (!collider) return;
 
     collider.collideCallback = (player, npc) => {
+      if (!this.enabled) return; // Não executar se debug desativado
+      
       const collisionKey = `NPC_${npcName}`;
       
       if (!this.activeCollisions.has(collisionKey)) {
@@ -96,6 +407,7 @@ export default class CollisionDebugger {
    * Registra colisão com limites do mundo
    */
   checkWorldBounds() {
+    if (!this.enabled) return; // Não executar se debug desativado
     if (!this.player.body) return;
 
     const body = this.player.body;
@@ -125,6 +437,8 @@ export default class CollisionDebugger {
    * Loga informações sobre a colisão
    */
   logCollision(layerName, tile) {
+    if (!this.enabled) return; // Não executar se debug desativado
+    
     console.log(`[Collision] Player colidindo com:`, {
       layer: layerName,
       tileX: tile.x,
@@ -196,6 +510,9 @@ export default class CollisionDebugger {
 
     // Atualizar visualização da hitbox
     this.updateHitboxVisualization();
+    
+    // Atualizar debug de posição
+    this.updatePositionDebug();
 
     // Verificar limites do mundo
     this.checkWorldBounds();
@@ -343,15 +660,51 @@ export default class CollisionDebugger {
    * Ativa/desativa o debugger
    */
   toggle() {
-    this.enabled = !this.enabled;
+    this.setEnabled(!this.enabled);
+  }
+
+  /**
+   * Define o estado do debugger
+   * @param {boolean} enabled - true para ativar, false para desativar
+   */
+  setEnabled(enabled) {
+    this.enabled = enabled;
     this.collisionText.setVisible(this.enabled);
     this.hitboxInfoText?.setVisible(this.enabled);
+    this.positionDebugText?.setVisible(this.enabled);
     
-    if (!this.enabled && this.hitboxGraphics) {
-      this.hitboxGraphics.clear();
+    if (!this.enabled) {
+      if (this.hitboxGraphics) this.hitboxGraphics.clear();
+      if (this.positionMarker) this.positionMarker.clear();
+      if (this.layerCollisionGraphics) this.layerCollisionGraphics.clear();
+      if (this.layerLegendText) this.layerLegendText.setVisible(false);
+      // Esconder marcadores clicados
+      this.clickedPositions.forEach(pos => {
+        pos.marker?.setVisible(false);
+        pos.text?.setVisible(false);
+      });
+    } else {
+      // Mostrar marcadores clicados
+      this.clickedPositions.forEach(pos => {
+        pos.marker?.setVisible(true);
+        pos.text?.setVisible(true);
+      });
+      // Desenhar colisões das camadas
+      this.drawLayerCollisions();
     }
     
+    // Atualizar estado global para acesso pelo menu de pausa
+    window.debugEnabled = this.enabled;
+    
     console.log('[CollisionDebugger]', this.enabled ? 'ENABLED' : 'DISABLED');
+  }
+
+  /**
+   * Retorna se o debugger está ativo
+   * @returns {boolean}
+   */
+  isEnabled() {
+    return this.enabled;
   }
 
   /**
@@ -361,6 +714,11 @@ export default class CollisionDebugger {
     this.collisionText?.destroy();
     this.hitboxGraphics?.destroy();
     this.hitboxInfoText?.destroy();
+    this.layerCollisionGraphics?.destroy();
+    this.layerLegendText?.destroy();
+    this.positionDebugText?.destroy();
+    this.positionMarker?.destroy();
+    this.clearPositionMarkers();
     this.activeCollisions.clear();
   }
 }

@@ -1,0 +1,343 @@
+{
+  "mapId": "reception",
+  "version": "1.0.0",
+  "description": "Elementos interativos da cena de recepção",
+  "elements": [
+    {
+      "id": "npc_receptionist",
+      "type": "npc",
+      "name": "Recepcionista",
+      "description": "A recepcionista da empresa, sempre atenciosa",
+      "area": {
+        "x": 280,
+        "y": 230,
+        "width": 64,
+        "height": 64
+      },
+      "sprite": {
+        "key": "receptionist",
+        "frame": 0,
+        "scale": 2
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -50
+      },
+      "greeting": "Olá! Bem-vindo à Janus Corp. Como posso ajudar?",
+      "options": [
+        {
+          "id": "opt_info",
+          "label": "Informações sobre a empresa",
+          "icon": "ℹ️",
+          "description": "Saiba mais sobre a Janus Corp",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "A Janus Corp é líder em inovação tecnológica." },
+                { "text": "Fundada há 10 anos, temos escritórios em 5 países." },
+                { "text": "Posso ajudar com mais alguma coisa?" }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_directions",
+          "label": "Onde fica o setor de TI?",
+          "icon": "🗺️",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "O setor de TI fica no corredor à direita." },
+                { "text": "Siga em frente e procure a porta com o símbolo de computador." }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_meeting",
+          "label": "Agendar reunião",
+          "icon": "📅",
+          "action": {
+            "type": "event",
+            "target": "schedule-meeting",
+            "data": {
+              "npcId": "npc_receptionist"
+            }
+          },
+          "condition": {
+            "type": "quest",
+            "id": "QUEST_INTRO_COMPLETE",
+            "operator": "==",
+            "value": true
+          }
+        },
+        {
+          "id": "opt_bye",
+          "label": "Até logo",
+          "icon": "👋",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "Tenha um ótimo dia!" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "door_hallway",
+      "type": "door",
+      "name": "Corredor Principal",
+      "description": "Porta para o corredor principal",
+      "area": {
+        "x": 480,
+        "y": 100,
+        "width": 48,
+        "height": 32
+      },
+      "indicator": {
+        "text": "[E] Entrar",
+        "offsetY": -30
+      },
+      "greeting": "Você deseja ir para o corredor?",
+      "options": [
+        {
+          "id": "opt_enter",
+          "label": "Entrar no corredor",
+          "icon": "🚪",
+          "action": {
+            "type": "scene",
+            "target": "HallwayScene",
+            "data": {
+              "spawnPoint": "from_reception"
+            }
+          }
+        },
+        {
+          "id": "opt_cancel",
+          "label": "Ficar aqui",
+          "icon": "↩️",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal_info",
+      "type": "terminal",
+      "name": "Terminal de Informações",
+      "description": "Terminal interativo com informações da empresa",
+      "area": {
+        "x": 200,
+        "y": 160,
+        "width": 48,
+        "height": 48
+      },
+      "sprite": {
+        "key": "terminal",
+        "frame": 0,
+        "scale": 1.5
+      },
+      "indicator": {
+        "text": "[E] Usar",
+        "offsetY": -40
+      },
+      "greeting": "=== TERMINAL DE INFORMAÇÕES ===",
+      "options": [
+        {
+          "id": "opt_map",
+          "label": "Ver mapa do prédio",
+          "icon": "🗺️",
+          "action": {
+            "type": "event",
+            "target": "show-building-map"
+          }
+        },
+        {
+          "id": "opt_directory",
+          "label": "Diretório de funcionários",
+          "icon": "📋",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "=== DIRETÓRIO ===" },
+                { "text": "Chefe Silva - Sala da Diretoria" },
+                { "text": "Ana - Setor de TI" },
+                { "text": "Carlos - RH" },
+                { "text": "Marina - Laboratório" }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_quiz",
+          "label": "🎮 Quiz de Integração",
+          "icon": "🧠",
+          "description": "Teste seus conhecimentos!",
+          "action": {
+            "type": "minigame",
+            "target": "QuizGame",
+            "data": {
+              "category": "integration",
+              "difficulty": "easy"
+            }
+          }
+        },
+        {
+          "id": "opt_close_terminal",
+          "label": "Desligar terminal",
+          "icon": "⏻",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "obj_plant",
+      "type": "object",
+      "name": "Planta",
+      "description": "Uma bela planta no canto da recepção",
+      "area": {
+        "x": 220,
+        "y": 230,
+        "width": 32,
+        "height": 32
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        { "text": "Uma planta bem cuidada. Parece artificial." },
+        { "text": "Você nota algo brilhando entre as folhas..." }
+      ]
+    },
+    {
+      "id": "obj_bulletin_board",
+      "type": "object",
+      "name": "Quadro de Avisos",
+      "description": "Quadro com informações importantes",
+      "area": {
+        "x": 150,
+        "y": 50,
+        "width": 48,
+        "height": 48
+      },
+      "indicator": {
+        "text": "[E] Ler",
+        "offsetY": -35
+      },
+      "greeting": "=== QUADRO DE AVISOS ===",
+      "options": [
+        {
+          "id": "opt_news",
+          "label": "📰 Notícias da Empresa",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "🎉 COMUNICADO IMPORTANTE 🎉" },
+                { "text": "Bem-vindos ao novo sistema JANUS!" },
+                { "text": "Este sistema revolucionário irá transformar nossa forma de trabalhar." },
+                { "text": "Fiquem atentos às próximas atualizações." }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_rules",
+          "label": "📋 Regras do Escritório",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "REGRAS DO ESCRITÓRIO:" },
+                { "text": "1. Horário de trabalho: 9h às 18h" },
+                { "text": "2. Intervalo para almoço: 12h às 13h" },
+                { "text": "3. Uso de crachá obrigatório" },
+                { "text": "4. Mantenha seu espaço limpo" }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_events",
+          "label": "🎊 Eventos",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                { "text": "PRÓXIMOS EVENTOS:" },
+                { "text": "📅 15/01 - Reunião Geral às 10h" },
+                { "text": "📅 20/01 - Treinamento JANUS às 14h" },
+                { "text": "📅 25/01 - Happy Hour às 18h" }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_close_board",
+          "label": "↩️ Fechar",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "trigger_entrance",
+      "type": "trigger",
+      "name": "Entrada",
+      "description": "Área de entrada da recepção",
+      "area": {
+        "x": 320,
+        "y": 380,
+        "width": 100,
+        "height": 40
+      },
+      "onInteract": {
+        "type": "event",
+        "target": "player-at-entrance",
+        "data": {
+          "message": "Você está na entrada da recepção"
+        }
+      }
+    },
+    {
+      "id": "obj_carpet",
+      "type": "object",
+      "name": "Tapete",
+      "description": "Um elegante tapete corporativo no centro da recepção",
+      "area": {
+        "x": 336,
+        "y": 360,
+        "width": 80,
+        "height": 168
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        { "text": "Um tapete bem cuidado com o logo da Janus Corp." },
+        { "text": "Parece ser feito de material premium." }
+      ]
+    }
+  ]
+}

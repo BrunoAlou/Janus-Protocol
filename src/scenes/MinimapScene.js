@@ -145,12 +145,5 @@ export default class MinimapScene extends Phaser.Scene {
     if (this.minimapContainer) {
       this.minimapContainer.setVisible(true);
     }
-    
-    // Debug ocasional (a cada segundo)
-    if (this.game.loop.frame % 60 === 0) {
-      console.log('[MinimapScene UPDATE] Active:', this.scene.isActive('MinimapScene'),
-                  'Visible:', this.scene.isVisible('MinimapScene'),
-                  'Container:', this.minimapContainer?.visible);
-    }
   }
 }

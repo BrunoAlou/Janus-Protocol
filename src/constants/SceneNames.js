@@ -17,6 +17,7 @@ export const SCENE_NAMES = Object.freeze({
   DIALOG: 'DialogScene',
   PAUSE_MENU: 'PauseMenuScene',
   MINIMAP: 'MinimapScene',
+  MINIGAME_MENU: 'MinigameMenuScene',
   
   // Mapas
   RECEPTION: 'ReceptionScene',
@@ -49,7 +50,8 @@ export const SYSTEM_SCENES = Object.freeze([
   SCENE_NAMES.UI,
   SCENE_NAMES.DIALOG,
   SCENE_NAMES.PAUSE_MENU,
-  SCENE_NAMES.MINIMAP
+  SCENE_NAMES.MINIMAP,
+  SCENE_NAMES.MINIGAME_MENU
 ]);
 
 export const AUTH_SCENES = Object.freeze([

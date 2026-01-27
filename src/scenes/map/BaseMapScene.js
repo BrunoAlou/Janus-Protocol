@@ -4,6 +4,7 @@ import PlayerController from '../../player/PlayerController.js';
 import InteractionManager from '../../interactions/InteractionManager.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import CollisionDebugger from '../../utils/CollisionDebugger.js';
+import { ElementManager } from '../../elements/index.js';
 
 /**
  * BaseMapScene - Classe base para todas as cenas de mapa
@@ -43,6 +44,9 @@ export default class BaseMapScene extends Phaser.Scene {
 
     // Configurar interações
     this.setupInteractions();
+
+    // Configurar elementos interativos
+    this.setupElements();
 
     // Configurar câmera
     this.setupCamera();
@@ -95,6 +99,7 @@ export default class BaseMapScene extends Phaser.Scene {
       else if (tilesetName.includes('Generic_Home')) textureKey = 'generic_home_image';
       else if (tilesetName.includes('Condominium_Design_2_layer_1')) textureKey = 'condo_layer1_image';
       else if (tilesetName.includes('Condominium_Design_2_preview')) textureKey = 'condo_preview_image';
+      else if (tilesetName.includes('Modern_Office_Shadowless')) textureKey = 'modern_office_image';
       
       if (textureKey) {
         console.log(`[${this.sceneKey}] Tentando adicionar ${tilesetName} com textura ${textureKey}`);
@@ -173,10 +178,17 @@ export default class BaseMapScene extends Phaser.Scene {
     if (colliderObjects) this.collisionDebugger.registerCollider(colliderObjects, 'Objetos');
     if (colliderDoors) this.collisionDebugger.registerCollider(colliderDoors, 'Portas');
 
-    // Listener para toggle do debug (tecla D)
-    this.input.keyboard.on('keydown-D', () => {
+    // Listener para toggle do debug (tecla P)
+    this.input.keyboard.on('keydown-P', () => {
+      // Toggle apenas o CollisionDebugger (nosso sistema customizado)
       if (this.collisionDebugger) {
         this.collisionDebugger.toggle();
+        window.debugEnabled = this.collisionDebugger.isEnabled();
+        
+        // Atualizar visibilidade dos debug boxes dos elementos
+        if (this.elementManager) {
+          this.elementManager.setDebugVisible(window.debugEnabled);
+        }
       }
     });
 
@@ -194,6 +206,21 @@ export default class BaseMapScene extends Phaser.Scene {
     if (this.npcs.length > 0) {
       this.interactionManager.registerNPCs(this.npcs);
     }
+  }
+
+  /**
+   * Configura elementos interativos do mapa
+   * Carrega elementos de arquivo JSON baseado no mapKey
+   */
+  async setupElements() {
+    // Criar ElementManager
+    this.elementManager = new ElementManager(this, this.player);
+
+    // Carregar elementos do arquivo JSON
+    const mapId = this.mapKey || this.sceneKey.toLowerCase().replace('scene', '');
+    await this.elementManager.loadFromFile(mapId);
+
+    console.log(`[${this.sceneKey}] Elements loaded for map: ${mapId}`);
   }
 
   setupCamera() {
@@ -216,6 +243,10 @@ export default class BaseMapScene extends Phaser.Scene {
     }
     if (this.interactionManager) {
       this.interactionManager.update();
+    }
+    // Atualizar ElementManager (elementos interativos)
+    if (this.elementManager) {
+      this.elementManager.update(time, delta);
     }
     // Atualizar debugger de colisões
     if (this.collisionDebugger) {

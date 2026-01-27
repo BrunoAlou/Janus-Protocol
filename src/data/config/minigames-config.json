@@ -1,0 +1,272 @@
+{
+  "minigamesConfig": {
+    "description": "Configuração de minigames - Editável pelo RH",
+    "version": "1.0.0",
+    "lastModified": "2026-01-11"
+  },
+  "globalSettings": {
+    "requireForProgression": false,
+    "allowSkip": true,
+    "skipPenalty": "narrative_only",
+    "replayLimit": "unlimited",
+    "showPublicAverage": true,
+    "showPlayerRanking": true
+  },
+  "minigames": {
+    "QuizGame": {
+      "enabled": true,
+      "displayName": "Quiz de Conhecimentos",
+      "description": "Teste seus conhecimentos respondendo perguntas",
+      "icon": "📝",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "object",
+        "location": "reception",
+        "description": "Folha de papel com perguntas encontrada no chão"
+      },
+      "difficulty": {
+        "easy": { "timeLimit": 60, "questionsCount": 5 },
+        "normal": { "timeLimit": 45, "questionsCount": 10 },
+        "hard": { "timeLimit": 30, "questionsCount": 15 }
+      },
+      "metrics": {
+        "track": ["accuracy", "speed", "streaks", "averageResponseTime"],
+        "reportLabels": {
+          "accuracy": "Taxa de acerto",
+          "speed": "Velocidade de resposta",
+          "streaks": "Maior sequência correta",
+          "averageResponseTime": "Tempo médio por questão"
+        }
+      }
+    },
+    "MemoryGame": {
+      "enabled": true,
+      "displayName": "Jogo da Memória",
+      "description": "Encontre os pares correspondentes",
+      "icon": "🧠",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "terminal",
+        "location": "it_room",
+        "description": "Terminal com programa de treinamento cognitivo"
+      },
+      "difficulty": {
+        "easy": { "pairs": 6, "timeLimit": 120 },
+        "normal": { "pairs": 10, "timeLimit": 90 },
+        "hard": { "pairs": 15, "timeLimit": 60 }
+      },
+      "metrics": {
+        "track": ["accuracy", "attempts", "completionTime", "perfectMatches"],
+        "reportLabels": {
+          "accuracy": "Precisão de memória",
+          "attempts": "Tentativas até completar",
+          "completionTime": "Tempo de conclusão",
+          "perfectMatches": "Acertos de primeira"
+        }
+      }
+    },
+    "PuzzleGame": {
+      "enabled": true,
+      "displayName": "Quebra-Cabeça Lógico",
+      "description": "Resolva o puzzle para desbloquear",
+      "icon": "🧩",
+      "requireForProgression": true,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "door",
+        "location": "boss_room",
+        "description": "Porta com mecanismo de segurança"
+      },
+      "difficulty": {
+        "easy": { "pieces": 9, "hintsAllowed": 3 },
+        "normal": { "pieces": 16, "hintsAllowed": 2 },
+        "hard": { "pieces": 25, "hintsAllowed": 0 }
+      },
+      "metrics": {
+        "track": ["completionTime", "movesCount", "hintsUsed", "efficiency"],
+        "reportLabels": {
+          "completionTime": "Tempo de conclusão",
+          "movesCount": "Movimentos realizados",
+          "hintsUsed": "Dicas utilizadas",
+          "efficiency": "Eficiência de movimentos"
+        }
+      }
+    },
+    "TypingGame": {
+      "enabled": true,
+      "displayName": "Digitação Rápida",
+      "description": "Digite o texto o mais rápido possível",
+      "icon": "⌨️",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "npc",
+        "location": "office",
+        "description": "Colega pede ajuda para digitar relatório urgente"
+      },
+      "difficulty": {
+        "easy": { "wordCount": 20, "timeLimit": 60 },
+        "normal": { "wordCount": 40, "timeLimit": 60 },
+        "hard": { "wordCount": 60, "timeLimit": 45 }
+      },
+      "metrics": {
+        "track": ["wpm", "accuracy", "consistency", "errorRate"],
+        "reportLabels": {
+          "wpm": "Palavras por minuto",
+          "accuracy": "Precisão",
+          "consistency": "Consistência ao longo do tempo",
+          "errorRate": "Taxa de erros"
+        }
+      }
+    },
+    "SnakeGame": {
+      "enabled": false,
+      "displayName": "Snake Corporativo",
+      "description": "Colete itens enquanto evita obstáculos",
+      "icon": "🐍",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "terminal",
+        "location": "break_room",
+        "description": "Jogo escondido no computador da copa"
+      },
+      "difficulty": {
+        "easy": { "speed": 100, "obstacles": 0 },
+        "normal": { "speed": 150, "obstacles": 5 },
+        "hard": { "speed": 200, "obstacles": 10 }
+      },
+      "metrics": {
+        "track": ["maxScore", "survivalTime", "itemsCollected", "closeCallCount"],
+        "reportLabels": {
+          "maxScore": "Pontuação máxima",
+          "survivalTime": "Tempo de sobrevivência",
+          "itemsCollected": "Itens coletados",
+          "closeCallCount": "Quase-colisões evitadas"
+        }
+      }
+    },
+    "TetrisGame": {
+      "enabled": false,
+      "displayName": "Tetris de Arquivos",
+      "description": "Organize os blocos de forma eficiente",
+      "icon": "🟦",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "object",
+        "location": "archive_room",
+        "description": "Prateleira bagunçada precisa ser organizada"
+      },
+      "difficulty": {
+        "easy": { "speed": 1, "targetLines": 10 },
+        "normal": { "speed": 2, "targetLines": 20 },
+        "hard": { "speed": 3, "targetLines": 30 }
+      },
+      "metrics": {
+        "track": ["linesCleared", "level", "tetrises", "efficiency"],
+        "reportLabels": {
+          "linesCleared": "Linhas completadas",
+          "level": "Nível alcançado",
+          "tetrises": "Tetris realizados (4 linhas)",
+          "efficiency": "Eficiência de espaço"
+        }
+      }
+    },
+    "WhackAMoleGame": {
+      "enabled": false,
+      "displayName": "Caça aos Bugs",
+      "description": "Elimine os bugs antes que escapem",
+      "icon": "🐛",
+      "requireForProgression": false,
+      "unlockMethod": "interaction",
+      "unlockContext": {
+        "type": "terminal",
+        "location": "it_room",
+        "description": "Sistema com bugs críticos para corrigir"
+      },
+      "difficulty": {
+        "easy": { "spawnRate": 2000, "duration": 30 },
+        "normal": { "spawnRate": 1500, "duration": 45 },
+        "hard": { "spawnRate": 1000, "duration": 60 }
+      },
+      "metrics": {
+        "track": ["totalHits", "accuracy", "reactionTime", "missedBugs"],
+        "reportLabels": {
+          "totalHits": "Bugs eliminados",
+          "accuracy": "Precisão de cliques",
+          "reactionTime": "Tempo de reação médio",
+          "missedBugs": "Bugs que escaparam"
+        }
+      }
+    }
+  },
+  "attemptTracking": {
+    "description": "Configuração de como os resultados são rastreados e comparados",
+    "metrics": {
+      "firstAttempt": {
+        "description": "Primeira tentativa do jogador (usado para assessment)",
+        "useForAssessment": true,
+        "showToPlayer": true
+      },
+      "bestAttempt": {
+        "description": "Melhor resultado alcançado",
+        "useForAssessment": false,
+        "showToPlayer": true
+      },
+      "numberAttempts": {
+        "description": "Quantidade total de tentativas",
+        "useForAssessment": false,
+        "showToPlayer": true,
+        "interpretation": {
+          "low": "1-2 tentativas: Focado/objetivo",
+          "medium": "3-5 tentativas: Persistente",
+          "high": "6+ tentativas: Muito engajado ou perfeccionista"
+        }
+      },
+      "average": {
+        "description": "Média de todas as tentativas do jogador",
+        "useForAssessment": false,
+        "showToPlayer": true
+      },
+      "publicAverage": {
+        "description": "Média de todos os jogadores (para comparação)",
+        "showToPlayer": true,
+        "refreshRate": "daily"
+      },
+      "playerVsPlayers": {
+        "description": "Percentil do jogador comparado aos demais",
+        "showToPlayer": true,
+        "positiveFramingOnly": true,
+        "examples": [
+          "Você está entre os 25% mais rápidos",
+          "Sua precisão supera 60% dos candidatos"
+        ]
+      }
+    }
+  },
+  "reportConfig": {
+    "positiveFramingOnly": true,
+    "showOnlyIfAboveThreshold": true,
+    "thresholds": {
+      "excellent": {
+        "percentile": 90,
+        "label": "Destaque",
+        "color": "#00ff00"
+      },
+      "good": {
+        "percentile": 70,
+        "label": "Acima da média",
+        "color": "#00d9ff"
+      },
+      "average": {
+        "percentile": 50,
+        "label": "Na média",
+        "color": "#ffffff"
+      }
+    },
+    "hideIfBelow": 30
+  }
+}

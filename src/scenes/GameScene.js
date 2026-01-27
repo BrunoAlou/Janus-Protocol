@@ -126,9 +126,13 @@ export default class GameScene extends Phaser.Scene {
     this.collisionDebugger.registerCollider(colliderObjetos, 'Objetos');
     this.collisionDebugger.registerCollider(colliderPortas, 'Portas');
 
-    // Tecla D para toggle do debug de colisões
-    this.input.keyboard.on('keydown-D', () => {
-      this.collisionDebugger.toggle();
+    // Tecla P para toggle do debug de colisões
+    this.input.keyboard.on('keydown-P', () => {
+      // Toggle apenas o CollisionDebugger (nosso sistema customizado)
+      if (this.collisionDebugger) {
+        this.collisionDebugger.toggle();
+        window.debugEnabled = this.collisionDebugger.isEnabled();
+      }
     });
 
     // Controlador de input do player (velocidade ajustada para mapa menor)
