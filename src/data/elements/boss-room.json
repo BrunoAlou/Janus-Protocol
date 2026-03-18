@@ -1,0 +1,116 @@
+{
+  "mapId": "boss",
+  "version": "1.0.0",
+  "description": "Elementos interativos da sala do chefe",
+  "elements": [
+    {
+      "id": "npc_boss",
+      "type": "npc",
+      "name": "Chefe",
+      "description": "O chefe da empresa, figura-chave para decisões importantes",
+      "area": {
+        "x": 305,
+        "y": 230,
+        "width": 44,
+        "height": 44
+      },
+      "sprite": {
+        "key": "boss",
+        "frame": 0,
+        "scale": 2
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -50
+      },
+      "greeting": "Ah, bem-vindo! Sente-se, por favor. O que você gostaria de discutir?",
+      "options": [
+        {
+          "id": "opt_boss_project",
+          "label": "Falar sobre um projeto",
+          "icon": "📊",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                {
+                  "text": "Excelente! Aqui na Janus Corp valorizamos inovação e criatividade."
+                },
+                {
+                  "text": "Compartilhe suas ideias. Talvez você tenha o próximo grande projeto!"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_boss_career",
+          "label": "Conversa sobre carreira",
+          "icon": "📈",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                {
+                  "text": "Carreira é uma jornada. O importante é crescimento contínuo."
+                },
+                {
+                  "text": "Foque em seu desenvolvimento e os resultados virão naturalmente."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_boss_feedback",
+          "label": "Solicitar feedback",
+          "icon": "📝",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                {
+                  "text": "Feedback é essencial para melhorar. Você tem desenvolvido bem seu trabalho."
+                },
+                {
+                  "text": "Continue assim e teremos muito a comemorar juntos!"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "opt_boss_bye",
+          "label": "Com licença",
+          "icon": "👋",
+          "action": {
+            "type": "dialog",
+            "data": {
+              "dialogues": [
+                {
+                  "text": "Certo. Com calma, temos muito trabalho por fazer!"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "trigger_boss_office",
+      "type": "trigger",
+      "name": "Escritório do chefe",
+      "description": "Trigger acionado ao entrar na sala do chefe",
+      "area": {
+        "x": 320,
+        "y": 280,
+        "width": 200,
+        "height": 200
+      },
+      "action": {
+        "type": "event",
+        "target": "boss-office-entered"
+      }
+    }
+  ]
+}

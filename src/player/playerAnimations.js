@@ -11,6 +11,27 @@ export const ANIM_WALK_LEFT = 'walk_left';
 export const ANIM_WALK_DOWN = 'walk_down';
 export const ANIM_IDLE = 'idle';
 
+const PLAYER_ANIM_MAP = Object.freeze({
+  walk: Object.freeze({
+    right: ANIM_WALK_RIGHT,
+    up: ANIM_WALK_UP,
+    left: ANIM_WALK_LEFT,
+    down: ANIM_WALK_DOWN
+  }),
+  idle: Object.freeze({
+    right: ANIM_IDLE,
+    up: ANIM_IDLE,
+    left: ANIM_IDLE,
+    down: ANIM_IDLE
+  })
+});
+
+export function resolvePlayerAnimation(action = 'idle', direction = 'down') {
+  const actionKey = (action || 'idle').toLowerCase();
+  const directionKey = (direction || 'down').toLowerCase();
+  return PLAYER_ANIM_MAP[actionKey]?.[directionKey] || ANIM_IDLE;
+}
+
 /**
  * Create all directional player animations from texture atlas
  * @param {Phaser.Scene} scene

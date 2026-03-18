@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import loadPlayerAssets from '../player/loadPlayerAssets.js';
 import { createPlayer } from '../player/PlayerFactory.js';
+import { getSpawnPosition } from '../constants/MapAssets.js';
 import PlayerController from '../player/PlayerController.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -81,8 +82,9 @@ export default class GameScene extends Phaser.Scene {
     objetosSobrepostosLayer.setDepth(6);
 
     // 2. CRIAR O PLAYER (personagem principal)
-    const spawnPoint = this.getPlayerSpawnPoint();
-    console.log('[GameScene] Spawn point:', spawnPoint);
+    // Ponto de spawn específico por cena
+    const spawn = getSpawnPosition('ReceptionScene') || { x: 21, y: 240 };
+    console.log('[GameScene] Spawn point:', spawn);
     console.log('[GameScene] Map dimensions:', { 
       widthInPixels: this.map.widthInPixels, 
       heightInPixels: this.map.heightInPixels,
@@ -92,10 +94,9 @@ export default class GameScene extends Phaser.Scene {
       heightInTiles: this.map.height
     });
     
-    // DEFINA AQUI A POSIÇÃO INICIAL DO PLAYER EM PIXELS
-    // Exemplo: playerX = 320, playerY = 240 (centro do mapa 40x30)
-    const playerX = 320;  // Posição X em pixels (0 a 640)
-    const playerY = 450;  // Posição Y em pixels (0 a 480)
+    // Posição inicial do player baseada na configuração da cena
+    const playerX = spawn.x;
+    const playerY = spawn.y;
     
     console.log('[GameScene] Player position set to:', { playerX, playerY });
 

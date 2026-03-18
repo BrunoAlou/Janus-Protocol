@@ -2,6 +2,7 @@ import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import { getTextureKeyForTileset, preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 
 /**
  * ItRoomScene - Sala de TI / Informática
@@ -17,11 +18,8 @@ export default class ItRoomScene extends BaseMapScene {
     // Carregar assets do player
     loadPlayerAssets(this);
     
-    // Carregar tilesets
-    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("modern_office_image", "/src/assets/Modern_Office_Shadowless_16x16.png");
+    // Carregar tilesets de forma padronizada pelo registro central
+    preloadRegisteredTilesets(this);
     
     // Carregar mapa da sala de TI
     this.load.tilemapTiledJSON("ti_map", "/src/assets/Ti.json");
@@ -43,6 +41,9 @@ export default class ItRoomScene extends BaseMapScene {
     
     // Configurar zonas de transição
     this.setupDoorTransitions();
+    
+    // Registrar zonas de portas no debugger de colisão
+    this.registerDoorZonesToDebugger();
     
     console.log('[ItRoomScene] IT Room loaded, spawn:', this.spawnPoint);
   }
@@ -74,12 +75,7 @@ export default class ItRoomScene extends BaseMapScene {
     
     this.map.tilesets.forEach(tilesetData => {
       const tilesetName = tilesetData.name;
-      let textureKey = null;
-      
-      if (tilesetName.includes('1_Generic')) textureKey = '1_generic_image';
-      else if (tilesetName.includes('5_Classroom')) textureKey = '5_classroom_image';
-      else if (tilesetName.includes('Condominium_Design_2_layer_1')) textureKey = 'condo_layer1_image';
-      else if (tilesetName.includes('Modern_Office')) textureKey = 'modern_office_image';
+      const textureKey = getTextureKeyForTileset(tilesetName);
       
       if (textureKey) {
         const tileset = this.map.addTilesetImage(tilesetName, textureKey);

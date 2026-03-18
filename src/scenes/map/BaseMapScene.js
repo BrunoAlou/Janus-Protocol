@@ -5,6 +5,7 @@ import InteractionManager from '../../interactions/InteractionManager.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import CollisionDebugger from '../../utils/CollisionDebugger.js';
 import { ElementManager } from '../../elements/index.js';
+import { getTextureKeyForTileset } from '../../constants/TilesetAssets.js';
 
 /**
  * BaseMapScene - Classe base para todas as cenas de mapa
@@ -15,6 +16,7 @@ export default class BaseMapScene extends Phaser.Scene {
     super(key);
     this.sceneKey = key;
     this.mapKey = mapKey;
+    this.defaultZoom = 3.0; // Zoom padrão - pode ser sobrescrito em subclasses
   }
 
   init(data) {
@@ -55,6 +57,9 @@ export default class BaseMapScene extends Phaser.Scene {
     
     // SceneManager já gerencia as cenas UI
     console.log(`[${this.sceneKey}] UI scenes managed by SceneManager`);
+    
+    // Manter rastreamento de DoorZones registradas para evitar duplicatas
+    this._registeredDoorZones = new Set();
   }
 
   setupMap() {
@@ -92,14 +97,8 @@ export default class BaseMapScene extends Phaser.Scene {
       const tilesetName = tilesetData.name;
       console.log(`[${this.sceneKey}] Procurando tileset: ${tilesetName}`);
       
-      // Mapear nome do tileset para chave da textura carregada
-      let textureKey = null;
-      if (tilesetName.includes('1_Generic_32x32')) textureKey = '1_generic_image';
-      else if (tilesetName.includes('5_Classroom')) textureKey = '5_classroom_image';
-      else if (tilesetName.includes('Generic_Home')) textureKey = 'generic_home_image';
-      else if (tilesetName.includes('Condominium_Design_2_layer_1')) textureKey = 'condo_layer1_image';
-      else if (tilesetName.includes('Condominium_Design_2_preview')) textureKey = 'condo_preview_image';
-      else if (tilesetName.includes('Modern_Office_Shadowless')) textureKey = 'modern_office_image';
+      // Resolver chave de textura pelo registro central de tilesets
+      const textureKey = getTextureKeyForTileset(tilesetName);
       
       if (textureKey) {
         console.log(`[${this.sceneKey}] Tentando adicionar ${tilesetName} com textura ${textureKey}`);
@@ -162,21 +161,9 @@ export default class BaseMapScene extends Phaser.Scene {
     const spawnY = this.getSpawnY();
 
     this.player = createPlayer(this, spawnX, spawnY);
-    this.player.setCollideWorldBounds(true);
-
-    // Adicionar colisões e armazenar referências
-    const colliderWalls = this.layers.walls ? this.physics.add.collider(this.player, this.layers.walls) : null;
-    const colliderWalls2 = this.layers.walls2 ? this.physics.add.collider(this.player, this.layers.walls2) : null;
-    const colliderObjects = this.layers.objects ? this.physics.add.collider(this.player, this.layers.objects) : null;
-    const colliderDoors = this.layers.doors ? this.physics.add.collider(this.player, this.layers.doors) : null;
-    // ObjetosSobrepostos NÃO deve ter collider (camada visual apenas)
 
     // Configurar debugger de colisões
     this.collisionDebugger = new CollisionDebugger(this, this.player);
-    if (colliderWalls) this.collisionDebugger.registerCollider(colliderWalls, 'Paredes');
-    if (colliderWalls2) this.collisionDebugger.registerCollider(colliderWalls2, 'Paredes2');
-    if (colliderObjects) this.collisionDebugger.registerCollider(colliderObjects, 'Objetos');
-    if (colliderDoors) this.collisionDebugger.registerCollider(colliderDoors, 'Portas');
 
     // Listener para toggle do debug (tecla P)
     this.input.keyboard.on('keydown-P', () => {
@@ -192,8 +179,42 @@ export default class BaseMapScene extends Phaser.Scene {
       }
     });
 
+    // Configurar colisões do player
+    this.addCollisionsToSprite(this.player, true);
+
     // Controller
     this.playerController = new PlayerController(this, this.player, { speed: 180 });
+  }
+
+  /**
+   * Adiciona colisões de sprite com camadas do mapa
+   * @param {Phaser.Physics.Arcade.Sprite} sprite - Sprite para adicionar colisões
+   * @param {boolean} isPlayer - Se true, registra colisões no debugger
+   */
+  addCollisionsToSprite(sprite, isPlayer = false) {
+    if (!sprite || !sprite.body) {
+      console.warn(`[${this.sceneKey}] Sprite sem body não pode colisionar`);
+      return;
+    }
+
+    sprite.setCollideWorldBounds(true);
+
+    const colliders = {
+      walls: this.layers.walls ? this.physics.add.collider(sprite, this.layers.walls) : null,
+      walls2: this.layers.walls2 ? this.physics.add.collider(sprite, this.layers.walls2) : null,
+      objects: this.layers.objects ? this.physics.add.collider(sprite, this.layers.objects) : null,
+      doors: this.layers.doors ? this.physics.add.collider(sprite, this.layers.doors) : null
+    };
+
+    // Registrar colisões no debugger apenas para o player
+    if (isPlayer && this.collisionDebugger) {
+      if (colliders.walls) this.collisionDebugger.registerCollider(colliders.walls, 'Paredes');
+      if (colliders.walls2) this.collisionDebugger.registerCollider(colliders.walls2, 'Paredes2');
+      if (colliders.objects) this.collisionDebugger.registerCollider(colliders.objects, 'Objetos');
+      if (colliders.doors) this.collisionDebugger.registerCollider(colliders.doors, 'Portas');
+    }
+
+    console.log(`[${this.sceneKey}] Colisões adicionadas ao sprite`);
   }
 
   setupNPCs() {
@@ -226,7 +247,39 @@ export default class BaseMapScene extends Phaser.Scene {
   setupCamera() {
     this.cameras.main.startFollow(this.player);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.cameras.main.setZoom(4.0); // Zoom padrão
+    this.cameras.main.setZoom(this.defaultZoom); // Usar zoom da cena
+  }
+
+  /**
+   * Registra DoorZones no debugger de colisão
+   * Chamado pelas cenas filhas após criar suas DoorZones com setupDoorTransitions()
+   * Suporta dois formatos de DoorZone:
+   *   - Classe DoorZone com propriedade .label
+   *   - Objeto JSON com propriedades .zone, .indicator, .proximityDistance etc
+   */
+  registerDoorZonesToDebugger() {
+    if (!this.collisionDebugger || !this.doorZones) {
+      return;
+    }
+
+    // Registrar cada DoorZone, evitando duplicatas
+    this.doorZones.forEach(doorZone => {
+      if (!this._registeredDoorZones.has(doorZone)) {
+        // Obter label do DoorZone (pode ser .label ou nome genérico)
+        let label;
+        if (doorZone instanceof Object) {
+          // Se tem propriedade label, usar ela
+          label = doorZone.label || `Porta ${this._registeredDoorZones.size + 1}`;
+        } else {
+          label = doorZone.label || 'Porta';
+        }
+        
+        this.collisionDebugger.registerDoorZone(doorZone, label);
+        this._registeredDoorZones.add(doorZone);
+      }
+    });
+
+    console.log(`[${this.sceneKey}] Registered ${this.doorZones.length} door zones to debugger`);
   }
 
   getSpawnX() {

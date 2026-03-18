@@ -19,16 +19,17 @@ export default class LabScene extends BaseMapScene {
   }
 
   setupNPCs() {
-    this.npcs = [
-      NPCFactory.create(this, 250, 250, {
-        name: 'Cientista',
-        texture: 'npc_default',
-        dialogues: [
-          { text: 'Bem-vindo ao laboratório!', emotion: 'excited' },
-          { text: 'Aqui testamos novas tecnologias.', emotion: 'professional' },
-          { text: 'Quer fazer um teste de digitação?', emotion: 'happy' }
-        ]
-      })
-    ];
+    const cientista = NPCFactory.create(this, 250, 250, {
+      name: 'Cientista',
+      texture: 'npc_default',
+      dialogues: [
+        { text: 'Bem-vindo ao laboratório!', emotion: 'excited' },
+        { text: 'Aqui testamos novas tecnologias.', emotion: 'professional' },
+        { text: 'Quer fazer um teste de digitação?', emotion: 'happy' }
+      ]
+    });
+
+    this.addCollisionsToSprite(cientista, false);
+    this.npcs = [cientista];
   }
 }

@@ -1,6 +1,8 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import loadPlayerAssets from '../../player/loadPlayerAssets.js';
+import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 
 /**
  * GardenScene - Jardim / Área Externa
@@ -8,6 +10,12 @@ import { SCENE_NAMES } from '../../constants/SceneNames.js';
 export default class GardenScene extends BaseMapScene {
   constructor() {
     super(SCENE_NAMES.GARDEN, 'garden');
+  }
+
+  preload() {
+    loadPlayerAssets(this);
+    preloadRegisteredTilesets(this);
+    this.load.tilemapTiledJSON('garden', '/src/assets/garden.json');
   }
 
   getSpawnX() {
@@ -19,16 +27,17 @@ export default class GardenScene extends BaseMapScene {
   }
 
   setupNPCs() {
-    this.npcs = [
-      NPCFactory.create(this, 400, 250, {
-        name: 'Jardineiro',
-        texture: 'npc_default',
-        dialogues: [
-          { text: 'Que dia lindo, não acha?', emotion: 'happy' },
-          { text: 'Cuido deste jardim com muito carinho.', emotion: 'proud' },
-          { text: 'Às vezes é bom relaxar um pouco.', emotion: 'peaceful' }
-        ]
-      })
-    ];
+    const jardineiro = NPCFactory.create(this, 400, 250, {
+      name: 'Jardineiro',
+      texture: 'npc_default',
+      dialogues: [
+        { text: 'Que dia lindo, não acha?', emotion: 'happy' },
+        { text: 'Cuido deste jardim com muito carinho.', emotion: 'proud' },
+        { text: 'Às vezes é bom relaxar um pouco.', emotion: 'peaceful' }
+      ]
+    });
+
+    this.addCollisionsToSprite(jardineiro, false);
+    this.npcs = [jardineiro];
   }
 }

@@ -50,7 +50,7 @@ export function createPlayer(scene, x, y) {
   
   const tileWidth = scene.map?.tileWidth ?? FRAME_WIDTH;
   const tileHeight = scene.map?.tileHeight ?? FRAME_HEIGHT;
-  // Player ocupa 4x4 tiles para melhor proporção
+  // Padronizar tamanho visual com NPCs (4x4 tiles)
   const desiredTilesWide = 4;
   const desiredTilesTall = 4;
   const scaleX = (tileWidth * desiredTilesWide) / FRAME_WIDTH;

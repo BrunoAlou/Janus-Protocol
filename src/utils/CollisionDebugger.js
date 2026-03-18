@@ -25,6 +25,11 @@ export default class CollisionDebugger {
     this.positionMarker = null;
     this.clickedPositions = []; // Histórico de posições clicadas
     
+    // Zonas de portas (DoorZone)
+    this.doorZones = [];
+    this.doorZonesGraphics = null;
+    this.doorZoneTextLabels = {};
+    
     // Cores para cada camada de colisão
     this.layerColors = {
       'Paredes': 0xff0000,      // Vermelho
@@ -38,7 +43,8 @@ export default class CollisionDebugger {
     this.createHitboxVisualization();
     this.createLayerCollisionVisualization();
     this.createPositionDebugUI();
-    console.log('[CollisionDebugger] Initialized with hitbox, layer collision and position debug');
+    this.createDoorZonesVisualization();
+    console.log('[CollisionDebugger] Initialized with hitbox, layer collision, door zones and position debug');
   }
 
   createDebugUI() {
@@ -225,6 +231,132 @@ export default class CollisionDebugger {
       // Feedback visual
       this.showCopiedFeedback(x, y);
     });
+  }
+  
+  /**
+   * Cria a visualização das zonas de portas (DoorZone)
+   */
+  createDoorZonesVisualization() {
+    // Gráficos para desenhar as zonas de portas
+    this.doorZonesGraphics = this.scene.add.graphics();
+    this.doorZonesGraphics.setDepth(98); // Acima das colisões de layer mas abaixo do player
+    this.doorZonesGraphics.setVisible(false);
+  }
+  
+  /**
+   * Registra uma DoorZone para ser visualizada no debug
+   * @param {DoorZone} doorZone - A zona de porta a registrar
+   * @param {string} label - Rótulo da porta (ex: 'ARQUIVO', 'SALA TI')
+   */
+  registerDoorZone(doorZone, label) {
+    this.doorZones.push({ doorZone, label });
+    console.log(`[CollisionDebugger] Registered DoorZone: ${label}`);
+  }
+  
+  /**
+   * Desenha as zonas de portas no mapa
+   */
+  drawDoorZones() {
+    if (!this.doorZonesGraphics || !this.enabled) {
+      this.doorZonesGraphics?.clear();
+      this.doorZonesGraphics?.setVisible(false);
+      return;
+    }
+    
+    this.doorZonesGraphics.clear();
+    this.doorZonesGraphics.setVisible(true);
+    
+    // Cor para as zonas de portas
+    const doorColor = 0x00ffff; // Ciano
+    
+    this.doorZones.forEach(({ doorZone, label }) => {
+      // Suportar dois tipos de estrutura de DoorZone
+      let zone, width, height;
+      
+      if (doorZone.zone) {
+        // Tipo 1: DoorZone com .zone (objeto Phaser Zone)
+        zone = doorZone.zone;
+        // Tentar obter dimensões do body se disponível
+        if (zone.body) {
+          width = zone.body.width;
+          height = zone.body.height;
+        } else {
+          width = zone.width || 16;
+          height = zone.height || 64;
+        }
+      } else {
+        // Tipo 2: objeto simples com x, y, width, height
+        zone = doorZone;
+        width = zone.width || 16;
+        height = zone.height || 64;
+      }
+      
+      if (!zone) return;
+      
+      // Calcular posição do retângulo (zona tem origin em 0.5, então é centrada)
+      const x = zone.x - width / 2;
+      const y = zone.y - height / 2;
+      
+      // Desenhar retângulo preenchido semi-transparente
+      this.doorZonesGraphics.fillStyle(doorColor, 0.2);
+      this.doorZonesGraphics.fillRect(x, y, width, height);
+      
+      // Contorno mais destacado
+      this.doorZonesGraphics.lineStyle(3, doorColor, 0.9);
+      this.doorZonesGraphics.strokeRect(x, y, width, height);
+      
+      // Desenhar cantos para melhor visualização
+      this.doorZonesGraphics.fillStyle(doorColor, 0.6);
+      const cornerSize = 4;
+      // Canto superior esquerdo
+      this.doorZonesGraphics.fillRect(x, y, cornerSize, cornerSize);
+      // Canto superior direito
+      this.doorZonesGraphics.fillRect(x + width - cornerSize, y, cornerSize, cornerSize);
+      // Canto inferior esquerdo
+      this.doorZonesGraphics.fillRect(x, y + height - cornerSize, cornerSize, cornerSize);
+      // Canto inferior direito
+      this.doorZonesGraphics.fillRect(x + width - cornerSize, y + height - cornerSize, cornerSize, cornerSize);
+      
+      // Texto com informações da porta (desenhado uma vez apenas)
+      if (!this.doorZoneTextLabels) this.doorZoneTextLabels = {};
+      
+      const labelKey = `${label}_text`;
+      if (!this.doorZoneTextLabels[labelKey]) {
+        const labelText = this.scene.add.text(
+          zone.x,
+          y - 18,
+          `[${label}] ${Math.round(width)}x${Math.round(height)}`,
+          {
+            fontSize: '11px',
+            color: '#00ffff',
+            backgroundColor: '#000000dd',
+            padding: { x: 4, y: 2 },
+            align: 'center',
+            fontStyle: 'bold'
+          }
+        ).setOrigin(0.5, 1).setDepth(99999);
+        
+        this.doorZoneTextLabels[labelKey] = labelText;
+      } else {
+        // Apenas atualizar visibilidade
+        this.doorZoneTextLabels[labelKey].setVisible(true);
+      }
+    });
+    
+    console.log(`[CollisionDebugger] Drew ${this.doorZones.length} door zones`);
+  }
+  
+  /**
+   * Limpa os rótulos das portas
+   */
+  clearDoorZoneLabels() {
+    if (this.doorZoneTextLabels) {
+      Object.values(this.doorZoneTextLabels).forEach(text => text?.setVisible(false));
+    }
+    if (this.doorZonesGraphics) {
+      this.doorZonesGraphics.clear();
+      this.doorZonesGraphics.setVisible(false);
+    }
   }
   
   /**
@@ -513,6 +645,13 @@ export default class CollisionDebugger {
     
     // Atualizar debug de posição
     this.updatePositionDebug();
+    
+    // Desenhar zonas de portas
+    if (this.enabled) {
+      this.drawDoorZones();
+    } else {
+      this.clearDoorZoneLabels();
+    }
 
     // Verificar limites do mundo
     this.checkWorldBounds();
@@ -678,17 +817,26 @@ export default class CollisionDebugger {
       if (this.positionMarker) this.positionMarker.clear();
       if (this.layerCollisionGraphics) this.layerCollisionGraphics.clear();
       if (this.layerLegendText) this.layerLegendText.setVisible(false);
+      if (this.doorZonesGraphics) this.doorZonesGraphics.clear();
       // Esconder marcadores clicados
       this.clickedPositions.forEach(pos => {
         pos.marker?.setVisible(false);
         pos.text?.setVisible(false);
       });
+      // Esconder rótulos de portas
+      if (this.doorZoneTextLabels) {
+        Object.values(this.doorZoneTextLabels).forEach(text => text?.setVisible(false));
+      }
     } else {
       // Mostrar marcadores clicados
       this.clickedPositions.forEach(pos => {
         pos.marker?.setVisible(true);
         pos.text?.setVisible(true);
       });
+      // Mostrar rótulos de portas
+      if (this.doorZoneTextLabels) {
+        Object.values(this.doorZoneTextLabels).forEach(text => text?.setVisible(true));
+      }
       // Desenhar colisões das camadas
       this.drawLayerCollisions();
     }
@@ -718,7 +866,12 @@ export default class CollisionDebugger {
     this.layerLegendText?.destroy();
     this.positionDebugText?.destroy();
     this.positionMarker?.destroy();
+    this.doorZonesGraphics?.destroy();
     this.clearPositionMarkers();
+    if (this.doorZoneTextLabels) {
+      Object.values(this.doorZoneTextLabels).forEach(text => text?.destroy());
+      this.doorZoneTextLabels = {};
+    }
     this.activeCollisions.clear();
   }
 }

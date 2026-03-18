@@ -54,8 +54,8 @@ export const MAP_ASSETS = Object.freeze({
     mapKey: 'archive-room',
     path: './src/assets/archive-room.json',
     displayName: 'Arquivo',
-    spawnX: 320,
-    spawnY: 400
+    spawnX: 21,
+    spawnY: 240
   },
   
   [SCENE_NAMES.IT_ROOM]: {
@@ -93,6 +93,15 @@ export const MAP_ASSETS = Object.freeze({
     spawnX: 320,
     spawnY: 400
   },
+
+  [SCENE_NAMES.COFFEE_ROOM]: {
+    sceneKey: SCENE_NAMES.COFFEE_ROOM,
+    mapKey: 'coffee',
+    path: './src/assets/coffee.json',
+    displayName: 'Cafeteria',
+    spawnX: 320,
+    spawnY: 400
+  },
   
   [SCENE_NAMES.BOSS_ROOM]: {
     sceneKey: SCENE_NAMES.BOSS_ROOM,
@@ -108,8 +117,8 @@ export const MAP_ASSETS = Object.freeze({
     mapKey: 'hallway',
     path: './src/assets/hallway.json',
     displayName: 'Corredor',
-    spawnX: 320,
-    spawnY: 400
+    spawnX: 21,
+    spawnY: 240
   }
 });
 

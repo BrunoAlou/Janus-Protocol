@@ -22,6 +22,7 @@ import ItRoomScene from "./scenes/map/ItRoomScene.js";
 import RhRoomScene from "./scenes/map/RhRoomScene.js";
 import ElevatorScene from "./scenes/map/ElevatorScene.js";
 import GardenScene from "./scenes/map/GardenScene.js";
+import CoffeeRoomScene from "./scenes/map/CoffeeRoomScene.js";
 import BossRoomScene from "./scenes/map/BossRoomScene.js";
 
 // Minigames
@@ -70,6 +71,7 @@ const config = {
     RhRoomScene,
     ElevatorScene,
     GardenScene,
+    CoffeeRoomScene,
     BossRoomScene,
     
     MinimapScene,

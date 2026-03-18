@@ -48,6 +48,9 @@ export default class ArchiveRoomScene extends BaseMapScene {
     // Criar zonas de transição
     this.setupDoorTransitions();
     
+    // Registrar zonas de portas no debugger de colisão
+    this.registerDoorZonesToDebugger();
+    
     console.log('[ArchiveRoomScene] Archive Room loaded, spawn:', this.spawnPoint);
   }
 
@@ -99,7 +102,7 @@ export default class ArchiveRoomScene extends BaseMapScene {
     // Porta no lado esquerdo (oeste) - volta para Reception
     // Mapa do hall: 16x16 tiles de 16px = 256x256 pixels
     // Porta na parede esquerda, mais abaixo para não ficar atrás da parede: x=8 (tile 0), y=200
-    const receptionDoor = this.add.zone(8, 200, 16, 64).setOrigin(0.5);
+    const receptionDoor = this.add.zone(10, 240, 16, 64).setOrigin(0.5);
     this.physics.world.enable(receptionDoor);
     receptionDoor.body.setAllowGravity(false);
     receptionDoor.body.moves = false;

@@ -9,10 +9,10 @@
       "name": "Recepcionista",
       "description": "A recepcionista da empresa, sempre atenciosa",
       "area": {
-        "x": 280,
-        "y": 230,
-        "width": 64,
-        "height": 64
+        "x": 285,
+        "y": 225,
+        "width": 44,
+        "height": 44
       },
       "sprite": {
         "key": "receptionist",
@@ -34,9 +34,15 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "A Janus Corp é líder em inovação tecnológica." },
-                { "text": "Fundada há 10 anos, temos escritórios em 5 países." },
-                { "text": "Posso ajudar com mais alguma coisa?" }
+                {
+                  "text": "A Janus Corp é líder em inovação tecnológica."
+                },
+                {
+                  "text": "Fundada há 10 anos, temos escritórios em 5 países."
+                },
+                {
+                  "text": "Posso ajudar com mais alguma coisa?"
+                }
               ]
             }
           }
@@ -49,8 +55,12 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "O setor de TI fica no corredor à direita." },
-                { "text": "Siga em frente e procure a porta com o símbolo de computador." }
+                {
+                  "text": "O setor de TI fica no corredor à direita."
+                },
+                {
+                  "text": "Siga em frente e procure a porta com o símbolo de computador."
+                }
               ]
             }
           }
@@ -81,7 +91,9 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "Tenha um ótimo dia!" }
+                {
+                  "text": "Tenha um ótimo dia!"
+                }
               ]
             }
           }
@@ -111,7 +123,7 @@
           "icon": "🚪",
           "action": {
             "type": "scene",
-            "target": "HallwayScene",
+            "target": "ElevatorScene",
             "data": {
               "spawnPoint": "from_reception"
             }
@@ -169,11 +181,21 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "=== DIRETÓRIO ===" },
-                { "text": "Chefe Silva - Sala da Diretoria" },
-                { "text": "Ana - Setor de TI" },
-                { "text": "Carlos - RH" },
-                { "text": "Marina - Laboratório" }
+                {
+                  "text": "=== DIRETÓRIO ==="
+                },
+                {
+                  "text": "Chefe Silva - Sala da Diretoria"
+                },
+                {
+                  "text": "Ana - Setor de TI"
+                },
+                {
+                  "text": "Carlos - RH"
+                },
+                {
+                  "text": "Marina - Laboratório"
+                }
               ]
             }
           }
@@ -221,8 +243,153 @@
         "offsetY": -30
       },
       "dialogues": [
-        { "text": "Uma planta bem cuidada. Parece artificial." },
-        { "text": "Você nota algo brilhando entre as folhas..." }
+        {
+          "text": "Uma planta bem cuidada. Parece artificial."
+        },
+        {
+          "text": "Você nota algo brilhando entre as folhas..."
+        }
+      ],
+      "clickDialogues": [
+        {
+          "text": "Você consegue visualizar uma planta de longe."
+        },
+        {
+          "text": "Parece ser decorativa."
+        }
+      ]
+    },
+    {
+      "id": "obj_plant2",
+      "type": "object",
+      "name": "Planta",
+      "description": "Uma bela planta no canto da recepção",
+      "area": {
+        "x": 448,
+        "y": 230,
+        "width": 32,
+        "height": 32
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        {
+          "text": "Uma planta bem cuidada. Parece artificial."
+        },
+        {
+          "text": "Você nota algo brilhando entre as folhas..."
+        }
+      ],
+      "clickDialogues": [
+        {
+          "text": "Você consegue visualizar uma planta de longe."
+        },
+        {
+          "text": "Parece ser decorativa."
+        }
+      ]
+    },
+    {
+      "id": "couch_1",
+      "type": "object",
+      "name": "Sofa_1",
+      "description": "Um sofá",
+      "area": {
+        "x": 144,
+        "y": 337,
+        "width": 65,
+        "height": 65
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        {
+          "text": "Um confortável sofá de couro cinza."
+        },
+        {
+          "text": "Você sente vontade de sentar."
+        }
+      ],
+      "clickDialogues": [
+        {
+          "text": "Você vê um sofá cinza de longe."
+        }
+      ]
+    },
+    {
+      "id": "couch_2",
+      "type": "object",
+      "name": "Sofa_2",
+      "description": "Um sofá",
+      "area": {
+        "x": 144,
+        "y": 400,
+        "width": 65,
+        "height": 65
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        {
+          "text": "Uma planta bem cuidada. Parece artificial."
+        },
+        {
+          "text": "Você nota algo brilhando entre as folhas..."
+        }
+      ]
+    },
+    {
+      "id": "couch_3",
+      "type": "object",
+      "name": "Sofa_3",
+      "description": "Um sofá",
+      "area": {
+        "x": 544,
+        "y": 400,
+        "width": 65,
+        "height": 65
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        {
+          "text": "Uma planta bem cuidada. Parece artificial."
+        },
+        {
+          "text": "Você nota algo brilhando entre as folhas..."
+        }
+      ]
+    },
+        {
+      "id": "couch_4",
+      "type": "object",
+      "name": "Sofa_4",
+      "description": "Um sofá",
+      "area": {
+        "x": 544,
+        "y": 337,
+        "width": 65,
+        "height": 65
+      },
+      "indicator": {
+        "text": "[E]",
+        "offsetY": -30
+      },
+      "dialogues": [
+        {
+          "text": "Uma planta bem cuidada. Parece artificial."
+        },
+        {
+          "text": "Você nota algo brilhando entre as folhas..."
+        }
       ]
     },
     {
@@ -231,10 +398,10 @@
       "name": "Quadro de Avisos",
       "description": "Quadro com informações importantes",
       "area": {
-        "x": 150,
-        "y": 50,
-        "width": 48,
-        "height": 48
+        "x": 126,
+        "y": 48,
+        "width": 62,
+        "height": 50
       },
       "indicator": {
         "text": "[E] Ler",
@@ -249,10 +416,18 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "🎉 COMUNICADO IMPORTANTE 🎉" },
-                { "text": "Bem-vindos ao novo sistema JANUS!" },
-                { "text": "Este sistema revolucionário irá transformar nossa forma de trabalhar." },
-                { "text": "Fiquem atentos às próximas atualizações." }
+                {
+                  "text": "🎉 COMUNICADO IMPORTANTE 🎉"
+                },
+                {
+                  "text": "Bem-vindos ao novo sistema JANUS!"
+                },
+                {
+                  "text": "Este sistema revolucionário irá transformar nossa forma de trabalhar."
+                },
+                {
+                  "text": "Fiquem atentos às próximas atualizações."
+                }
               ]
             }
           }
@@ -264,11 +439,21 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "REGRAS DO ESCRITÓRIO:" },
-                { "text": "1. Horário de trabalho: 9h às 18h" },
-                { "text": "2. Intervalo para almoço: 12h às 13h" },
-                { "text": "3. Uso de crachá obrigatório" },
-                { "text": "4. Mantenha seu espaço limpo" }
+                {
+                  "text": "REGRAS DO ESCRITÓRIO:"
+                },
+                {
+                  "text": "1. Horário de trabalho: 9h às 18h"
+                },
+                {
+                  "text": "2. Intervalo para almoço: 12h às 13h"
+                },
+                {
+                  "text": "3. Uso de crachá obrigatório"
+                },
+                {
+                  "text": "4. Mantenha seu espaço limpo"
+                }
               ]
             }
           }
@@ -280,10 +465,18 @@
             "type": "dialog",
             "data": {
               "dialogues": [
-                { "text": "PRÓXIMOS EVENTOS:" },
-                { "text": "📅 15/01 - Reunião Geral às 10h" },
-                { "text": "📅 20/01 - Treinamento JANUS às 14h" },
-                { "text": "📅 25/01 - Happy Hour às 18h" }
+                {
+                  "text": "PRÓXIMOS EVENTOS:"
+                },
+                {
+                  "text": "📅 15/01 - Reunião Geral às 10h"
+                },
+                {
+                  "text": "📅 20/01 - Treinamento JANUS às 14h"
+                },
+                {
+                  "text": "📅 25/01 - Happy Hour às 18h"
+                }
               ]
             }
           }
@@ -335,8 +528,17 @@
         "offsetY": -30
       },
       "dialogues": [
-        { "text": "Um tapete bem cuidado com o logo da Janus Corp." },
-        { "text": "Parece ser feito de material premium." }
+        {
+          "text": "Um tapete bem cuidado com o logo da Janus Corp."
+        },
+        {
+          "text": "Parece ser feito de material premium."
+        }
+      ],
+      "clickDialogues": [
+        {
+          "text": "Você vê um tapete com a logo da Janus Corp."
+        }
       ]
     }
   ]

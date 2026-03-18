@@ -95,6 +95,9 @@ export default class InteractiveElement {
     /** @type {Object[]} */
     this.dialogues = config.dialogues || [];
 
+    /** @type {Object[]} */
+    this.clickDialogues = config.clickDialogues || [];
+
     /** @type {string} */
     this.greeting = config.greeting || '';
 
@@ -339,9 +342,10 @@ export default class InteractiveElement {
   }
 
   /**
-   * Inicia a interação (chamado quando jogador pressiona E)
+   * Inicia a interação com tipo especificado
+   * @param {string} [interactionType='keyboard'] - Tipo de interação ('keyboard' ou 'mouse')
    */
-  interact() {
+  interact(interactionType = 'keyboard') {
     if (!this.canInteract) {
       console.log(`[InteractiveElement] ${this.name} em cooldown`);
       return;
@@ -355,7 +359,21 @@ export default class InteractiveElement {
 
     this._lastInteractionTime = Date.now();
     
-    console.log(`[InteractiveElement] Interacting with: ${this.name}`);
+    console.log(`[InteractiveElement] Interacting with: ${this.name} (type: ${interactionType})`);
+
+    // Usar clickDialogues para interação por mouse, dialogues para teclado
+    const dialoguesToUse = interactionType === 'mouse' && this.clickDialogues.length > 0
+      ? this.clickDialogues
+      : this.dialogues;
+
+    console.log(`[InteractiveElement] Dialog choice for ${this.name}:`, {
+      interactionType,
+      clickDialoguesLength: this.clickDialogues.length,
+      dialoguesLength: this.dialogues.length,
+      usingClickDialogues: interactionType === 'mouse' && this.clickDialogues.length > 0,
+      dialoguesToUseLength: dialoguesToUse.length,
+      firstDialogue: dialoguesToUse[0]?.text || 'N/A'
+    });
 
     // Se tem opções, mostrar menu de opções
     if (this.hasOptions) {
@@ -363,9 +381,9 @@ export default class InteractiveElement {
       this.showOptionsDialog();
     }
     // Se tem diálogos, mostrar diálogos sequenciais
-    else if (this.hasDialogues) {
+    else if (dialoguesToUse.length > 0) {
       this._isInteracting = true;
-      this.showDialogues();
+      this.showDialogues(dialoguesToUse);
     }
     // Fallback: emitir evento genérico
     else {
@@ -403,13 +421,15 @@ export default class InteractiveElement {
 
   /**
    * Mostra diálogos sequenciais (sem opções)
+   * @param {Object[]} [dialogues] - Diálogos a exibir (usa this.dialogues se não fornecido)
    */
-  showDialogues() {
+  showDialogues(dialogues = null) {
     const self = this; // Guardar referência para o callback
+    const dialoguesToShow = dialogues || this.dialogues;
     
     const dialogData = {
       name: this.name,
-      dialogues: this.dialogues,
+      dialogues: dialoguesToShow,
       onComplete: () => {
         console.log(`[InteractiveElement] Dialog completed for: ${self.name}`);
         self.endInteraction();

@@ -29,6 +29,7 @@ export const SCENE_NAMES = Object.freeze({
   RH_ROOM: 'RhRoomScene',
   ELEVATOR: 'ElevatorScene',
   GARDEN: 'GardenScene',
+  COFFEE_ROOM: 'CoffeeRoomScene',
   BOSS_ROOM: 'BossRoomScene',
   HALLWAY: 'HallwayScene',
   
@@ -68,6 +69,7 @@ export const MAP_SCENES = Object.freeze([
   SCENE_NAMES.RH_ROOM,
   SCENE_NAMES.ELEVATOR,
   SCENE_NAMES.GARDEN,
+  SCENE_NAMES.COFFEE_ROOM,
   SCENE_NAMES.BOSS_ROOM,
   SCENE_NAMES.HALLWAY
 ]);

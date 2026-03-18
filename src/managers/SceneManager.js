@@ -22,6 +22,7 @@ export default class SceneManager {
       [SCENE_NAMES.RH_ROOM]: { sceneKey: SCENE_NAMES.RH_ROOM, mapKey: 'rh-room' },
       [SCENE_NAMES.ELEVATOR]: { sceneKey: SCENE_NAMES.ELEVATOR, mapKey: 'elevator' },
       [SCENE_NAMES.GARDEN]: { sceneKey: SCENE_NAMES.GARDEN, mapKey: 'garden' },
+      [SCENE_NAMES.COFFEE_ROOM]: { sceneKey: SCENE_NAMES.COFFEE_ROOM, mapKey: 'coffee' },
       [SCENE_NAMES.BOSS_ROOM]: { sceneKey: SCENE_NAMES.BOSS_ROOM, mapKey: 'boss-room' }
     };
     

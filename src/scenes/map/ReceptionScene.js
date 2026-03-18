@@ -2,6 +2,8 @@ import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import DoorZone from '../../components/DoorZone.js';
+import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 
 /**
  * ReceptionScene - Cena da recepção (antiga GameScene)
@@ -17,13 +19,8 @@ export default class ReceptionScene extends BaseMapScene {
     // Carregar assets do player
     loadPlayerAssets(this);
     
-    // Carregar tilesets (sempre, pois podem ter sido descartados)
-    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("generic_home_image", "/src/assets/Generic_Home_1_Layer_1_32x32.png");
-    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("condo_preview_image", "/src/assets/Condominium_Design_preview_32x32.png");
-    this.load.image("modern_office_image", "/src/assets/Modern_Office_Shadowless_32x32.png");
+    // Carregar tilesets de forma padronizada pelo registro central
+    preloadRegisteredTilesets(this);
     
     // Carregar mapa da reception
     this.load.tilemapTiledJSON("reception", "/src/assets/reception.json");
@@ -46,6 +43,9 @@ export default class ReceptionScene extends BaseMapScene {
     // Criar zona de transição para o hall (porta no fundo da recepção)
     this.setupDoorTransitions();
     
+    // Registrar zonas de portas no debugger de colisão
+    this.registerDoorZonesToDebugger();
+    
     // Mostrar diálogo de introdução apenas no spawn inicial (não ao voltar)
     if (this.spawnPoint === 'default') {
       this.showIntroductionDialogue();
@@ -57,117 +57,33 @@ export default class ReceptionScene extends BaseMapScene {
   update() {
     // Chamar update da classe pai para manter movimento do player
     super.update();
-    
-    // Verificar proximidade do player com portas
     if (this.player && this.doorZones) {
-      this.doorZones.forEach(doorData => {
-        const distance = Phaser.Math.Distance.Between(
-          this.player.x, this.player.y,
-          doorData.zone.x, doorData.zone.y
-        );
-
-        // Mostrar indicador se estiver próximo
-        if (distance < doorData.proximityDistance) {
-          doorData.indicator.setAlpha(1);
-          
-          // Animação de pulso
-          if (!doorData.indicator.isTweening) {
-            doorData.indicator.isTweening = true;
-            this.tweens.add({
-              targets: doorData.indicator,
-              y: doorData.indicator.y - 5,
-              duration: 400,
-              yoyo: true,
-              repeat: -1,
-              ease: 'Sine.easeInOut'
-            });
-          }
-          
-          // Verificar se pressionou E
-          if (Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('E'))) {
-            doorData.action();
-          }
-        } else {
-          doorData.indicator.setAlpha(0);
-          if (doorData.indicator.isTweening) {
-            this.tweens.killTweensOf(doorData.indicator);
-            doorData.indicator.isTweening = false;
-          }
-        }
-      });
+      this.doorZones.forEach(door => door.update(this.player, this.input, this.tweens));
     }
   }
 
   setupDoorTransitions() {
-    this.doorZones = [];
-    
-    // === PORTA PARA ARQUIVO (lado direito) ===
-    // Mapa da recepção: 40x30 tiles de 16x16px = 640x480px
-    // Porta na parede direita: x=624, y=240
-    const hallwayDoor = this.add.zone(624, 240, 16, 64).setOrigin(0.5);
-    this.physics.world.enable(hallwayDoor);
-    hallwayDoor.body.setAllowGravity(false);
-    hallwayDoor.body.moves = false;
-
-    const archiveIndicator = this.add.container(610, 240);
-    const eButton1 = this.add.circle(0, -20, 12, 0x000000, 0.8)
-      .setStrokeStyle(2, 0xffff00);
-    const eText1 = this.add.text(0, -20, 'E', {
-      fontSize: '14px',
-      color: '#ffff00',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    const actionText1 = this.add.text(0, 5, 'ARQUIVO', {
-      fontSize: '10px',
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5);
-    
-    archiveIndicator.add([eButton1, eText1, actionText1]);
-    archiveIndicator.setDepth(1500);
-    archiveIndicator.setAlpha(0);
-
-    this.doorZones.push({
-      zone: hallwayDoor,
-      indicator: archiveIndicator,
-      action: () => this.transitionToArchiveRoom(),
-      proximityDistance: 50
-    });
-
-    // === PORTA PARA SALA DE TI (lado esquerdo - simétrico ao arquivo) ===
-    // Porta na parede esquerda: x=16, y=240 (mesma altura que arquivo)
-    const itRoomDoor = this.add.zone(16, 240, 16, 64).setOrigin(0.5);
-    this.physics.world.enable(itRoomDoor);
-    itRoomDoor.body.setAllowGravity(false);
-    itRoomDoor.body.moves = false;
-
-    const itIndicator = this.add.container(30, 240);
-    const eButton2 = this.add.circle(0, -20, 12, 0x000000, 0.8)
-      .setStrokeStyle(2, 0x00ffff);
-    const eText2 = this.add.text(0, -20, 'E', {
-      fontSize: '14px',
-      color: '#00ffff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    const actionText2 = this.add.text(0, 5, 'SALA TI', {
-      fontSize: '10px',
-      color: '#ffffff',
-      backgroundColor: '#000066',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5);
-    
-    itIndicator.add([eButton2, eText2, actionText2]);
-    itIndicator.setDepth(1500);
-    itIndicator.setAlpha(0);
-
-    this.doorZones.push({
-      zone: itRoomDoor,
-      indicator: itIndicator,
-      action: () => this.transitionToItRoom(),
-      proximityDistance: 50
-    });
-
+    this.doorZones = [
+      new DoorZone(this, {
+        x: 624, y: 225, width: 16, height: 64,
+        label: 'ARQUIVO',
+        indicatorColor: 0xffff00,
+        indicatorTextColor: '#ffff00',
+        indicatorOffsetX: -14,
+        onInteract: () => this.transitionToArchiveRoom(),
+        proximityDistance: 50
+      }),
+      new DoorZone(this, {
+        x: 16, y: 240, width: 16, height: 64,
+        label: 'SALA TI',
+        indicatorColor: 0x00ffff,
+        indicatorTextColor: '#00ffff',
+        labelBg: '#000066',
+        indicatorOffsetX: 14,
+        onInteract: () => this.transitionToItRoom(),
+        proximityDistance: 50
+      })
+    ];
     console.log('[ReceptionScene] Door transitions: Archive (624,240), IT Room (16,240)');
   }
 

@@ -12,6 +12,7 @@
  */
 
 import InteractiveElement from './InteractiveElement.js';
+import FloatingMenu from '../ui/FloatingMenu.js';
 
 export default class ElementManager {
   /**
@@ -49,8 +50,17 @@ export default class ElementManager {
     /** @type {number} - Margem extra para detecção de saída (histerese) */
     this._exitMargin = 8;
 
+    /** @type {FloatingMenu} */
+    this.floatingMenu = null;
+
+    /** @type {Set<string>} - IDs de elementos com listeners de mouse */
+    this._elementMouseListeners = new Set();
+
     // Configurar tecla de interação
     this._setupInteractKey();
+
+    // Configurar listeners de mouse global
+    this._setupMouseListeners();
 
     console.log('[ElementManager] Initialized for scene:', scene.scene.key);
   }
@@ -68,6 +78,146 @@ export default class ElementManager {
     this.interactKey.on('down', () => this.handleInteraction());
   }
 
+  /**
+   * Configura listeners de mouse para objetos
+   * @private
+   */
+  _setupMouseListeners() {
+    // Click esquerdo para interagir com objetos
+    this.scene.input.on('pointerdown', (pointer) => {
+      if (pointer.button === 0) { // Left click
+        this.handleMouseClick(pointer);
+      }
+    });
+
+    // Click direito para menu contextual
+    this.scene.input.on('pointerdown', (pointer) => {
+      if (pointer.button === 2) { // Right click
+        pointer.event.preventDefault?.();
+        this.handleRightClick(pointer);
+      }
+    });
+  }
+
+  /**
+   * Processa click esquerdo do mouse em elementos (objetos) - sem restrição de proximidade
+   * @param {Phaser.Input.Pointer} pointer
+   * @private
+   */
+  handleMouseClick(pointer) {
+    // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
+    for (const element of this.elements.values()) {
+      if (element.type === 'object' && this._isPointerOverElement(pointer, element)) {
+        console.log('[ElementManager] Object clicked via mouse:', element.name);
+        element.interact('mouse');
+        return;
+      }
+    }
+  }
+
+  /**
+   * Processa click direito para menu contextual - sem restrição de proximidade
+   * @param {Phaser.Input.Pointer} pointer
+   * @private
+   */
+  handleRightClick(pointer) {
+    // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
+    for (const element of this.elements.values()) {
+      if (element.type === 'object' && this._isPointerOverElement(pointer, element)) {
+        this.showContextMenu(pointer.x, pointer.y, element);
+        return;
+      }
+    }
+  }
+
+  /**
+   * Verifica se o ponteiro está sobre a zona de um elemento
+   * @private
+   */
+  _isPointerOverElement(pointer, element) {
+    if (!element.area) return false;
+
+    const { x, y, width, height } = element.area;
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    return (
+      pointer.worldX >= x - halfW &&
+      pointer.worldX <= x + halfW &&
+      pointer.worldY >= y - halfH &&
+      pointer.worldY <= y + halfH
+    );
+  }
+
+  /**
+   * Exibe menu contextual com as opções de um elemento
+   * @param {number} x - Posição X do mouse
+   * @param {number} y - Posição Y do mouse
+   * @param {InteractiveElement} element - Elemento a interagir
+   */
+  showContextMenu(x, y, element) {
+    if (!this.floatingMenu) {
+      this.floatingMenu = new FloatingMenu(this.scene);
+    }
+
+    // Criar opções baseadas no elemento e suas reações
+    const options = [];
+
+    // Opção principal (interagir)
+    if (element.options && element.options.length > 0) {
+      element.options.forEach(opt => {
+        options.push({
+          label: opt.label || 'Interact',
+          icon: opt.icon || '◎',
+          disabled: opt.disabled || false,
+          action: () => {
+            if (opt.action && typeof opt.action === 'function') {
+              opt.action();
+            } else {
+              element.interact('mouse');
+            }
+          }
+        });
+      });
+    } else {
+      // Opção padrão se não houver opções customizadas
+      options.push({
+        label: `Interact with ${element.name}`,
+        icon: '◎',
+        action: () => element.interact('mouse')
+      });
+    }
+
+    // Adicionar separador
+    if (options.length > 0) {
+      options.push({ label: '', icon: '', disabled: true });
+    }
+
+    // Opções adicionais
+    options.push({
+      label: 'Examine',
+      icon: '◉',
+      action: () => {
+        console.log(`[ElementManager] Examined: ${element.name}`);
+        if (element.description) {
+          // Aqui você pode mostrar uma UI com a descrição
+          console.log(`Description: ${element.description}`);
+        }
+      }
+    });
+
+    options.push({
+      label: 'Cancel',
+      icon: '✕',
+      action: () => {
+        this.floatingMenu.hide();
+      }
+    });
+
+    // Mostrar menu
+    this.floatingMenu.show(x, y, options);
+  }
+
   // ============================================
   // CARREGAMENTO DE ELEMENTOS
   // ============================================
@@ -79,18 +229,26 @@ export default class ElementManager {
    */
   async loadFromFile(mapId) {
     try {
+      console.log(`[ElementManager] Attempting to load elements for map: ${mapId}`);
+      
       // Tentar carregar do cache do Phaser primeiro
       const cacheKey = `elements_${mapId}`;
       let data = this.scene.cache.json.get(cacheKey);
 
       if (!data) {
+        console.log(`[ElementManager] Not in cache, fetching from file...`);
         // Carregar via fetch
         const response = await fetch(`/src/data/elements/${mapId}.json`);
+        console.log(`[ElementManager] Fetch response status: ${response.status}`);
+        
         if (!response.ok) {
           console.warn(`[ElementManager] No elements file for map: ${mapId}`);
           return [];
         }
         data = await response.json();
+        console.log(`[ElementManager] Loaded data from file:`, data);
+      } else {
+        console.log(`[ElementManager] Loaded from cache`);
       }
 
       return this.loadFromConfig(data);
@@ -224,7 +382,7 @@ export default class ElementManager {
   // ============================================
 
   /**
-   * Processa interação quando tecla E é pressionada
+   * Processa interação quando tecla E é pressionada - respeita proximidade
    * @returns {boolean} true se processou uma interação
    */
   handleInteraction() {
@@ -233,7 +391,7 @@ export default class ElementManager {
       return false;
     }
 
-    this.currentInteractable.interact();
+    this.currentInteractable.interact('keyboard');
     return true;
   }
 
@@ -417,6 +575,13 @@ export default class ElementManager {
     this.elements.clear();
     this.nearbyElements.clear();
     this.currentInteractable = null;
+
+    if (this.floatingMenu) {
+      this.floatingMenu.destroy();
+      this.floatingMenu = null;
+    }
+
+    this._elementMouseListeners.clear();
 
     console.log('[ElementManager] Destroyed');
   }

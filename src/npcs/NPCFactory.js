@@ -18,7 +18,7 @@ export default class NPCFactory {
       name = 'NPC',
       texture = 'npc_default',
       frame = 0,
-      scale = 2,
+      scale = 4,
       depth = 4,
       dialogues = [],
       canMove = false,
