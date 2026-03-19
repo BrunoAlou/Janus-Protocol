@@ -21,9 +21,8 @@ export default class ReceptionScene extends BaseMapScene {
     
     // Carregar tilesets de forma padronizada pelo registro central
     preloadRegisteredTilesets(this);
-    
-    // Carregar mapa da reception
-    this.load.tilemapTiledJSON("reception", "/src/assets/reception.json");
+    // Carregar mapa via resolver compatível com Vite/GitHub Pages
+    super.preload();
     
     console.log('[ReceptionScene] Preload finished - loading reception map');
   }

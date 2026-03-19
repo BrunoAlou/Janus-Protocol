@@ -15,7 +15,7 @@ export default class GardenScene extends BaseMapScene {
   preload() {
     loadPlayerAssets(this);
     preloadRegisteredTilesets(this);
-    this.load.tilemapTiledJSON('garden', '/src/assets/garden.json');
+    super.preload();
   }
 
   getSpawnX() {

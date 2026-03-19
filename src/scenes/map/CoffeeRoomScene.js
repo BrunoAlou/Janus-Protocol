@@ -26,7 +26,7 @@ export default class CoffeeRoomScene extends BaseMapScene {
     loadPlayerAssets(this);
     loadBakerAssets(this);
     preloadRegisteredTilesets(this);
-    this.load.tilemapTiledJSON('coffee', '/src/assets/coffee.json');
+    super.preload();
   }
 
   getSpawnX() {

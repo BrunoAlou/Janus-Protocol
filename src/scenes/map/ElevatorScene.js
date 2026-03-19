@@ -2,6 +2,7 @@ import BaseMapScene from './BaseMapScene.js';
 import DoorZone from '../../components/DoorZone.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
 import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
+import { resolveAssetPath } from '../../utils/AssetResolver.js';
 
 /**
  * ElevatorScene - Cena do elevador (minimapa)
@@ -15,9 +16,9 @@ export default class ElevatorScene extends BaseMapScene {
   preload() {
     preloadRegisteredTilesets(this);
     // Carregar assets específicos do elevador, se houver
-    this.load.image('elevator_minimap', '/src/assets/elevator_minimap_16x16.png');
-    // Carregar tilemap do elevador
-    this.load.tilemapTiledJSON('elevator', '/src/assets/elevator.json');
+    this.load.image('elevator_minimap', resolveAssetPath('elevator_minimap_16x16.png'));
+    // Carregar tilemap do elevador via resolver
+    super.preload();
   }
 
   create() {

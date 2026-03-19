@@ -35,10 +35,57 @@ const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XX
 // Fallback para arquivo local quando MongoDB não estiver disponível
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'events.json');
+const MINIGAME_TELEMETRY_FILE = path.join(DATA_DIR, 'minigame-telemetry.json');
 
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]', 'utf8');
+  if (!fs.existsSync(MINIGAME_TELEMETRY_FILE)) fs.writeFileSync(MINIGAME_TELEMETRY_FILE, '[]', 'utf8');
+}
+
+function readMinigameTelemetry() {
+  ensureDataFile();
+  const raw = fs.readFileSync(MINIGAME_TELEMETRY_FILE, 'utf8');
+  try {
+    return JSON.parse(raw || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeMinigameTelemetry(arr) {
+  ensureDataFile();
+  fs.writeFileSync(MINIGAME_TELEMETRY_FILE, JSON.stringify(arr, null, 2), 'utf8');
+}
+
+function buildPublicAverages(records) {
+  const grouped = new Map();
+
+  for (const record of records) {
+    const key = record?.minigame || record?.summary?.minigame || record?.minigameKey;
+    const score = Number(record?.summary?.score);
+    if (!key || !Number.isFinite(score)) continue;
+
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(score);
+  }
+
+  const result = {};
+  for (const [minigame, scores] of grouped.entries()) {
+    if (scores.length === 0) continue;
+
+    const totalPlayers = scores.length;
+    const averageScore = scores.reduce((acc, v) => acc + v, 0) / totalPlayers;
+    const variance = scores.reduce((acc, v) => acc + Math.pow(v - averageScore, 2), 0) / totalPlayers;
+
+    result[minigame] = {
+      averageScore: Math.round(averageScore * 100) / 100,
+      standardDeviation: Math.round(Math.sqrt(variance) * 100) / 100,
+      totalPlayers
+    };
+  }
+
+  return result;
 }
 
 // Wrapper synchrono para readEvents
@@ -496,6 +543,47 @@ const server = http.createServer((req, res) => {
       console.error('[Auth callback] Error:', e);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // Minigame telemetry ingest
+  if (req.method === 'POST' && req.url === '/api/telemetry/minigame') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const records = readMinigameTelemetry();
+
+        records.push({
+          ...payload,
+          insertedAt: new Date().toISOString()
+        });
+
+        writeMinigameTelemetry(records);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Public minigame averages used by frontend comparison panel
+  if (req.method === 'GET' && req.url === '/api/minigames/public-averages') {
+    try {
+      const records = readMinigameTelemetry();
+      const averages = buildPublicAverages(records);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(averages));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
     }
     return;
   }

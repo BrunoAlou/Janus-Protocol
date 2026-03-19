@@ -18,6 +18,8 @@ export default class BaseMapScene extends Phaser.Scene {
     this.sceneKey = key;
     this.mapKey = mapKey;
     this.defaultZoom = 3.0; // Zoom padrão - pode ser sobrescrito em subclasses
+    this.npcs = [];
+    this.layers = null;
   }
 
   init(data) {
@@ -38,6 +40,11 @@ export default class BaseMapScene extends Phaser.Scene {
 
     // Criar mapa
     this.setupMap();
+
+    if (!this.map || !this.layers) {
+      console.error(`[${this.sceneKey}] Scene aborted: map/layers could not be initialized`);
+      return;
+    }
 
     // Criar player
     this.setupPlayer();
@@ -200,11 +207,12 @@ export default class BaseMapScene extends Phaser.Scene {
 
     sprite.setCollideWorldBounds(true);
 
+    const layers = this.layers || {};
     const colliders = {
-      walls: this.layers.walls ? this.physics.add.collider(sprite, this.layers.walls) : null,
-      walls2: this.layers.walls2 ? this.physics.add.collider(sprite, this.layers.walls2) : null,
-      objects: this.layers.objects ? this.physics.add.collider(sprite, this.layers.objects) : null,
-      doors: this.layers.doors ? this.physics.add.collider(sprite, this.layers.doors) : null
+      walls: layers.walls ? this.physics.add.collider(sprite, layers.walls) : null,
+      walls2: layers.walls2 ? this.physics.add.collider(sprite, layers.walls2) : null,
+      objects: layers.objects ? this.physics.add.collider(sprite, layers.objects) : null,
+      doors: layers.doors ? this.physics.add.collider(sprite, layers.doors) : null
     };
 
     // Registrar colisões no debugger apenas para o player

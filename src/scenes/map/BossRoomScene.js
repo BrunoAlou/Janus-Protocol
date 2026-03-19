@@ -15,7 +15,7 @@ export default class BossRoomScene extends BaseMapScene {
   preload() {
     loadPlayerAssets(this);
     preloadRegisteredTilesets(this);
-    this.load.tilemapTiledJSON('boss-room', '/src/assets/boss-room.json');
+    super.preload();
   }
 
   getSpawnX() {

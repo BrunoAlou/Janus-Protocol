@@ -3,6 +3,7 @@ import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
 import { getTextureKeyForTileset, preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
+import { resolveMapPath } from '../../utils/AssetResolver.js';
 
 /**
  * ItRoomScene - Sala de TI / Informática
@@ -22,7 +23,7 @@ export default class ItRoomScene extends BaseMapScene {
     preloadRegisteredTilesets(this);
     
     // Carregar mapa da sala de TI
-    this.load.tilemapTiledJSON("ti_map", "/src/assets/Ti.json");
+    this.load.tilemapTiledJSON('ti_map', resolveMapPath('Ti.json'));
     
     console.log('[ItRoomScene] Preload finished');
   }
