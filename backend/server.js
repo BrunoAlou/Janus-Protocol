@@ -367,11 +367,14 @@ const server = http.createServer((req, res) => {
       }
 
       // Build the correct redirect_uri (must match what's registered in LinkedIn)
-      const referer = req.headers.referer || req.headers.origin || 'http://localhost:3000';
-      const refererUrl = new URL(referer);
-      const origin = refererUrl.origin;
+      // Use X-Forwarded-Proto/Host for Railway (behind proxy) or fallback to req.headers
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
       
-      let redirectUri = `${origin}/auth/callback`;
+      let redirectUri = `${protocol}://${host}/auth/callback`;
+
+      console.log('[Auth callback] Received callback from LinkedIn');
+      console.log('[Auth callback] Using redirect_uri:', redirectUri);
 
       // Exchange code for access token
       const https = require('https');
