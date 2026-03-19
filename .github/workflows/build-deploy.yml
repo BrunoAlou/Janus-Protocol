@@ -3,19 +3,17 @@ name: Build and Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
@@ -30,13 +28,10 @@ jobs:
           rm -rf docs/*
           cp -r dist/* docs/
 
-      - name: Commit and push changes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Commit and push to docs
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add docs/
-          git commit -m "Auto-build: Update GitHub Pages from dist/" --allow-empty
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-deploy: Update GitHub Pages from dist/" && git push)
+
