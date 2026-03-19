@@ -125,6 +125,15 @@ export default class InteractiveElement {
     /** @type {Phaser.GameObjects.Container|null} */
     this.indicator = null;
 
+    /** @type {Phaser.GameObjects.Rectangle|null} */
+    this.indicatorBg = null;
+
+    /** @type {Phaser.GameObjects.Text|null} */
+    this.indicatorText = null;
+
+    /** @private */
+    this._isHovered = false;
+
     // Criar elementos visuais
     this._createVisuals();
     this._createInteractionZone();
@@ -244,19 +253,50 @@ export default class InteractiveElement {
     this.indicator = this.scene.add.container(this.area.x, this.area.y + (indConfig.offsetY || -40));
     
     // Fundo do indicador
-    const indicatorBg = this.scene.add.rectangle(0, 0, 40, 24, 0x000000, 0.7)
+    this.indicatorBg = this.scene.add.rectangle(0, 0, 40, 24, 0x000000, 0.7)
       .setStrokeStyle(1, 0x00d9ff);
     
     // Texto do indicador
-    const indicatorText = this.scene.add.text(0, 0, indConfig.text || '[E]', {
+    this.indicatorText = this.scene.add.text(0, 0, indConfig.text || '[E]', {
       fontSize: '14px',
       fontFamily: 'Arial',
       color: '#00d9ff'
     }).setOrigin(0.5);
 
-    this.indicator.add([indicatorBg, indicatorText]);
+    this.indicator.add([this.indicatorBg, this.indicatorText]);
     this.indicator.setDepth(1000);
     this.indicator.setVisible(false);
+  }
+
+  /**
+   * Atualiza visual do indicador conforme estado (aproximação/hover)
+   * @private
+   */
+  _refreshIndicator() {
+    if (!this.indicator || !this.indicatorText || !this.indicatorBg) {
+      return;
+    }
+
+    const label = this._isHovered ? '[CLICK]' : '[E]';
+    this.indicatorText.setText(label);
+
+    const textWidth = this.indicatorText.width || 0;
+    this.indicatorBg.width = Math.max(40, textWidth + 16);
+
+    this.indicator.setVisible(this._isPlayerNearby || this._isHovered);
+  }
+
+  /**
+   * Define se o mouse está em hover sobre o elemento
+   * @param {boolean} hovered
+   */
+  setHovered(hovered) {
+    if (this._isHovered === hovered) {
+      return;
+    }
+
+    this._isHovered = hovered;
+    this._refreshIndicator();
   }
 
   /**
@@ -343,7 +383,7 @@ export default class InteractiveElement {
     if (this._isPlayerNearby) return;
     
     this._isPlayerNearby = true;
-    this.indicator?.setVisible(true);
+    this._refreshIndicator();
     
     console.log(`[InteractiveElement] Player entered: ${this.name}`);
 
@@ -362,7 +402,7 @@ export default class InteractiveElement {
     if (!this._isPlayerNearby) return;
     
     this._isPlayerNearby = false;
-    this.indicator?.setVisible(false);
+    this._refreshIndicator();
     
     // Resetar estado de interação quando player sai
     this._isInteracting = false;

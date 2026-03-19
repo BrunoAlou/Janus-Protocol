@@ -23,12 +23,35 @@ export default class AuthManager {
         authUrl: 'https://www.linkedin.com/oauth/v2/authorization'
       },
       google: {
-        clientId: 'SEU_GOOGLE_CLIENT_ID',
+        clientId: this.resolveOAuthClientId('google', 'GOOGLE_CLIENT_ID'),
         redirectUri: redirectUri,
         scope: 'profile email',
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
       }
     };
+  }
+
+  /**
+   * Resolve client_id com prioridade para variáveis de ambiente.
+   * @param {'google'|'linkedin'} provider
+   * @param {string} fallback
+   * @returns {string}
+   */
+  resolveOAuthClientId(provider, fallback) {
+    const envByProvider = provider === 'google'
+      ? import.meta.env.VITE_GOOGLE_CLIENT_ID
+      : import.meta.env.VITE_LINKEDIN_CLIENT_ID;
+
+    return envByProvider || fallback;
+  }
+
+  /**
+   * Verifica se o client_id ainda está em modo placeholder.
+   * @param {string} value
+   * @returns {boolean}
+   */
+  isPlaceholderClientId(value) {
+    return !value || value.startsWith('SEU_') || value.includes('CLIENT_ID');
   }
 
   /**
@@ -112,6 +135,13 @@ export default class AuthManager {
    * Inicia fluxo de login com Google
    */
   loginWithGoogle() {
+    if (this.isPlaceholderClientId(this.config.google.clientId)) {
+      const message = '[AuthManager] Google OAuth client_id não configurado. Defina VITE_GOOGLE_CLIENT_ID.';
+      console.error(message);
+      alert('Google OAuth não configurado. Defina VITE_GOOGLE_CLIENT_ID e rode o build novamente.');
+      return;
+    }
+
     const params = new URLSearchParams({
       client_id: this.config.google.clientId,
       redirect_uri: this.config.google.redirectUri,

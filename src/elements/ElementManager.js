@@ -100,6 +100,9 @@ export default class ElementManager {
     /** @type {Set<string>} - IDs de elementos com listeners de mouse */
     this._elementMouseListeners = new Set();
 
+    /** @type {InteractiveElement|null} */
+    this._hoveredElement = null;
+
     // Configurar tecla de interação
     this._setupInteractKey();
 
@@ -181,16 +184,51 @@ export default class ElementManager {
   _isPointerOverElement(pointer, element) {
     if (!element.area) return false;
 
+    const camera = this.scene.cameras?.main;
+    const worldPoint = camera
+      ? camera.getWorldPoint(pointer.x, pointer.y)
+      : { x: pointer.worldX, y: pointer.worldY };
+
     const { x, y, width, height } = element.area;
     const halfW = width / 2;
     const halfH = height / 2;
 
     return (
-      pointer.worldX >= x - halfW &&
-      pointer.worldX <= x + halfW &&
-      pointer.worldY >= y - halfH &&
-      pointer.worldY <= y + halfH
+      worldPoint.x >= x - halfW &&
+      worldPoint.x <= x + halfW &&
+      worldPoint.y >= y - halfH &&
+      worldPoint.y <= y + halfH
     );
+  }
+
+  /**
+   * Atualiza qual elemento clicável está sob hover do mouse
+   * @private
+   */
+  _updateHoveredElement() {
+    const pointer = this.scene.input.activePointer;
+    let nextHovered = null;
+
+    if (pointer) {
+      for (const element of this.elements.values()) {
+        if (element.type !== 'object') {
+          continue;
+        }
+
+        if (this._isPointerOverElement(pointer, element)) {
+          nextHovered = element;
+          break;
+        }
+      }
+    }
+
+    if (nextHovered === this._hoveredElement) {
+      return;
+    }
+
+    this._hoveredElement?.setHovered(false);
+    this._hoveredElement = nextHovered;
+    this._hoveredElement?.setHovered(true);
   }
 
   /**
@@ -464,6 +502,8 @@ export default class ElementManager {
    * @param {number} delta
    */
   update(time, delta) {
+    this._updateHoveredElement();
+
     const now = Date.now();
     
     // Verificar quais elementos o player saiu (com debounce e histerese)
@@ -610,6 +650,10 @@ export default class ElementManager {
   removeElement(id) {
     const element = this.elements.get(id);
     if (element) {
+      if (this._hoveredElement === element) {
+        this._hoveredElement.setHovered(false);
+        this._hoveredElement = null;
+      }
       this.nearbyElements.delete(element);
       if (this.currentInteractable === element) {
         this.currentInteractable = null;
@@ -628,6 +672,9 @@ export default class ElementManager {
    * Destrói todos os elementos e limpa recursos
    */
   destroy() {
+    this._hoveredElement?.setHovered(false);
+    this._hoveredElement = null;
+
     for (const element of this.elements.values()) {
       element.destroy();
     }
