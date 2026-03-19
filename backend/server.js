@@ -468,7 +468,8 @@ const server = http.createServer((req, res) => {
         path: provider === 'google' ? '/token' : '/oauth/v2/accessToken',
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
         }
       }, (tokenRes) => {
         let tokenData = '';
@@ -478,8 +479,21 @@ const server = http.createServer((req, res) => {
             const tokenResponse = JSON.parse(tokenData);
 
             if (tokenResponse.error) {
+              console.error('[Auth callback] Token exchange failed', {
+                provider,
+                statusCode: tokenRes.statusCode,
+                error: tokenResponse.error,
+                error_description: tokenResponse.error_description
+              });
+
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: tokenResponse.error_description || tokenResponse.error }));
+              res.end(JSON.stringify({
+                error: tokenResponse.error_description || tokenResponse.error,
+                provider,
+                hint: provider === 'google'
+                  ? 'Check GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET on backend and ensure redirect_uri exactly matches Google Console'
+                  : 'Check LinkedIn app credentials and redirect_uri'
+              }));
               return;
             }
 
