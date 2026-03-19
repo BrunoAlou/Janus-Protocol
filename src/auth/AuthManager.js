@@ -31,24 +31,18 @@ export default class AuthManager {
 
   /**
    * Build redirect URI based on current location
-   * For GitHub Pages, include the project path (e.g., /Janus-Protocol)
+   * For GitHub Pages, use Railway backend for OAuth callback
    */
   buildRedirectUri() {
     const origin = window.location.origin;
-    const pathname = window.location.pathname;
     
-    // If on GitHub Pages, extract project name from pathname
+    // If on GitHub Pages, use Railway backend URL for callback
     if (origin.includes('github.io')) {
-      // pathname will be something like "/Janus-Protocol/..." or "/Janus-Protocol"
-      const pathMatch = pathname.match(/^\/([^\/]+)\//);
-      if (pathMatch) {
-        const projectName = pathMatch[1];
-        return `${origin}/${projectName}/auth/callback`;
-      }
-      return `${origin}/auth/callback`;
+      const railwayUrl = 'https://janus-protocol-production.up.railway.app';
+      return `${railwayUrl}/auth/callback`;
     }
     
-    // For other domains (localhost, custom domain), just use origin
+    // For localhost or custom domains, use current origin
     return `${origin}/auth/callback`;
   }
 
