@@ -23,6 +23,12 @@ export default class ElevatorScene extends BaseMapScene {
 
   create() {
     super.create();
+
+    if (!this.map || !this.layers) {
+      console.error('[ElevatorScene] create aborted: map/layers indisponíveis');
+      return;
+    }
+
     this.cameras.main.fadeIn(400, 0, 0, 0);
     this.setupDoorTransitions();
     // Centralizar câmera no mapa (override do setupCamera da base)
@@ -37,6 +43,11 @@ export default class ElevatorScene extends BaseMapScene {
    */
   setupCameraForMinimap() {
     console.log('[ElevatorScene] setupCameraForMinimap() chamado');
+
+    if (!this.map) {
+      console.error('[ElevatorScene] setupCameraForMinimap abortado: this.map indefinido');
+      return;
+    }
     
     // Dados do mapa
     console.log('[ElevatorScene] Mapa info:', {

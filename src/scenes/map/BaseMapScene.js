@@ -29,7 +29,13 @@ export default class BaseMapScene extends Phaser.Scene {
 
   preload() {
     // Carregar mapa específico com path correto para Vite base config
-    this.load.tilemapTiledJSON(this.mapKey, resolveMapPath(`${this.mapKey}.json`));
+    const mapUrl = resolveMapPath(this.mapKey);
+    if (!mapUrl) {
+      console.error(`[${this.sceneKey}] Map URL could not be resolved for key: ${this.mapKey}`);
+      return;
+    }
+
+    this.load.tilemapTiledJSON(this.mapKey, mapUrl);
     
     // Tilesets comuns já carregados no BootScene
   }
