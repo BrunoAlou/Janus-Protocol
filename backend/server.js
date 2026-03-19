@@ -32,6 +32,10 @@ const PORT = process.env.PORT || 3000;
 const LINKEDIN_CLIENT_ID = '77vels5rgzs1ki';
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XXXXXXXX'; // Substitua pelo seu client secret
 
+// Google OAuth config (NEVER commit CLIENT_SECRET - use environment variables only)
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'your-client-id.apps.googleusercontent.com';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''; // ⚠️ NUNCA faça commit disso!
+
 // Fallback para arquivo local quando MongoDB não estiver disponível
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'events.json');
