@@ -346,6 +346,126 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // OAuth callback handler - receives code from LinkedIn
+  if (req.method === 'GET' && req.url.startsWith('/auth/callback')) {
+    try {
+      const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
+      const code = parsedUrl.searchParams.get('code');
+      const state = parsedUrl.searchParams.get('state');
+      const error = parsedUrl.searchParams.get('error');
+
+      if (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error, error_description: parsedUrl.searchParams.get('error_description') }));
+        return;
+      }
+
+      if (!code) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing authorization code' }));
+        return;
+      }
+
+      // Build the correct redirect_uri (must match what's registered in LinkedIn)
+      const referer = req.headers.referer || req.headers.origin || 'http://localhost:3000';
+      const refererUrl = new URL(referer);
+      const origin = refererUrl.origin;
+      
+      let redirectUri = `${origin}/auth/callback`;
+
+      // Exchange code for access token
+      const https = require('https');
+      const tokenParams = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        client_id: LINKEDIN_CLIENT_ID,
+        client_secret: LINKEDIN_CLIENT_SECRET
+      });
+
+      const tokenReq = https.request({
+        hostname: 'www.linkedin.com',
+        path: '/oauth/v2/accessToken',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }, (tokenRes) => {
+        let tokenData = '';
+        tokenRes.on('data', chunk => tokenData += chunk);
+        tokenRes.on('end', () => {
+          try {
+            const tokenResponse = JSON.parse(tokenData);
+
+            if (tokenResponse.error) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: tokenResponse.error_description || tokenResponse.error }));
+              return;
+            }
+
+            const accessToken = tokenResponse.access_token;
+
+            // Get user profile using access token
+            const userReq = https.request({
+              hostname: 'api.linkedin.com',
+              path: '/v2/userinfo',
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Accept': 'application/json'
+              }
+            }, (userRes) => {
+              let userData = '';
+              userRes.on('data', chunk => userData += chunk);
+              userRes.on('end', () => {
+                try {
+                  const userInfo = JSON.parse(userData);
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    success: true,
+                    access_token: accessToken,
+                    user: {
+                      id: userInfo.sub,
+                      name: userInfo.name,
+                      email: userInfo.email,
+                      picture: userInfo.picture,
+                      provider: 'linkedin'
+                    }
+                  }));
+                } catch (e) {
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'Failed to parse user info' }));
+                }
+              });
+            });
+            userReq.on('error', (err) => {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: err.message }));
+            });
+            userReq.end();
+          } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid token response' }));
+          }
+        });
+      });
+
+      tokenReq.on('error', (err) => {
+        console.error('[Auth callback] Token exchange error:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      });
+
+      tokenReq.write(tokenParams.toString());
+      tokenReq.end();
+    } catch (e) {
+      console.error('[Auth callback] Error:', e);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found' }));
 });

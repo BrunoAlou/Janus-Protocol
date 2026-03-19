@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node backend/server.js"
+  },
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
   },
   "repository": {
     "type": "git",
