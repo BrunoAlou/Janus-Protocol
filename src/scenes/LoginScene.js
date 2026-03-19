@@ -31,6 +31,13 @@ export default class LoginScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
 
+    // Processar OAuth redirect to_session do backend
+    if (this.authManager.processOAuthRedirect()) {
+      console.log('[LoginScene] OAuth redirect processed, starting game...');
+      this.startGame();
+      return;
+    }
+
     // Verificar se já está logado
     if (this.authManager.checkSession()) {
       this.startGame();

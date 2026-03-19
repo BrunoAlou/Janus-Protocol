@@ -423,10 +423,19 @@ const server = http.createServer((req, res) => {
               userRes.on('end', () => {
                 try {
                   const userInfo = JSON.parse(userData);
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({
-                    success: true,
-                    access_token: accessToken,
+                  
+                  // Determine frontend URL (for GitHub Pages or local dev)
+                  const scheme = req.headers['x-forwarded-proto'] || 'https';
+                  let frontendUrl = 'https://brunoalou.github.io/Janus-Protocol';
+                  
+                  // For local testing
+                  if (req.headers.host && (req.headers.host.includes('localhost') || req.headers.host.includes('127.0.0.1'))) {
+                    frontendUrl = `http://${req.headers.host}`;
+                  }
+                  
+                  // Build session data to pass back to frontend
+                  const sessionData = {
+                    token: accessToken,
                     user: {
                       id: userInfo.sub,
                       name: userInfo.name,
@@ -434,8 +443,16 @@ const server = http.createServer((req, res) => {
                       picture: userInfo.picture,
                       provider: 'linkedin'
                     }
-                  }));
+                  };
+                  
+                  // Redirect to frontend with session data in hash (more secure than query params)
+                  const encodedSession = encodeURIComponent(JSON.stringify(sessionData));
+                  const redirectUrl = `${frontendUrl}/?oauth_success=true#session=${encodedSession}`;
+                  
+                  res.writeHead(302, { 'Location': redirectUrl });
+                  res.end();
                 } catch (e) {
+                  console.error('[Auth callback] User info parsing error:', e);
                   res.writeHead(500, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify({ error: 'Failed to parse user info' }));
                 }

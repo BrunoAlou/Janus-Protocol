@@ -62,6 +62,51 @@ export default class AuthManager {
   }
 
   /**
+   * Processa redirect do OAuth callback do backend
+   * O backend redireciona para /?oauth_success=true#session={...}
+   */
+  processOAuthRedirect() {
+    try {
+      // Check if this is an OAuth callback
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('oauth_success') !== 'true') {
+        return false;
+      }
+
+      // Extract session data from hash
+      const hashMatch = window.location.hash.match(/session=([^&]*)/);
+      if (!hashMatch || !hashMatch[1]) {
+        console.warn('[AuthManager] OAuth redirect but no session data found');
+        return false;
+      }
+
+      try {
+        const sessionData = JSON.parse(decodeURIComponent(hashMatch[1]));
+        
+        // Restore session
+        this.token = sessionData.token;
+        this.user = sessionData.user;
+        this.provider = sessionData.user.provider;
+        this.saveSession();
+
+        console.log('[AuthManager] OAuth redirect processed successfully');
+        console.log('[AuthManager] User:', this.user.name, '(' + this.user.email + ')');
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        return true;
+      } catch (e) {
+        console.error('[AuthManager] Failed to parse session data:', e);
+        return false;
+      }
+    } catch (e) {
+      console.error('[AuthManager] Error processing OAuth redirect:', e);
+      return false;
+    }
+  }
+
+  /**
    * Inicia fluxo de login com Google
    */
   loginWithGoogle() {
