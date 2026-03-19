@@ -2,6 +2,8 @@
  * InteractionManager - Gerencia interações com NPCs e objetos
  */
 
+import { logAction } from '../utils/telemetry.js';
+
 export default class InteractionManager {
   constructor(scene, player) {
     this.scene = scene;
@@ -93,6 +95,19 @@ export default class InteractionManager {
     }
 
     console.log('[InteractionManager] Interacting with:', npc.npcName);
+
+    try {
+      logAction('interaction', {
+        actionName: 'npc_interaction',
+        npcName: npc.npcName,
+        scene: this.scene?.scene?.key
+      }, {
+        x: Math.round(npc.x || 0),
+        y: Math.round(npc.y || 0)
+      });
+    } catch (error) {
+      console.warn('[InteractionManager] Telemetry tracking failed:', error?.message || error);
+    }
     
     // Emitir evento de interação
     this.scene.events.emit('npc-interact', {

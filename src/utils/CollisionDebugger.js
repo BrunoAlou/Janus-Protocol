@@ -397,8 +397,11 @@ export default class CollisionDebugger {
    * Mostra feedback visual de "copiado"
    */
   showCopiedFeedback(x, y) {
-    const worldPoint = { x, y };
-    const screenPoint = this.scene.cameras.main.worldToScreen(worldPoint.x, worldPoint.y);
+    const camera = this.scene.cameras.main;
+    const screenPoint = {
+      x: (x - camera.scrollX) * camera.zoom + camera.x,
+      y: (y - camera.scrollY) * camera.zoom + camera.y
+    };
     
     const feedback = this.scene.add.text(screenPoint.x, screenPoint.y - 30, '📋 Copiado!', {
       fontSize: '14px',

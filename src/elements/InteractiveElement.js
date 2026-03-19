@@ -11,6 +11,7 @@
  */
 
 import { SCENE_NAMES } from '../constants/SceneNames.js';
+import { logAction } from '../utils/telemetry.js';
 
 /**
  * @typedef {Object} ElementArea
@@ -129,6 +130,34 @@ export default class InteractiveElement {
     this._createInteractionZone();
 
     console.log(`[InteractiveElement] Created: ${this.id} (${this.type}) at (${this.area.x}, ${this.area.y})`);
+  }
+
+  /**
+   * Envia telemetria de forma não bloqueante.
+   * @param {string} actionName
+   * @param {Object} extra
+   * @private
+   */
+  _trackInteraction(actionName, extra = {}) {
+    try {
+      const payload = {
+        actionName,
+        elementId: this.id,
+        elementType: this.type,
+        elementName: this.name,
+        scene: this.scene?.scene?.key,
+        ...extra
+      };
+
+      const position = {
+        x: Math.round(this.area?.x || 0),
+        y: Math.round(this.area?.y || 0)
+      };
+
+      logAction('interaction', payload, position);
+    } catch (error) {
+      console.warn('[InteractiveElement] Telemetry tracking failed:', error?.message || error);
+    }
   }
 
   // ============================================
@@ -360,6 +389,7 @@ export default class InteractiveElement {
     this._lastInteractionTime = Date.now();
     
     console.log(`[InteractiveElement] Interacting with: ${this.name} (type: ${interactionType})`);
+    this._trackInteraction('interact_start', { interactionType });
 
     // Usar clickDialogues para interação por mouse, dialogues para teclado
     const dialoguesToUse = interactionType === 'mouse' && this.clickDialogues.length > 0
@@ -550,6 +580,11 @@ export default class InteractiveElement {
    */
   handleOptionSelect(option) {
     console.log(`[InteractiveElement] Option selected: ${option.label}`);
+    this._trackInteraction('option_selected', {
+      optionId: option?.id || null,
+      optionLabel: option?.label || null,
+      optionDisabled: !!option?.disabled
+    });
     
     if (option.disabled) {
       console.log(`[InteractiveElement] Option disabled: ${option.disabledReason}`);
@@ -569,6 +604,12 @@ export default class InteractiveElement {
     if (!action) return;
 
     console.log(`[InteractiveElement] Executing action: ${action.type}`, action);
+    this._trackInteraction('execute_action', {
+      actionType: action?.type || null,
+      actionTarget: action?.target || null,
+      optionId: option?.id || null,
+      optionLabel: option?.label || null
+    });
 
     switch (action.type) {
       case 'dialog':
