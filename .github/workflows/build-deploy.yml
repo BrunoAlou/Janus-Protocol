@@ -31,7 +31,8 @@ jobs:
 
       - name: Copy dist to docs
         run: |
-          rm -rf docs/*
+          rm -rf docs
+          mkdir -p docs
           cp -r dist/* docs/
 
       - name: Commit and push to docs
