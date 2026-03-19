@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Interactive Elements Schema",
+  "description": "Schema para definição de elementos interativos nos mapas (NPCs, objetos, portas, etc.)",
+  
+  "definitions": {
+    "Area": {
+      "type": "object",
+      "description": "Área de interação em pixels",
+      "properties": {
+        "x": { "type": "number", "description": "Posição X do centro da área" },
+        "y": { "type": "number", "description": "Posição Y do centro da área" },
+        "width": { "type": "number", "description": "Largura da área" },
+        "height": { "type": "number", "description": "Altura da área" }
+      },
+      "required": ["x", "y", "width", "height"]
+    },
+    
+    "Action": {
+      "type": "object",
+      "description": "Ação a ser executada quando uma opção é selecionada",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["dialog", "scene", "minigame", "event", "item", "quest", "custom"],
+          "description": "Tipo da ação"
+        },
+        "target": { 
+          "type": "string", 
+          "description": "Alvo da ação (nome da cena, id do evento, etc.)" 
+        },
+        "data": { 
+          "type": "object", 
+          "description": "Dados adicionais para a ação" 
+        },
+        "condition": {
+          "type": "object",
+          "description": "Condição para a ação estar disponível",
+          "properties": {
+            "type": { "type": "string", "enum": ["quest", "item", "flag", "stat"] },
+            "id": { "type": "string" },
+            "operator": { "type": "string", "enum": ["==", "!=", ">", "<", ">=", "<=", "has", "!has"] },
+            "value": { "type": ["string", "number", "boolean"] }
+          }
+        }
+      },
+      "required": ["type"]
+    },
+    
+    "Option": {
+      "type": "object",
+      "description": "Opção de interação disponível para o jogador",
+      "properties": {
+        "id": { "type": "string", "description": "ID único da opção" },
+        "label": { "type": "string", "description": "Texto exibido para o jogador" },
+        "description": { "type": "string", "description": "Descrição detalhada (tooltip)" },
+        "icon": { "type": "string", "description": "Ícone da opção (emoji ou sprite key)" },
+        "action": { "$ref": "#/definitions/Action" },
+        "condition": { "$ref": "#/definitions/Action/properties/condition" },
+        "disabled": { "type": "boolean", "description": "Se a opção está desabilitada" },
+        "disabledReason": { "type": "string", "description": "Motivo da opção estar desabilitada" }
+      },
+      "required": ["id", "label", "action"]
+    },
+    
+    "InteractiveElement": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID único do elemento" },
+        "type": {
+          "type": "string",
+          "enum": ["npc", "object", "door", "terminal", "item", "trigger"],
+          "description": "Tipo do elemento"
+        },
+        "name": { "type": "string", "description": "Nome de exibição" },
+        "description": { "type": "string", "description": "Descrição do elemento" },
+        "area": { "$ref": "#/definitions/Area" },
+        "sprite": {
+          "type": "object",
+          "description": "Configuração visual do elemento",
+          "properties": {
+            "key": { "type": "string", "description": "Chave do sprite/texture" },
+            "frame": { "type": ["number", "string"], "description": "Frame inicial" },
+            "animation": { "type": "string", "description": "Animação padrão" },
+            "scale": { "type": "number", "default": 1 },
+            "visible": { "type": "boolean", "default": true }
+          }
+        },
+        "indicator": {
+          "type": "object",
+          "description": "Indicador visual de interação",
+          "properties": {
+            "text": { "type": "string", "default": "[E]" },
+            "icon": { "type": "string" },
+            "offsetY": { "type": "number", "default": -40 }
+          }
+        },
+        "greeting": { 
+          "type": "string", 
+          "description": "Texto inicial ao interagir (antes das opções)" 
+        },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Option" },
+          "description": "Opções de interação disponíveis"
+        },
+        "dialogues": {
+          "type": "array",
+          "items": { 
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "speaker": { "type": "string" }
+            }
+          },
+          "description": "Diálogos sequenciais (alternativa a opções)"
+        },
+        "persistent": { 
+          "type": "boolean", 
+          "default": true,
+          "description": "Se o elemento persiste após interação" 
+        },
+        "cooldown": { 
+          "type": "number", 
+          "description": "Tempo em ms antes de poder interagir novamente" 
+        },
+        "requiresItem": { 
+          "type": "string", 
+          "description": "Item necessário para interagir" 
+        },
+        "onInteract": { 
+          "$ref": "#/definitions/Action",
+          "description": "Ação automática ao entrar na área (sem precisar pressionar E)" 
+        }
+      },
+      "required": ["id", "type", "name", "area"]
+    }
+  },
+  
+  "type": "object",
+  "properties": {
+    "mapId": { "type": "string", "description": "ID do mapa" },
+    "version": { "type": "string", "description": "Versão do arquivo" },
+    "elements": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/InteractiveElement" }
+    }
+  },
+  "required": ["mapId", "elements"]
+}

@@ -14,6 +14,12 @@
 import InteractiveElement from './InteractiveElement.js';
 import FloatingMenu from '../ui/FloatingMenu.js';
 
+// Carrega os JSON de elementos no bundle para funcionar em dev e produção (GitHub Pages).
+const ELEMENT_CONFIGS = import.meta.glob('../data/elements/*.json', {
+  eager: true,
+  import: 'default'
+});
+
 export default class ElementManager {
   /**
    * @param {Phaser.Scene} scene - Cena do Phaser
@@ -236,17 +242,27 @@ export default class ElementManager {
       let data = this.scene.cache.json.get(cacheKey);
 
       if (!data) {
-        console.log(`[ElementManager] Not in cache, fetching from file...`);
-        // Carregar via fetch
-        const response = await fetch(`/src/data/elements/${mapId}.json`);
-        console.log(`[ElementManager] Fetch response status: ${response.status}`);
-        
-        if (!response.ok) {
-          console.warn(`[ElementManager] No elements file for map: ${mapId}`);
-          return [];
+        console.log('[ElementManager] Not in cache, loading bundled config...');
+
+        // Primeiro tenta via import.meta.glob (compatível com Vite build/base path)
+        const bundledPath = `../data/elements/${mapId}.json`;
+        data = ELEMENT_CONFIGS[bundledPath];
+
+        // Fallback para fetch relativo em cenários fora do fluxo do Vite
+        if (!data) {
+          const response = await fetch(new URL(`../data/elements/${mapId}.json`, import.meta.url));
+          console.log(`[ElementManager] Fallback fetch response status: ${response.status}`);
+
+          if (!response.ok) {
+            console.warn(`[ElementManager] No elements file for map: ${mapId}`);
+            return [];
+          }
+          data = await response.json();
         }
-        data = await response.json();
-        console.log(`[ElementManager] Loaded data from file:`, data);
+
+        // Cachear para evitar recarregamentos
+        this.scene.cache.json.add(cacheKey, data);
+        console.log('[ElementManager] Loaded data for map:', mapId, data);
       } else {
         console.log(`[ElementManager] Loaded from cache`);
       }
