@@ -410,13 +410,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // OAuth callback handler - receives code from LinkedIn
+  // OAuth callback handler - receives code from LinkedIn or Google
   if (req.method === 'GET' && req.url.startsWith('/auth/callback')) {
     try {
       const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
       const code = parsedUrl.searchParams.get('code');
-      const state = parsedUrl.searchParams.get('state');
       const error = parsedUrl.searchParams.get('error');
+      const iss = parsedUrl.searchParams.get('iss') || '';
+      const isGoogleCallback = iss.includes('accounts.google.com') || parsedUrl.searchParams.has('authuser');
+      const provider = isGoogleCallback ? 'google' : 'linkedin';
 
       if (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -437,8 +439,19 @@ const server = http.createServer((req, res) => {
       
       let redirectUri = `${protocol}://${host}/auth/callback`;
 
-      console.log('[Auth callback] Received callback from LinkedIn');
+      console.log(`[Auth callback] Received callback from ${provider}`);
       console.log('[Auth callback] Using redirect_uri:', redirectUri);
+
+      if (provider === 'google') {
+        if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('your-client-id') || !GOOGLE_CLIENT_SECRET) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'Google OAuth credentials are not configured on backend',
+            details: 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend environment'
+          }));
+          return;
+        }
+      }
 
       // Exchange code for access token
       const https = require('https');
@@ -446,13 +459,13 @@ const server = http.createServer((req, res) => {
         grant_type: 'authorization_code',
         code: code,
         redirect_uri: redirectUri,
-        client_id: LINKEDIN_CLIENT_ID,
-        client_secret: LINKEDIN_CLIENT_SECRET
+        client_id: provider === 'google' ? GOOGLE_CLIENT_ID : LINKEDIN_CLIENT_ID,
+        client_secret: provider === 'google' ? GOOGLE_CLIENT_SECRET : LINKEDIN_CLIENT_SECRET
       });
 
       const tokenReq = https.request({
-        hostname: 'www.linkedin.com',
-        path: '/oauth/v2/accessToken',
+        hostname: provider === 'google' ? 'oauth2.googleapis.com' : 'www.linkedin.com',
+        path: provider === 'google' ? '/token' : '/oauth/v2/accessToken',
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -474,8 +487,8 @@ const server = http.createServer((req, res) => {
 
             // Get user profile using access token
             const userReq = https.request({
-              hostname: 'api.linkedin.com',
-              path: '/v2/userinfo',
+              hostname: provider === 'google' ? 'openidconnect.googleapis.com' : 'api.linkedin.com',
+              path: provider === 'google' ? '/v1/userinfo' : '/v2/userinfo',
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -501,11 +514,11 @@ const server = http.createServer((req, res) => {
                   const sessionData = {
                     token: accessToken,
                     user: {
-                      id: userInfo.sub,
+                      id: userInfo.sub || userInfo.id,
                       name: userInfo.name,
                       email: userInfo.email,
                       picture: userInfo.picture,
-                      provider: 'linkedin'
+                      provider: provider
                     }
                   };
                   
