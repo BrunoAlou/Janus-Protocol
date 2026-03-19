@@ -6,6 +6,7 @@ import NPCFactory from '../../npcs/NPCFactory.js';
 import CollisionDebugger from '../../utils/CollisionDebugger.js';
 import { ElementManager } from '../../elements/index.js';
 import { getTextureKeyForTileset } from '../../constants/TilesetAssets.js';
+import { resolveMapPath } from '../../utils/AssetResolver.js';
 
 /**
  * BaseMapScene - Classe base para todas as cenas de mapa
@@ -25,8 +26,8 @@ export default class BaseMapScene extends Phaser.Scene {
   }
 
   preload() {
-    // Carregar mapa específico (sobrescrever em cada cena)
-    this.load.tilemapTiledJSON(this.mapKey, `./src/assets/${this.mapKey}.json`);
+    // Carregar mapa específico com path correto para Vite base config
+    this.load.tilemapTiledJSON(this.mapKey, resolveMapPath(`${this.mapKey}.json`));
     
     // Tilesets comuns já carregados no BootScene
   }

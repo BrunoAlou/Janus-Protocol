@@ -2,11 +2,13 @@
  * MapAssets - Configuração centralizada de assets de mapas
  * 
  * Uso:
- *   import { MAP_ASSETS, getMapAsset } from '../constants/MapAssets.js';
+ *   import { MAP_ASSETS, getMapAsset, getResolvedMapPath } from '../constants/MapAssets.js';
  *   const config = getMapAsset('ReceptionScene');
+ *   const url = getResolvedMapPath('ReceptionScene');
  */
 
 import { SCENE_NAMES } from './SceneNames.js';
+import { resolveMapPath } from '../utils/AssetResolver.js';
 
 // ============================================
 // CONFIGURAÇÃO DE MAPAS
@@ -150,6 +152,21 @@ export function getAvailableMapKeys() {
  */
 export function getMapPath(sceneKey) {
   return MAP_ASSETS[sceneKey]?.path || null;
+}
+
+/**
+ * Obtém o path resolvido (URL completa) do JSON de um mapa
+ * Funciona com Vite e GitHub Pages
+ * @param {string} sceneKey - Chave da cena
+ * @returns {string|null}
+ */
+export function getResolvedMapPath(sceneKey) {
+  const asset = MAP_ASSETS[sceneKey];
+  if (!asset) return null;
+  // Extract just the filename from the path
+  const match = asset.path.match(/\/([^/]+\.json)$/);
+  if (!match) return null;
+  return resolveMapPath(match[1]);
 }
 
 /**

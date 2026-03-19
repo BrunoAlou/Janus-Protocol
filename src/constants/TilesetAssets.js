@@ -49,7 +49,8 @@ export const TILESET_ASSETS = Object.freeze({
 export function preloadRegisteredTilesets(scene) {
   Object.values(TILESET_ASSETS).forEach(({ textureKey, fileName }) => {
     if (!scene.textures.exists(textureKey)) {
-      scene.load.image(textureKey, `/src/assets/${fileName}`);
+      // Use relative path that works with Vite's base config
+      scene.load.image(textureKey, new URL(`../assets/${fileName}`, import.meta.url).href);
     }
   });
 }

@@ -10,15 +10,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Carregar as imagens dos tilesets
-    this.load.image("1_generic_image", "/src/assets/1_Generic_32x32.png");
-    this.load.image("5_classroom_image", "/src/assets/5_Classroom_and_library_32x32.png");
-    this.load.image("generic_home_image", "/src/assets/Generic_Home_1_Layer_1_32x32.png");
-    this.load.image("condo_layer1_image", "/src/assets/Condominium_Design_2_layer_1_32x32.png");
-    this.load.image("condo_preview_image", "/src/assets/Condominium_Design_preview_32x32.png");
+    // Carregar as imagens dos tilesets - use relative paths for Vite base config
+    this.load.image("1_generic_image", new URL("../assets/1_Generic_32x32.png", import.meta.url).href);
+    this.load.image("5_classroom_image", new URL("../assets/5_Classroom_and_library_32x32.png", import.meta.url).href);
+    this.load.image("generic_home_image", new URL("../assets/Generic_Home_1_Layer_1_32x32.png", import.meta.url).href);
+    this.load.image("condo_layer1_image", new URL("../assets/Condominium_Design_2_layer_1_32x32.png", import.meta.url).href);
+    this.load.image("condo_preview_image", new URL("../assets/Condominium_Design_preview_32x32.png", import.meta.url).href);
     
     // Carregar o tilemap JSON da recepção
-    this.load.tilemapTiledJSON("reception", "/src/assets/reception.json");
+    this.load.tilemapTiledJSON("reception", new URL("../assets/reception.json", import.meta.url).href);
 
     // Carregar spritesheet do PLAYER
     loadPlayerAssets(this);

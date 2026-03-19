@@ -65,22 +65,22 @@ function createDirectionalAnimationSet(scene, baseName, textureKey, framesPerDir
 }
 
 export function loadBakerAssets(scene) {
-  scene.load.spritesheet(BAKER_TEXTURE_KEYS.idle, '/src/assets/baker/baker_idle.png', {
+  scene.load.spritesheet(BAKER_TEXTURE_KEYS.idle, new URL('../assets/baker/baker_idle.png', import.meta.url).href, {
     frameWidth: BAKER_FRAME_WIDTH,
     frameHeight: BAKER_FRAME_HEIGHT
   });
 
-  scene.load.spritesheet(BAKER_TEXTURE_KEYS.walk, '/src/assets/baker/baker_walk.png', {
+  scene.load.spritesheet(BAKER_TEXTURE_KEYS.walk, new URL('../assets/baker/baker_walk.png', import.meta.url).href, {
     frameWidth: BAKER_FRAME_WIDTH,
     frameHeight: BAKER_FRAME_HEIGHT
   });
 
-  scene.load.spritesheet(BAKER_TEXTURE_KEYS.read, '/src/assets/baker/baker_read.png', {
+  scene.load.spritesheet(BAKER_TEXTURE_KEYS.read, new URL('../assets/baker/baker_read.png', import.meta.url).href, {
     frameWidth: BAKER_FRAME_WIDTH,
     frameHeight: BAKER_FRAME_HEIGHT
   });
 
-  scene.load.spritesheet(BAKER_TEXTURE_KEYS.lift, '/src/assets/baker/baker_lift.png', {
+  scene.load.spritesheet(BAKER_TEXTURE_KEYS.lift, new URL('../assets/baker/baker_lift.png', import.meta.url).href, {
     frameWidth: BAKER_FRAME_WIDTH,
     frameHeight: BAKER_FRAME_HEIGHT
   });
