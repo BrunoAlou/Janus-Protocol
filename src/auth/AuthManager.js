@@ -3,6 +3,8 @@
  * Suporta LinkedIn e Google
  */
 
+import { getApiUrl } from '../config/apiConfig.js';
+
 export default class AuthManager {
   constructor() {
     this.user = null;
@@ -145,7 +147,7 @@ export default class AuthManager {
     // Aqui você deve trocar o code por um access_token no seu backend
     // NUNCA faça isso no frontend com client_secret
     try {
-      const response = await fetch('/api/auth/token', {
+      const response = await fetch(getApiUrl('/api/auth/token'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, provider: this.provider })

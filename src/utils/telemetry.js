@@ -2,9 +2,11 @@
 // Envia eventos para o backend em http://localhost:3000/api/events
 // Se o envio falhar, guarda no localStorage e tenta reenviar mais tarde.
 
+import { API_BASE_URL } from '../config/apiConfig.js';
+
 if (typeof window !== 'undefined' && window.console) console.log('telemetry module loaded');
 
-const BACKEND_URL = (typeof window !== 'undefined' && window.__BACKEND_URL__) ? window.__BACKEND_URL__ : 'http://localhost:3000';
+const BACKEND_URL = (typeof window !== 'undefined' && window.__BACKEND_URL__) ? window.__BACKEND_URL__ : API_BASE_URL || 'http://localhost:3000';
 const ANON_SALT = (typeof window !== 'undefined' && window.__ANON_SALT__) ? window.__ANON_SALT__ : 'janus-salt-please-change';
 
 function getSessionId() {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import { getApiUrl } from '../../config/apiConfig.js';
 
 /**
  * BaseMinigame - Classe base para todos os minigames
@@ -392,7 +393,7 @@ export default class BaseMinigame extends Phaser.Scene {
       };
 
       // Substituir com seu endpoint real
-      const response = await fetch('/api/telemetry/minigame', {
+      const response = await fetch(getApiUrl('/api/telemetry/minigame'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

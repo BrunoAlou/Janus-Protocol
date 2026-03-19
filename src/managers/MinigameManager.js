@@ -10,6 +10,7 @@
  */
 
 import minigamesConfig from '../data/config/minigames-config.json';
+import { getApiUrl } from '../config/apiConfig.js';
 
 export default class MinigameManager {
   constructor() {
@@ -497,7 +498,7 @@ export default class MinigameManager {
    */
   async _loadPublicAverages() {
     try {
-      const response = await fetch('/api/minigames/public-averages');
+      const response = await fetch(getApiUrl('/api/minigames/public-averages'));
       if (response.ok) {
         this.publicAverages = await response.json();
         console.log('[MinigameManager] Loaded public averages');
