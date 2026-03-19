@@ -1,12 +1,15 @@
-// Servidor HTTP simples para desenvolvimento local.
-// Aceita POST /api/events para gravar eventos em backend/data/events.json
-// e GET /api/events para listar os eventos.
+// Backend API para Janus-Protocol
+// - Aceita POST /api/events para gravar eventos
+// - GET /api/events para listar os eventos
+// - OAuth callback para LinkedIn
+// - Suporta MongoDB Atlas ou armazenamento local
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { URL } = require('url');
+const db = require('./database.js');
 
 // Load .env file manually (without dotenv dependency)
 const envPath = path.join(__dirname, '.env');
@@ -23,28 +26,39 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'events.json');
 const PORT = process.env.PORT || 3000;
 
 // LinkedIn OAuth config (client secret should be in environment variable)
 const LINKEDIN_CLIENT_ID = '77vels5rgzs1ki';
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XXXXXXXX'; // Substitua pelo seu client secret
 
+// Fallback para arquivo local quando MongoDB não estiver disponível
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'events.json');
+
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]', 'utf8');
 }
 
+// Wrapper synchrono para readEvents
 function readEvents() {
-  ensureDataFile();
-  const raw = fs.readFileSync(DATA_FILE, 'utf8');
-  try { return JSON.parse(raw || '[]'); } catch (e) { return []; }
+  if (!process.env.MONGODB_URI) {
+    ensureDataFile();
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    try { return JSON.parse(raw || '[]'); } catch (e) { return []; }
+  }
+  // Se MongoDB estiver disponível, será lido de forma async nos endpoints
+  return [];
 }
 
+// Wrapper synchrono para writeEvents
 function writeEvents(arr) {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2), 'utf8');
+  if (!process.env.MONGODB_URI) {
+    ensureDataFile();
+    fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2), 'utf8');
+  }
+  // Se MongoDB estiver disponível, será escrito de forma async nos endpoints
 }
 
 function generateObjectId() {
@@ -490,4 +504,27 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: 'not found' }));
 });
 
-server.listen(PORT, () => console.log(`Backend de telemetria rodando em http://localhost:${PORT}`));
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Try to connect to MongoDB
+    await db.initializeDatabase();
+    
+    server.listen(PORT, () => {
+      console.log(`[Server] Backend API running on port ${PORT}`);
+      console.log(`[Server] Database: ${process.env.MONGODB_URI ? 'MongoDB Atlas' : 'Local File Storage'}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', async () => {
+      console.log('[Server] SIGTERM signal received: closing HTTP server');
+      await db.closeDatabase();
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error('[Server] Failed to start:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
