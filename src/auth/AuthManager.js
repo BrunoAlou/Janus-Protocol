@@ -9,21 +9,47 @@ export default class AuthManager {
     this.token = null;
     this.provider = null; // 'linkedin' | 'google'
     
+    // Build correct redirect URI based on current location
+    const redirectUri = this.buildRedirectUri();
+    
     // Configurações OAuth (substitua com suas credenciais)
     this.config = {
       linkedin: {
         clientId: '77vels5rgzs1ki',
-        redirectUri: window.location.origin + '/auth/callback',
+        redirectUri: redirectUri,
         scope: 'openid profile email',
         authUrl: 'https://www.linkedin.com/oauth/v2/authorization'
       },
       google: {
         clientId: 'SEU_GOOGLE_CLIENT_ID',
-        redirectUri: window.location.origin + '/auth/callback',
+        redirectUri: redirectUri,
         scope: 'profile email',
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
       }
     };
+  }
+
+  /**
+   * Build redirect URI based on current location
+   * For GitHub Pages, include the project path (e.g., /Janus-Protocol)
+   */
+  buildRedirectUri() {
+    const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    
+    // If on GitHub Pages, extract project name from pathname
+    if (origin.includes('github.io')) {
+      // pathname will be something like "/Janus-Protocol/..." or "/Janus-Protocol"
+      const pathMatch = pathname.match(/^\/([^\/]+)\//);
+      if (pathMatch) {
+        const projectName = pathMatch[1];
+        return `${origin}/${projectName}/auth/callback`;
+      }
+      return `${origin}/auth/callback`;
+    }
+    
+    // For other domains (localhost, custom domain), just use origin
+    return `${origin}/auth/callback`;
   }
 
   /**

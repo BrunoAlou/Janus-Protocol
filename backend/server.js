@@ -238,8 +238,20 @@ const server = http.createServer((req, res) => {
         if (provider === 'linkedin' || !provider) {
           // Determine redirect_uri based on referer or use default
           const referer = req.headers.referer || req.headers.origin || 'http://localhost:5173';
-          const origin = new URL(referer).origin;
-          const redirectUri = origin + '/auth/callback';
+          const refererUrl = new URL(referer);
+          const origin = refererUrl.origin;
+          
+          // For GitHub Pages, include the /Janus-Protocol path
+          let redirectUri = origin + '/auth/callback';
+          if (origin.includes('github.io') && !refererUrl.pathname.includes('/Janus-Protocol')) {
+            redirectUri = origin + '/Janus-Protocol/auth/callback';
+          } else if (origin.includes('github.io')) {
+            // Extract the project path from referer
+            const pathMatch = refererUrl.pathname.match(/\/([^\/]+)\//);
+            if (pathMatch) {
+              redirectUri = origin + '/' + pathMatch[1] + '/auth/callback';
+            }
+          }
 
           // Exchange code for access token
           const tokenParams = new URLSearchParams({
