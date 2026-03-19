@@ -28,13 +28,19 @@ if (fs.existsSync(envPath)) {
 
 const PORT = process.env.PORT || 3000;
 
+function sanitizeEnvValue(value) {
+  if (!value) return '';
+  // Railway/GitHub UI copy-paste sometimes includes surrounding quotes/spaces.
+  return String(value).trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+}
+
 // LinkedIn OAuth config (client secret should be in environment variable)
 const LINKEDIN_CLIENT_ID = '77vels5rgzs1ki';
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XXXXXXXX'; // Substitua pelo seu client secret
 
 // Google OAuth config (NEVER commit CLIENT_SECRET - use environment variables only)
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'your-client-id.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''; // ⚠️ NUNCA faça commit disso!
+const GOOGLE_CLIENT_ID = sanitizeEnvValue(process.env.GOOGLE_CLIENT_ID) || 'your-client-id.apps.googleusercontent.com';
+const GOOGLE_CLIENT_SECRET = sanitizeEnvValue(process.env.GOOGLE_CLIENT_SECRET); // ⚠️ NUNCA faça commit disso!
 
 // Fallback para arquivo local quando MongoDB não estiver disponível
 const DATA_DIR = path.join(__dirname, 'data');
@@ -631,6 +637,11 @@ async function startServer() {
     server.listen(PORT, () => {
       console.log(`[Server] Backend API running on port ${PORT}`);
       console.log(`[Server] Database: ${process.env.MONGODB_URI ? 'MongoDB Atlas' : 'Local File Storage'}`);
+      console.log('[Server] Google OAuth configured:', {
+        hasClientId: Boolean(GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('your-client-id')),
+        hasClientSecret: Boolean(GOOGLE_CLIENT_SECRET),
+        clientIdLooksValid: GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')
+      });
     });
 
     // Graceful shutdown
