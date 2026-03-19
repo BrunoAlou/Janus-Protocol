@@ -20,6 +20,44 @@ const ELEMENT_CONFIGS = import.meta.glob('../data/elements/*.json', {
   import: 'default'
 });
 
+const ELEMENT_CONFIG_URLS = import.meta.glob('../data/elements/*.json', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+});
+
+function normalizeMapId(value) {
+  return String(value || '')
+    .replace(/\.json$/i, '')
+    .replace(/[_\s]+/g, '-')
+    .toLowerCase();
+}
+
+function resolveBundledElementConfig(mapId) {
+  const raw = String(mapId || '');
+  const fileName = raw.endsWith('.json') ? raw : `${raw}.json`;
+  const exactKey = `../data/elements/${fileName}`;
+
+  if (ELEMENT_CONFIGS[exactKey]) {
+    return { data: ELEMENT_CONFIGS[exactKey], url: ELEMENT_CONFIG_URLS[exactKey] || null };
+  }
+
+  const wanted = normalizeMapId(fileName);
+  const matchedKey = Object.keys(ELEMENT_CONFIGS).find((key) => {
+    const assetFile = key.split('/').pop() || '';
+    return normalizeMapId(assetFile) === wanted;
+  });
+
+  if (!matchedKey) {
+    return { data: null, url: null };
+  }
+
+  return {
+    data: ELEMENT_CONFIGS[matchedKey],
+    url: ELEMENT_CONFIG_URLS[matchedKey] || null
+  };
+}
+
 export default class ElementManager {
   /**
    * @param {Phaser.Scene} scene - Cena do Phaser
@@ -245,12 +283,17 @@ export default class ElementManager {
         console.log('[ElementManager] Not in cache, loading bundled config...');
 
         // Primeiro tenta via import.meta.glob (compatível com Vite build/base path)
-        const bundledPath = `../data/elements/${mapId}.json`;
-        data = ELEMENT_CONFIGS[bundledPath];
+        const bundled = resolveBundledElementConfig(mapId);
+        data = bundled.data;
 
         // Fallback para fetch relativo em cenários fora do fluxo do Vite
         if (!data) {
-          const response = await fetch(new URL(`../data/elements/${mapId}.json`, import.meta.url));
+          if (!bundled.url) {
+            console.warn(`[ElementManager] No bundled elements file for map: ${mapId}`);
+            return [];
+          }
+
+          const response = await fetch(bundled.url);
           console.log(`[ElementManager] Fallback fetch response status: ${response.status}`);
 
           if (!response.ok) {

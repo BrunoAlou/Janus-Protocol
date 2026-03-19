@@ -88,24 +88,14 @@ function buildPublicAverages(records) {
   return result;
 }
 
-// Wrapper synchrono para readEvents
-function readEvents() {
-  if (!process.env.MONGODB_URI) {
-    ensureDataFile();
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    try { return JSON.parse(raw || '[]'); } catch (e) { return []; }
-  }
-  // Se MongoDB estiver disponível, será lido de forma async nos endpoints
-  return [];
+// Wrapper assíncrono para readEvents, sempre usando o módulo de banco.
+async function readEvents() {
+  return db.readEvents();
 }
 
-// Wrapper synchrono para writeEvents
-function writeEvents(arr) {
-  if (!process.env.MONGODB_URI) {
-    ensureDataFile();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2), 'utf8');
-  }
-  // Se MongoDB estiver disponível, será escrito de forma async nos endpoints
+// Wrapper assíncrono para writeEvents, sempre usando o módulo de banco.
+async function writeEvents(arr) {
+  await db.writeEvents(arr);
 }
 
 function generateObjectId() {
@@ -156,7 +146,7 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/api/events') {
     let body = '';
     req.on('data', chunk => body += chunk);
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const obj = JSON.parse(body || '{}');
         // enrich and normalize basic fields (client should provide _id/insertedAt/hash)
@@ -171,7 +161,7 @@ const server = http.createServer((req, res) => {
         }
         if (!obj.type_event && obj.event_type && allowed.includes(obj.event_type)) obj.type_event = obj.event_type;
 
-        const events = readEvents();
+        const events = await readEvents();
         const lastHash = getLastHashForSession(obj.session_id, events);
 
         // If client provided prev_hash, validate it against last known hash for session
@@ -197,7 +187,7 @@ const server = http.createServer((req, res) => {
         obj.hash = recomputed;
 
         events.push(obj);
-        writeEvents(events);
+        await writeEvents(events);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, insertedId: obj._id, hash: obj.hash, last_hash: lastHash }));
       } catch (e) {
@@ -212,11 +202,11 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/api/events/batch') {
     let body = '';
     req.on('data', chunk => body += chunk);
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const arr = JSON.parse(body || '[]');
         if (!Array.isArray(arr)) throw new Error('expected array');
-        const events = readEvents();
+        const events = await readEvents();
         const failures = [];
         for (const obj of arr) {
           if (!obj._id) obj._id = generateObjectId();
@@ -236,7 +226,7 @@ const server = http.createServer((req, res) => {
           obj.hash = recomputed;
           events.push(obj);
         }
-        writeEvents(events);
+        await writeEvents(events);
         if (failures.length) {
           res.writeHead(207, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, failures }));
@@ -254,24 +244,33 @@ const server = http.createServer((req, res) => {
 
   // GET last_hash by session
   if (req.method === 'GET' && req.url.startsWith('/api/last_hash')) {
-    try {
-      const parsed = new URL(req.url, `http://localhost:${PORT}`);
-      const session_id = parsed.searchParams.get('session_id');
-      const events = readEvents();
-      const lastHash = getLastHashForSession(session_id, events);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, last_hash: lastHash }));
-    } catch (e) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: e.message }));
-    }
+    (async () => {
+      try {
+        const parsed = new URL(req.url, `http://localhost:${PORT}`);
+        const session_id = parsed.searchParams.get('session_id');
+        const events = await readEvents();
+        const lastHash = getLastHashForSession(session_id, events);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, last_hash: lastHash }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    })();
     return;
   }
 
   if (req.method === 'GET' && req.url === '/api/events') {
-    const events = readEvents();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(events));
+    (async () => {
+      try {
+        const events = await readEvents();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(events));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    })();
     return;
   }
 
