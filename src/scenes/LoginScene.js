@@ -9,6 +9,7 @@ export default class LoginScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENE_NAMES.LOGIN, active: true }); // Primeira cena, inicia automaticamente
     this.authManager = new AuthManager();
+    window.authManager = this.authManager;
   }
 
   create() {
@@ -141,9 +142,23 @@ export default class LoginScene extends Phaser.Scene {
     console.log('[LoginScene] User authenticated:', this.authManager.getUser());
     
     const user = this.authManager.getUser();
+    const provider = this.authManager.provider || user?.provider || null;
+
+    if (window.gameState) {
+      window.gameState.setUser(user, provider);
+      window.gameState.loadProgressForUser(user, provider);
+    }
+
+    const lastLocation = window.gameState?.getPlayerLastLocation?.();
+    const hasValidLastScene = !!lastLocation?.scene && !!window.sceneManager?.mapConfig?.[lastLocation.scene];
+    const initialScene = hasValidLastScene ? lastLocation.scene : SCENE_NAMES.RECEPTION;
+    const initialData = {
+      user,
+      spawnPoint: lastLocation?.spawnPoint || 'default'
+    };
     
     // Usar SceneManager para iniciar gameplay
-    window.sceneManager.startGameplay(SCENE_NAMES.RECEPTION, { user });
+    window.sceneManager.startGameplay(initialScene, initialData);
     
     console.log('[LoginScene] Gameplay started via SceneManager');
   }

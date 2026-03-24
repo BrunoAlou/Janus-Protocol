@@ -41,6 +41,8 @@ export default class ReceptionScene extends BaseMapScene {
     createSitGuyAnimations(this);
 
     super.create(); // Chama o create da BaseMapScene
+
+    this.registerStoryEvents();
     
     // Fade in da câmera
     this.cameras.main.fadeIn(500, 0, 0, 0);
@@ -57,6 +59,26 @@ export default class ReceptionScene extends BaseMapScene {
     }
     
     console.log('[ReceptionScene] Reception loaded, spawn:', this.spawnPoint);
+  }
+
+  registerStoryEvents() {
+    this.events.on('meet-it-team', () => {
+      if (window.gameState?.setFlag) {
+        window.gameState.setFlag('met_it_team', true);
+        window.gameState.setFlag('reception_ti_door_unlocked', true);
+      }
+
+      const dialogScene = this.scene.get('DialogScene');
+      if (dialogScene && this.scene.isActive('DialogScene')) {
+        dialogScene.showDialog({
+          name: 'Recepcionista',
+          dialogues: [
+            { text: 'Perfeito! Ja registrei sua visita para conhecer a equipe de TI.' },
+            { text: 'A porta da esquerda foi liberada. Pode seguir.' }
+          ]
+        });
+      }
+    });
   }
 
   update() {
@@ -76,17 +98,40 @@ export default class ReceptionScene extends BaseMapScene {
   setupDoorTransitions() {
     this.doorZones = [
       new DoorZone(this, {
+        x: 624,
+        y: 240,
+        width: 16,
+        height: 64,
+        label: 'ENTRADA ELEVADOR',
+        indicatorColor: 0xff7777,
+        indicatorTextColor: '#ffcccc',
+        indicatorOffsetX: -14,
+        locked: true,
+        lockedMessage: 'A entrada do elevador ainda nao esta disponivel para voce.',
+        onInteract: () => {},
+        proximityDistance: 50
+      }),
+      new DoorZone(this, {
         x: 16, y: 240, width: 16, height: 64,
         label: 'SALA TI',
         indicatorColor: 0x00ffff,
         indicatorTextColor: '#00ffff',
         labelBg: '#000066',
         indicatorOffsetX: 14,
+        locked: true,
+        lockedCondition: () => {
+          const unlocked =
+            window.gameState?.getFlag?.('reception_ti_door_unlocked') === true ||
+            window.gameState?.getFlag?.('met_it_team') === true;
+          return !unlocked;
+        },
+        lockedMessageResolver: () =>
+          'A porta da TI esta bloqueada. Fale com a recepcionista e selecione "Conhecer equipe de TI".',
         onInteract: () => this.transitionToItRoom(),
         proximityDistance: 50
       })
     ];
-    console.log('[ReceptionScene] Door transitions: IT Room (16,240)');
+    console.log('[ReceptionScene] Door transitions: Elevator (locked), IT Room (conditional)');
   }
 
   transitionToItRoom() {

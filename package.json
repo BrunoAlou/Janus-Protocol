@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --mode local",
+    "build:prod": "vite build --mode production",
     "preview": "vite preview",
     "start": "node backend/server.js",
     "optimize:assets": "node scripts/optimize-assets.js --json --images --write",

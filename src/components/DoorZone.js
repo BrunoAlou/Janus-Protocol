@@ -13,6 +13,10 @@ export default class DoorZone {
     this.visible = config.visible !== false;
     this.locked = config.locked === true;
     this.lockedMessage = config.lockedMessage || 'Esta porta esta trancada.';
+    this.lockedCondition = typeof config.lockedCondition === 'function' ? config.lockedCondition : null;
+    this.lockedMessageResolver = typeof config.lockedMessageResolver === 'function'
+      ? config.lockedMessageResolver
+      : null;
 
     this.zone = scene.add.zone(config.x, config.y, config.width, config.height).setOrigin(0.5);
     scene.physics.world.enable(this.zone);
@@ -52,12 +56,26 @@ export default class DoorZone {
     }
   }
 
+  isLocked() {
+    if (this.lockedCondition) {
+      return this.lockedCondition() === true;
+    }
+    return this.locked;
+  }
+
+  getLockedMessage() {
+    if (this.lockedMessageResolver) {
+      return this.lockedMessageResolver() || this.lockedMessage;
+    }
+    return this.lockedMessage;
+  }
+
   showLockedFeedback() {
     const dialogScene = this.scene.scene.get('DialogScene');
     if (dialogScene && typeof dialogScene.showDialog === 'function') {
       dialogScene.showDialog({
         name: this.label,
-        dialogues: [{ text: this.lockedMessage, emotion: 'neutral' }]
+        dialogues: [{ text: this.getLockedMessage(), emotion: 'neutral' }]
       });
     }
   }
@@ -86,7 +104,7 @@ export default class DoorZone {
         });
       }
       if (Phaser.Input.Keyboard.JustDown(input.keyboard.addKey('E'))) {
-        if (this.locked) {
+        if (this.isLocked()) {
           this.showLockedFeedback();
           return;
         }

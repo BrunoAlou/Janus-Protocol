@@ -3,6 +3,7 @@ import Phaser from "phaser";
 // Gerenciadores
 import SceneManager from "./managers/SceneManager.js";
 import MinigameManager from "./managers/MinigameManager.js";
+import { GameStateManager } from './state/index.js';
 
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
@@ -95,6 +96,9 @@ const game = new Phaser.Game(config);
 
 // Inicializar MinigameManager global
 window.minigameManager = new MinigameManager();
+
+// Estado global do jogo (flags, quests, progresso em memória)
+window.gameState = new GameStateManager();
 
 // Inicializar SceneManager global
 window.sceneManager = new SceneManager(game);

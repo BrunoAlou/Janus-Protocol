@@ -71,6 +71,9 @@ export default class GameStateManager {
     
     /** @type {boolean} */
     this._debug = false;
+
+    /** @type {string|null} */
+    this._progressUserKey = null;
   }
   
   // ============================================
@@ -230,6 +233,8 @@ export default class GameStateManager {
         provider
       }
     });
+
+    this._progressUserKey = this._resolveUserProgressKey(user, provider);
     
     this._emit('auth-changed', this._state.auth);
   }
@@ -245,6 +250,8 @@ export default class GameStateManager {
         provider: null
       }
     });
+
+    this._progressUserKey = null;
     
     this._emit('auth-changed', this._state.auth);
   }
@@ -320,6 +327,257 @@ export default class GameStateManager {
     });
     
     this._emit('settings-changed', this._state.settings);
+  }
+
+  // ============================================
+  // PLAYER PROGRESS / FLAGS
+  // ============================================
+
+  /**
+   * Define um flag global do jogador
+   * @param {string} id
+   * @param {any} value
+   */
+  setFlag(id, value = true) {
+    if (!id) return;
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        flags: {
+          ...(this._state.player.flags || {}),
+          [id]: value
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Obtém um flag global do jogador
+   * @param {string} id
+   * @returns {any}
+   */
+  getFlag(id) {
+    return this._state.player.flags?.[id];
+  }
+
+  /**
+   * Define status de quest
+   * @param {string} questId
+   * @param {string} status
+   */
+  setQuestStatus(questId, status = 'started') {
+    if (!questId) return;
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        quests: {
+          ...(this._state.player.quests || {}),
+          [questId]: status
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Obtém status de quest
+   * @param {string} questId
+   * @returns {string|null}
+   */
+  getQuestStatus(questId) {
+    return this._state.player.quests?.[questId] ?? null;
+  }
+
+  /**
+   * Adiciona item ao inventário
+   * @param {string} itemId
+   * @param {number} quantity
+   */
+  addItem(itemId, quantity = 1) {
+    if (!itemId) return;
+
+    const current = Number(this._state.player.inventory?.[itemId] || 0);
+    const next = Math.max(0, current + Number(quantity || 0));
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        inventory: {
+          ...(this._state.player.inventory || {}),
+          [itemId]: next
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Remove item do inventário
+   * @param {string} itemId
+   * @param {number} quantity
+   */
+  removeItem(itemId, quantity = 1) {
+    this.addItem(itemId, -Math.abs(Number(quantity || 1)));
+  }
+
+  /**
+   * Verifica se possui item
+   * @param {string} itemId
+   * @returns {boolean}
+   */
+  hasItem(itemId) {
+    return this.getItemCount(itemId) > 0;
+  }
+
+  /**
+   * Obtém quantidade de item
+   * @param {string} itemId
+   * @returns {number}
+   */
+  getItemCount(itemId) {
+    return Number(this._state.player.inventory?.[itemId] || 0);
+  }
+
+  /**
+   * Define stat do jogador
+   * @param {string} id
+   * @param {number} value
+   */
+  setStat(id, value) {
+    if (!id) return;
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        stats: {
+          ...(this._state.player.stats || {}),
+          [id]: value
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Obtém stat do jogador
+   * @param {string} id
+   * @returns {number}
+   */
+  getStat(id) {
+    return Number(this._state.player.stats?.[id] || 0);
+  }
+
+  /**
+   * Atualiza última localização do jogador
+   * @param {string} scene
+   * @param {string} [spawnPoint='default']
+   */
+  setPlayerLastLocation(scene, spawnPoint = 'default') {
+    if (!scene) return;
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        lastLocation: {
+          scene,
+          spawnPoint,
+          timestamp: Date.now()
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Obtém última localização do jogador
+   * @returns {{scene:string,spawnPoint:string,timestamp:number}|null}
+   */
+  getPlayerLastLocation() {
+    return this._state.player.lastLocation || null;
+  }
+
+  /**
+   * Persiste progresso por usuário
+   */
+  saveProgress() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    const storageKey = this._getProgressStorageKey();
+    if (!storageKey) {
+      return;
+    }
+
+    const payload = {
+      version: 1,
+      savedAt: Date.now(),
+      player: this._deepClone(this._state.player)
+    };
+
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(payload));
+    } catch (error) {
+      console.warn('[GameStateManager] Falha ao salvar progresso:', error?.message || error);
+    }
+  }
+
+  /**
+   * Carrega progresso por usuário
+   * @param {Object|null} user
+   * @param {string|null} provider
+   * @returns {boolean}
+   */
+  loadProgressForUser(user = null, provider = null) {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return false;
+    }
+
+    const resolvedUser = user || this._state.auth.user;
+    const resolvedProvider = provider || this._state.auth.provider;
+    this._progressUserKey = this._resolveUserProgressKey(resolvedUser, resolvedProvider);
+
+    const storageKey = this._getProgressStorageKey();
+    if (!storageKey) {
+      return false;
+    }
+
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) {
+      return false;
+    }
+
+    try {
+      const payload = JSON.parse(raw);
+      if (!payload || typeof payload !== 'object') {
+        return false;
+      }
+
+      const playerProgress = payload.player || {};
+      this.setState({
+        player: {
+          ...this._state.player,
+          ...playerProgress,
+          flags: { ...(playerProgress.flags || {}) },
+          inventory: { ...(playerProgress.inventory || {}) },
+          quests: { ...(playerProgress.quests || {}) },
+          stats: { ...(playerProgress.stats || {}) }
+        }
+      });
+
+      return true;
+    } catch (error) {
+      console.warn('[GameStateManager] Falha ao carregar progresso:', error?.message || error);
+      return false;
+    }
   }
   
   // ============================================
@@ -500,8 +758,11 @@ export default class GameStateManager {
       },
       player: {
         position: { x: 0, y: 0 },
-        inventory: [],
-        quests: []
+        inventory: {},
+        quests: {},
+        stats: {},
+        flags: {},
+        lastLocation: null
       }
     };
     
@@ -550,6 +811,37 @@ export default class GameStateManager {
     } catch (e) {
       console.error('[GameStateManager] Erro ao importar estado:', e);
     }
+  }
+
+  /**
+   * @private
+   */
+  _resolveUserProgressKey(user, provider = null) {
+    if (!user) {
+      return null;
+    }
+
+    const candidate =
+      user.id ||
+      user.sub ||
+      user.email ||
+      user.username ||
+      user.name;
+
+    if (!candidate) {
+      return null;
+    }
+
+    const normalized = String(candidate).toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
+    const providerPrefix = provider || user.provider || 'local';
+    return `${providerPrefix}:${normalized}`;
+  }
+
+  /**
+   * @private
+   */
+  _getProgressStorageKey() {
+    return this._progressUserKey ? `janus_progress_${this._progressUserKey}` : null;
   }
   
   /**

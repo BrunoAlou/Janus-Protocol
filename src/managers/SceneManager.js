@@ -174,6 +174,10 @@ export default class SceneManager {
     console.log(`[SceneManager] Starting: ${initialMapScene}`);
     this.game.scene.start(initialMapScene, sceneData);
     this.currentState.map = initialMapScene;
+
+    if (window.gameState?.setPlayerLastLocation) {
+      window.gameState.setPlayerLastLocation(initialMapScene, userData?.spawnPoint || 'default');
+    }
     
     // 2. Cenas de sistema - lançar após a cena de mapa iniciar
     // Usar evento 'create' da cena ou setTimeout como fallback
@@ -249,6 +253,10 @@ export default class SceneManager {
     console.log(`[SceneManager] Iniciando novo mapa: ${mapSceneKey}`);
     this.game.scene.run(mapSceneKey, sceneData);
     this.currentState.map = mapSceneKey;
+
+    if (window.gameState?.setPlayerLastLocation) {
+      window.gameState.setPlayerLastLocation(mapSceneKey, data?.spawnPoint || 'default');
+    }
     
     // Garantir que cenas de sistema estão ativas
     this.ensureSystemScenesActive();
