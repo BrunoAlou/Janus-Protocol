@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --mode local",
+    "build": "vite build --mode devbuild",
     "build:prod": "vite build --mode production",
     "preview": "vite preview",
     "start": "node backend/server.js",
