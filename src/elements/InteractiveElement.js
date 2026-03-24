@@ -702,6 +702,7 @@ export default class InteractiveElement {
     this._trackInteraction('option_selected', {
       optionId: option?.id || null,
       optionLabel: option?.label || null,
+      optionAxis: option?.axis || option?.action?.data?.axis || null,
       optionDisabled: !!option?.disabled
     });
     
@@ -795,6 +796,17 @@ export default class InteractiveElement {
   _executeMinigameAction(action) {
     // Iniciar minigame
     const minigameKey = action.target;
+
+    // Garantir unlock usando a mesma estrutura de flags globais
+    if (window.minigameManager?.unlock) {
+      window.minigameManager.unlock(minigameKey, {
+        source: 'interactive-element',
+        elementId: this.id,
+        scene: this.scene?.scene?.key || null
+      });
+      window.minigameManager.syncWithGameState?.();
+    }
+
     const minigameData = {
       ...action.data,
       returnScene: this.scene.scene.key,

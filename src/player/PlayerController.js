@@ -45,10 +45,15 @@ export default class PlayerController {
       this.wasd.left.isDown || this.wasd.right.isDown || this.wasd.up.isDown || this.wasd.down.isDown;
   }
 
+  isBlockedByDialog() {
+    const dialogScene = this.scene?.scene?.get?.('DialogScene');
+    return dialogScene?.isDialogOpen?.() === true;
+  }
+
   update() {
     if (!this.player || !this.player.body) return;
 
-    if (!this.enabled) {
+    if (!this.enabled || this.isBlockedByDialog()) {
       this.player.body.setVelocity(0, 0);
       this.commandController.execute({ action: 'idle' });
       return;

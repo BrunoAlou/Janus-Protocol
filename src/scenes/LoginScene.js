@@ -150,11 +150,25 @@ export default class LoginScene extends Phaser.Scene {
     }
 
     const lastLocation = window.gameState?.getPlayerLastLocation?.();
+    const lastPosition = window.gameState?.getPlayerPosition?.();
     const hasValidLastScene = !!lastLocation?.scene && !!window.sceneManager?.mapConfig?.[lastLocation.scene];
     const initialScene = hasValidLastScene ? lastLocation.scene : SCENE_NAMES.RECEPTION;
+    const hasValidPositionForScene =
+      !!lastPosition &&
+      lastPosition.scene === initialScene &&
+      Number.isFinite(Number(lastPosition.x)) &&
+      Number.isFinite(Number(lastPosition.y));
+
     const initialData = {
       user,
-      spawnPoint: lastLocation?.spawnPoint || 'default'
+      spawnPoint: lastLocation?.spawnPoint || 'default',
+      playerPosition: hasValidPositionForScene
+        ? {
+            x: Number(lastPosition.x),
+            y: Number(lastPosition.y),
+            scene: lastPosition.scene
+          }
+        : null
     };
     
     // Usar SceneManager para iniciar gameplay

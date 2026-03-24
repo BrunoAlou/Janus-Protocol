@@ -81,6 +81,15 @@ export default class DoorZone {
   }
 
   update(player, input, tweens) {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      this.indicator?.setAlpha(0);
+      if (this.isTweening) {
+        tweens.killTweensOf(this.indicator);
+        this.isTweening = false;
+      }
+      return;
+    }
+
     if (!this.visible || !this.zone?.body?.enable) {
       this.indicator?.setVisible(false);
       return;

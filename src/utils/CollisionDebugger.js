@@ -29,6 +29,23 @@ export default class CollisionDebugger {
     this.doorZones = [];
     this.doorZonesGraphics = null;
     this.doorZoneTextLabels = {};
+
+    // Menu de flags no estilo do menu de minigames
+    this.flagsMenu = null;
+    this.flagsListText = null;
+    this.flagsClearButton = null;
+    this.flagsClearButtonBg = null;
+    this.flagsEmptyText = null;
+    this.flagsMenuScene = null;
+    this.flagItemRows = [];
+    this._lastFlagsSignature = null;
+    this.flagsPageIndex = 0;
+    this.flagsPageSize = 9;
+    this.flagsPrevPageBg = null;
+    this.flagsNextPageBg = null;
+    this.flagsPrevPageText = null;
+    this.flagsNextPageText = null;
+    this.flagsPageInfoText = null;
     
     // Cores para cada camada de colisão
     this.layerColors = {
@@ -44,6 +61,7 @@ export default class CollisionDebugger {
     this.createLayerCollisionVisualization();
     this.createPositionDebugUI();
     this.createDoorZonesVisualization();
+    this.createFlagsDebugUI();
     console.log('[CollisionDebugger] Initialized with hitbox, layer collision, door zones and position debug');
   }
 
@@ -494,6 +512,368 @@ export default class CollisionDebugger {
   }
 
   /**
+   * Cria painel visual de flags do jogo no modo debug
+   */
+  createFlagsDebugUI() {
+    this.flagsMenuScene = this.scene.scene.get('UIScene') || this.scene;
+
+    const previousOwner = this.flagsMenuScene.__flagsMenuOwner;
+    if (previousOwner && previousOwner !== this && typeof previousOwner.destroyFlagsDebugUI === 'function') {
+      previousOwner.destroyFlagsDebugUI();
+    }
+
+    this.flagsMenu = this.flagsMenuScene.add.container(20, 70);
+    this.flagsMenu.setDepth(10050);
+    this.flagsMenu.setScrollFactor(0);
+    this.flagsMenu.setVisible(false);
+
+    const menuBg = this.flagsMenuScene.add.rectangle(0, 0, 300, 360, 0x1a1a2e, 0.96)
+      .setOrigin(0, 0)
+      .setStrokeStyle(3, 0x00d9ff)
+      .setScrollFactor(0);
+
+    const title = this.flagsMenuScene.add.text(150, 18, 'DEBUG FLAGS', {
+      fontSize: '22px',
+      color: '#00d9ff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+
+    const line = this.flagsMenuScene.add.graphics().setScrollFactor(0);
+    line.lineStyle(2, 0x3a3a4e);
+    line.lineBetween(20, 52, 280, 52);
+
+    this.flagsListText = this.flagsMenuScene.add.text(20, 64, '', {
+      fontSize: '13px',
+      color: '#cfefff',
+      fontFamily: 'monospace',
+      lineSpacing: 3
+    }).setScrollFactor(0);
+
+    this.flagsPrevPageBg = this.flagsMenuScene.add.rectangle(210, 70, 24, 20, 0x2a2a3e)
+      .setStrokeStyle(1, 0x5b6e89)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    this.flagsPrevPageText = this.flagsMenuScene.add.text(210, 70, '<', {
+      fontSize: '14px',
+      color: '#cfefff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.flagsNextPageBg = this.flagsMenuScene.add.rectangle(280, 70, 24, 20, 0x2a2a3e)
+      .setStrokeStyle(1, 0x5b6e89)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    this.flagsNextPageText = this.flagsMenuScene.add.text(280, 70, '>', {
+      fontSize: '14px',
+      color: '#cfefff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.flagsPageInfoText = this.flagsMenuScene.add.text(245, 70, '1/1', {
+      fontSize: '11px',
+      color: '#9cc4ff',
+      fontFamily: 'monospace'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    const prevPage = () => {
+      if (!this.enabled || this.flagsPageIndex <= 0) return;
+      this.flagsPageIndex -= 1;
+      this._lastFlagsSignature = null;
+      this.updateFlagsDebugUI();
+    };
+
+    const nextPage = () => {
+      if (!this.enabled) return;
+      this.flagsPageIndex += 1;
+      this._lastFlagsSignature = null;
+      this.updateFlagsDebugUI();
+    };
+
+    this.flagsPrevPageBg.on('pointerdown', prevPage);
+    this.flagsNextPageBg.on('pointerdown', nextPage);
+
+    this.flagsPrevPageBg.on('pointerover', () => this.flagsPrevPageBg?.setFillStyle(0x3a3a4e));
+    this.flagsPrevPageBg.on('pointerout', () => this.flagsPrevPageBg?.setFillStyle(0x2a2a3e));
+    this.flagsNextPageBg.on('pointerover', () => this.flagsNextPageBg?.setFillStyle(0x3a3a4e));
+    this.flagsNextPageBg.on('pointerout', () => this.flagsNextPageBg?.setFillStyle(0x2a2a3e));
+
+    this.flagsEmptyText = this.flagsMenuScene.add.text(150, 180, 'Nenhuma flag ativa', {
+      fontSize: '16px',
+      color: '#888888',
+      align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.flagsClearButtonBg = this.flagsMenuScene.add.rectangle(150, 322, 210, 34, 0x2a2a3e)
+      .setScrollFactor(0)
+      .setStrokeStyle(2, 0xff6666)
+      .setInteractive({ useHandCursor: true });
+
+    this.flagsClearButton = this.flagsMenuScene.add.text(150, 322, 'CLEAR ALL TAGS', {
+      fontSize: '15px',
+      color: '#ff6666',
+      fontStyle: 'bold',
+      padding: { x: 12, y: 4 }
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.flagsClearButtonBg.on('pointerover', () => {
+      this.flagsClearButtonBg?.setFillStyle(0x3a3a4e);
+      this.flagsClearButton?.setColor('#ff9999');
+    });
+
+    this.flagsClearButtonBg.on('pointerout', () => {
+      this.flagsClearButtonBg?.setFillStyle(0x2a2a3e);
+      this.flagsClearButton?.setColor('#ff6666');
+    });
+
+    this.flagsClearButtonBg.on('pointerdown', () => {
+      console.log('[CollisionDebugger][FlagsMenu] Clear all clicked', { enabled: this.enabled });
+
+      if (!this.enabled) {
+        return;
+      }
+
+      if (window.gameState?.clearFlags) {
+        window.gameState.clearFlags();
+        this._lastFlagsSignature = null;
+        this.updateFlagsDebugUI();
+        this.showDebugToast('Flags limpas com sucesso', 0x00aa55);
+      } else {
+        this.showDebugToast('GameState indisponivel', 0xaa3333);
+      }
+    });
+
+    this.flagsMenu.add([
+      menuBg,
+      title,
+      line,
+      this.flagsListText,
+      this.flagsPrevPageBg,
+      this.flagsPrevPageText,
+      this.flagsPageInfoText,
+      this.flagsNextPageBg,
+      this.flagsNextPageText,
+      this.flagsEmptyText,
+      this.flagsClearButtonBg,
+      this.flagsClearButton
+    ]);
+
+    this.layoutFlagsDebugUI();
+
+    const bounds = this.flagsMenu.getBounds();
+    console.log('[CollisionDebugger][FlagsMenu] Created', {
+      hostScene: this.flagsMenuScene?.scene?.key || 'unknown',
+      x: this.flagsMenu.x,
+      y: this.flagsMenu.y,
+      visible: this.flagsMenu.visible,
+      depth: this.flagsMenu.depth,
+      scrollFactorX: this.flagsMenu.scrollFactorX,
+      scrollFactorY: this.flagsMenu.scrollFactorY,
+      bounds
+    });
+
+    this.flagsMenuScene.__flagsMenuOwner = this;
+  }
+
+  /**
+   * Limpa apenas a UI do menu de flags
+   */
+  destroyFlagsDebugUI() {
+    this.clearFlagRows();
+    this.flagsClearButtonBg?.destroy();
+    this.flagsPrevPageBg?.destroy();
+    this.flagsNextPageBg?.destroy();
+    this.flagsPrevPageText?.destroy();
+    this.flagsNextPageText?.destroy();
+    this.flagsPageInfoText?.destroy();
+    this.flagsMenu?.destroy();
+    this.flagsMenu = null;
+    this.flagsListText = null;
+    this.flagsClearButton = null;
+    this.flagsClearButtonBg = null;
+    this.flagsEmptyText = null;
+    this.flagsPrevPageBg = null;
+    this.flagsNextPageBg = null;
+    this.flagsPrevPageText = null;
+    this.flagsNextPageText = null;
+    this.flagsPageInfoText = null;
+
+    if (this.flagsMenuScene && this.flagsMenuScene.__flagsMenuOwner === this) {
+      this.flagsMenuScene.__flagsMenuOwner = null;
+    }
+  }
+
+  /**
+   * Atualiza conteúdo textual do painel de flags
+   */
+  updateFlagsDebugUI() {
+    if (!this.flagsListText || !this.flagsEmptyText || !this.enabled) {
+      this.flagsListText?.setVisible(false);
+      this.flagsEmptyText?.setVisible(false);
+      return;
+    }
+
+    this.layoutFlagsDebugUI();
+
+    const flags = window.gameState?.getState?.()?.player?.flags || {};
+    const allEntries = Object.entries(flags)
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    const totalPages = Math.max(1, Math.ceil(allEntries.length / this.flagsPageSize));
+    if (this.flagsPageIndex >= totalPages) {
+      this.flagsPageIndex = totalPages - 1;
+    }
+    if (this.flagsPageIndex < 0) {
+      this.flagsPageIndex = 0;
+    }
+
+    const signature = `${this.flagsPageIndex}|${allEntries.map(([key, value]) => `${key}:${String(value)}`).join('|')}`;
+    if (signature === this._lastFlagsSignature) {
+      return;
+    }
+    this._lastFlagsSignature = signature;
+
+    this.clearFlagRows();
+
+    if (allEntries.length === 0) {
+      this.flagsListText.setVisible(false);
+      this.flagsEmptyText.setVisible(true);
+      return;
+    }
+
+    const activeCount = allEntries.filter(([, value]) => value === true).length;
+    this.flagsListText.setText(`Flags: ${allEntries.length} (ativas: ${activeCount})`);
+    this.flagsListText.setVisible(true);
+    this.flagsEmptyText.setVisible(false);
+
+    this.flagsPageInfoText?.setText(`${this.flagsPageIndex + 1}/${totalPages}`);
+    this.flagsPrevPageBg?.setAlpha(this.flagsPageIndex > 0 ? 1 : 0.45);
+    this.flagsPrevPageText?.setAlpha(this.flagsPageIndex > 0 ? 1 : 0.45);
+    this.flagsNextPageBg?.setAlpha(this.flagsPageIndex < totalPages - 1 ? 1 : 0.45);
+    this.flagsNextPageText?.setAlpha(this.flagsPageIndex < totalPages - 1 ? 1 : 0.45);
+
+    const start = this.flagsPageIndex * this.flagsPageSize;
+    const end = start + this.flagsPageSize;
+    const pageEntries = allEntries.slice(start, end);
+
+    pageEntries.forEach(([key, value], index) => {
+      this.createFlagRow(key, value, index);
+    });
+  }
+
+  /**
+   * Cria linha com flag e botão de remoção individual
+   */
+  createFlagRow(flagKey, flagValue, index) {
+    const y = 92 + (index * 22);
+    const row = this.flagsMenuScene.add.container(20, y).setScrollFactor(0);
+
+    const isActive = flagValue === true;
+    const valueText = isActive ? 'true' : 'false';
+
+    const labelText = `- ${this.truncateFlagText(flagKey, 18)}: ${valueText}`;
+    const label = this.flagsMenuScene.add.text(0, 0, labelText, {
+      fontSize: '12px',
+      color: isActive ? '#cfefff' : '#8ea1b5',
+      fontFamily: 'monospace'
+    }).setOrigin(0, 0.5);
+
+    const toggleBg = this.flagsMenuScene.add.rectangle(245, 0, 52, 18, isActive ? 0x1f5a3d : 0x5a1f2a)
+      .setStrokeStyle(1, isActive ? 0x8dffc2 : 0xff7f9a)
+      .setInteractive({ useHandCursor: true });
+
+    const toggleTxt = this.flagsMenuScene.add.text(245, 0, isActive ? 'ON' : 'OFF', {
+      fontSize: '11px',
+      color: isActive ? '#d7ffe9' : '#ffd4dc',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    toggleBg.on('pointerover', () => {
+      toggleBg.setFillStyle(isActive ? 0x2a6f4f : 0x7a2736);
+    });
+
+    toggleBg.on('pointerout', () => {
+      toggleBg.setFillStyle(isActive ? 0x1f5a3d : 0x5a1f2a);
+    });
+
+    toggleBg.on('pointerdown', () => {
+      console.log('[CollisionDebugger][FlagsMenu] Toggle flag clicked', { flagKey, enabled: this.enabled, current: isActive });
+      if (!this.enabled) return;
+
+      if (window.gameState?.setFlag) {
+        window.gameState.setFlag(flagKey, !isActive);
+      } else if (window.gameState?.removeFlag) {
+        window.gameState.removeFlag(flagKey);
+      }
+
+      this._lastFlagsSignature = null;
+      this.updateFlagsDebugUI();
+      this.showDebugToast(`Flag ${!isActive ? 'ativada' : 'desativada'}: ${flagKey}`, !isActive ? 0x2a6f4f : 0x6f2a2a);
+    });
+
+    row.add([label, toggleBg, toggleTxt]);
+    this.flagsMenu.add(row);
+    this.flagItemRows.push(row);
+  }
+
+  truncateFlagText(text, maxLength = 18) {
+    const value = String(text || '');
+    if (value.length <= maxLength) {
+      return value;
+    }
+    return `${value.slice(0, Math.max(1, maxLength - 3))}...`;
+  }
+
+  /**
+   * Limpa linhas dinâmicas de flags
+   */
+  clearFlagRows() {
+    if (!this.flagItemRows || this.flagItemRows.length === 0) {
+      return;
+    }
+
+    this.flagItemRows.forEach((row) => row?.destroy());
+    this.flagItemRows = [];
+  }
+
+  /**
+   * Toast rápido para ações do painel debug
+   */
+  showDebugToast(message, color = 0x222222) {
+    const menuBounds = this.flagsMenu?.getBounds();
+    const toastX = menuBounds ? menuBounds.centerX : 170;
+    const toastY = menuBounds ? menuBounds.bottom + 12 : 285;
+
+    const toastScene = this.flagsMenuScene || this.scene;
+    const toast = toastScene.add.text(toastX, toastY, message, {
+      fontSize: '11px',
+      color: '#ffffff',
+      backgroundColor: '#' + color.toString(16).padStart(6, '0'),
+      padding: { x: 6, y: 3 },
+      fontFamily: 'monospace'
+    }).setDepth(10003).setOrigin(0.5).setScrollFactor(0);
+
+    toastScene.tweens.add({
+      targets: toast,
+      alpha: 0,
+      y: toast.y - 8,
+      duration: 900,
+      onComplete: () => toast.destroy()
+    });
+  }
+
+  /**
+   * Reposiciona painel de flags de acordo com o viewport atual
+   */
+  layoutFlagsDebugUI() {
+    if (!this.flagsMenu) return;
+
+    const hostCamera = this.flagsMenuScene?.cameras?.main || this.scene.cameras.main;
+    const { width } = hostCamera;
+    const x = Math.max(12, Math.min(width - 312, 20));
+    this.flagsMenu.setPosition(x, 70);
+  }
+
+  /**
    * Registra um collider e adiciona callbacks de debug
    */
   registerCollider(collider, layerName) {
@@ -648,6 +1028,9 @@ export default class CollisionDebugger {
     
     // Atualizar debug de posição
     this.updatePositionDebug();
+
+    // Atualizar painel de flags do estado
+    this.updateFlagsDebugUI();
     
     // Desenhar zonas de portas
     if (this.enabled) {
@@ -814,6 +1197,19 @@ export default class CollisionDebugger {
     this.collisionText.setVisible(this.enabled);
     this.hitboxInfoText?.setVisible(this.enabled);
     this.positionDebugText?.setVisible(this.enabled);
+    this.flagsMenu?.setVisible(this.enabled);
+
+    if (this.flagsMenu) {
+      const bounds = this.flagsMenu.getBounds();
+      console.log('[CollisionDebugger][FlagsMenu] Toggle', {
+        enabled: this.enabled,
+        visible: this.flagsMenu.visible,
+        x: this.flagsMenu.x,
+        y: this.flagsMenu.y,
+        depth: this.flagsMenu.depth,
+        bounds
+      });
+    }
     
     if (!this.enabled) {
       if (this.hitboxGraphics) this.hitboxGraphics.clear();
@@ -821,6 +1217,9 @@ export default class CollisionDebugger {
       if (this.layerCollisionGraphics) this.layerCollisionGraphics.clear();
       if (this.layerLegendText) this.layerLegendText.setVisible(false);
       if (this.doorZonesGraphics) this.doorZonesGraphics.clear();
+      if (this.flagsListText) this.flagsListText.setVisible(false);
+      if (this.flagsEmptyText) this.flagsEmptyText.setVisible(false);
+      this.clearFlagRows();
       // Esconder marcadores clicados
       this.clickedPositions.forEach(pos => {
         pos.marker?.setVisible(false);
@@ -842,6 +1241,8 @@ export default class CollisionDebugger {
       }
       // Desenhar colisões das camadas
       this.drawLayerCollisions();
+      this._lastFlagsSignature = null;
+      this.updateFlagsDebugUI();
     }
     
     // Atualizar estado global para acesso pelo menu de pausa
@@ -870,6 +1271,7 @@ export default class CollisionDebugger {
     this.positionDebugText?.destroy();
     this.positionMarker?.destroy();
     this.doorZonesGraphics?.destroy();
+    this.destroyFlagsDebugUI();
     this.clearPositionMarkers();
     if (this.doorZoneTextLabels) {
       Object.values(this.doorZoneTextLabels).forEach(text => text?.destroy());

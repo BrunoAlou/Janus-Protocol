@@ -364,6 +364,109 @@ export default class GameStateManager {
   }
 
   /**
+   * Limpa todas as flags do jogador
+   */
+  clearFlags() {
+    const existingFlags = this._state.player.flags || {};
+    const wasResetGameEnabled = existingFlags.resetgame === true;
+    const clearedFlags = Object.keys(existingFlags).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        flags: clearedFlags
+      }
+    });
+
+    this.saveProgress();
+
+    if (wasResetGameEnabled && clearedFlags.resetgame === false) {
+      this._emit('resetgame-triggered', { source: 'clear-flags' });
+    }
+  }
+
+  /**
+   * Remove uma flag específica do jogador
+   * @param {string} id
+   */
+  removeFlag(id) {
+    if (!id) return;
+
+    const currentFlags = this._state.player.flags || {};
+    const previousValue = currentFlags[id];
+    if (!(id in currentFlags)) {
+      return;
+    }
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        flags: {
+          ...currentFlags,
+          [id]: false
+        }
+      }
+    });
+
+    this.saveProgress();
+
+    if (id === 'resetgame' && previousValue === true) {
+      this._emit('resetgame-triggered', { source: 'remove-flag' });
+    }
+  }
+
+  /**
+   * Limpa dados de sessão/progresso mantendo autenticação opcionalmente
+   * @param {{preserveAuth?: boolean}} options
+   */
+  resetSessionData(options = {}) {
+    const { preserveAuth = true } = options;
+
+    const authSnapshot = preserveAuth
+      ? { ...this._state.auth }
+      : { isAuthenticated: false, user: null, provider: null };
+
+    const defaultState = this._mergeWithDefaults({});
+
+    this.setState({
+      scenes: {
+        ...defaultState.scenes,
+        current: this._state.scenes?.current || defaultState.scenes.current,
+        previous: null,
+        active: []
+      },
+      minigame: { ...defaultState.minigame },
+      settings: { ...this._state.settings },
+      player: {
+        ...defaultState.player,
+        flags: {
+          ...defaultState.player.flags,
+          resetgame: true
+        }
+      },
+      auth: authSnapshot
+    });
+
+    this.clearHistory();
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const keys = this._getCandidateProgressStorageKeys(authSnapshot.user, authSnapshot.provider);
+      keys.forEach((key) => window.localStorage.removeItem(key));
+      window.localStorage.removeItem('janus_minigame_progress');
+    }
+
+    if (authSnapshot.user) {
+      this._progressUserKey = this._resolveUserProgressKey(authSnapshot.user, authSnapshot.provider);
+      this.saveProgress();
+    }
+
+    this._emit('session-reset', { preserveAuth });
+  }
+
+  /**
    * Define status de quest
    * @param {string} questId
    * @param {string} status
@@ -505,6 +608,42 @@ export default class GameStateManager {
   }
 
   /**
+   * Atualiza última posição exata do jogador
+   * @param {number} x
+   * @param {number} y
+   * @param {string|null} direction
+   * @param {string|null} scene
+   */
+  setPlayerPosition(x, y, direction = null, scene = null) {
+    if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
+      return;
+    }
+
+    this.setState({
+      player: {
+        ...this._state.player,
+        lastPosition: {
+          x: Number(x),
+          y: Number(y),
+          direction: direction || null,
+          scene: scene || this._state.player.lastLocation?.scene || null,
+          timestamp: Date.now()
+        }
+      }
+    });
+
+    this.saveProgress();
+  }
+
+  /**
+   * Obtém última posição exata do jogador
+   * @returns {{x:number,y:number,direction:string|null,scene:string|null,timestamp:number}|null}
+   */
+  getPlayerPosition() {
+    return this._state.player.lastPosition || null;
+  }
+
+  /**
    * Persiste progresso por usuário
    */
   saveProgress() {
@@ -545,12 +684,19 @@ export default class GameStateManager {
     const resolvedProvider = provider || this._state.auth.provider;
     this._progressUserKey = this._resolveUserProgressKey(resolvedUser, resolvedProvider);
 
-    const storageKey = this._getProgressStorageKey();
-    if (!storageKey) {
+    const storageKeys = this._getCandidateProgressStorageKeys(resolvedUser, resolvedProvider);
+    if (storageKeys.length === 0) {
       return false;
     }
 
-    const raw = window.localStorage.getItem(storageKey);
+    let raw = null;
+    for (const key of storageKeys) {
+      raw = window.localStorage.getItem(key);
+      if (raw) {
+        break;
+      }
+    }
+
     if (!raw) {
       return false;
     }
@@ -566,7 +712,10 @@ export default class GameStateManager {
         player: {
           ...this._state.player,
           ...playerProgress,
-          flags: { ...(playerProgress.flags || {}) },
+          flags: {
+            resetgame: true,
+            ...(playerProgress.flags || {})
+          },
           inventory: { ...(playerProgress.inventory || {}) },
           quests: { ...(playerProgress.quests || {}) },
           stats: { ...(playerProgress.stats || {}) }
@@ -761,8 +910,16 @@ export default class GameStateManager {
         inventory: {},
         quests: {},
         stats: {},
-        flags: {},
-        lastLocation: null
+        flags: {
+          contacted_receptionist: false,
+          reception_intro_modal_seen: false,
+          reception_intro_dialog_seen: false,
+          reception_intro_modal_active: false,
+          reception_intro_dialog_active: false,
+          resetgame: true
+        },
+        lastLocation: null,
+        lastPosition: null
       }
     };
     
@@ -833,8 +990,8 @@ export default class GameStateManager {
     }
 
     const normalized = String(candidate).toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
-    const providerPrefix = provider || user.provider || 'local';
-    return `${providerPrefix}:${normalized}`;
+    // Chave estável por identidade do usuário (independente de provider)
+    return `user:${normalized}`;
   }
 
   /**
@@ -842,6 +999,46 @@ export default class GameStateManager {
    */
   _getProgressStorageKey() {
     return this._progressUserKey ? `janus_progress_${this._progressUserKey}` : null;
+  }
+
+  /**
+   * @private
+   */
+  _getCandidateProgressStorageKeys(user, provider = null) {
+    const keys = [];
+    const stable = this._resolveUserProgressKey(user, provider);
+    if (stable) {
+      keys.push(`janus_progress_${stable}`);
+    }
+
+    // Compatibilidade com formato legado: "provider:identity"
+    if (user) {
+      const candidate =
+        user.id ||
+        user.sub ||
+        user.email ||
+        user.username ||
+        user.name;
+
+      if (candidate) {
+        const normalized = String(candidate).toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
+        const providerCandidates = [
+          provider,
+          user.provider,
+          this._state?.auth?.provider,
+          'google',
+          'linkedin',
+          'dev',
+          'local'
+        ].filter(Boolean);
+
+        providerCandidates.forEach((prefix) => {
+          keys.push(`janus_progress_${prefix}:${normalized}`);
+        });
+      }
+    }
+
+    return [...new Set(keys)];
   }
   
   /**

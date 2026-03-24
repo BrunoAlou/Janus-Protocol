@@ -44,6 +44,9 @@ export default class MinigameManager {
     
     // Carregar progresso salvo (localStorage)
     this._loadFromStorage();
+
+    // Sincronizar unlocks com flags globais do game state
+    this.syncWithGameState();
     
     // Carregar médias públicas do servidor
     this._loadPublicAverages();
@@ -131,6 +134,14 @@ export default class MinigameManager {
     
     return result;
   }
+
+  /**
+   * Verifica se existe pelo menos um minigame desbloqueado
+   * @returns {boolean}
+   */
+  hasAnyUnlocked() {
+    return this.getUnlockedMinigames().length > 0;
+  }
   
   // ============================================
   // DESBLOQUEIO
@@ -155,6 +166,7 @@ export default class MinigameManager {
     
     // Atualizar estado
     this.unlocked.set(minigameId, true);
+    this._setUnlockFlag(minigameId, true);
     
     const progress = this.progress.get(minigameId);
     progress.unlocked = true;
@@ -182,7 +194,53 @@ export default class MinigameManager {
    * @returns {boolean}
    */
   isUnlocked(minigameId) {
-    return this.unlocked.get(minigameId) === true;
+    const unlockedByMemory = this.unlocked.get(minigameId) === true;
+    const unlockedByFlag = this._isUnlockedByFlag(minigameId);
+    return unlockedByMemory || unlockedByFlag;
+  }
+
+  /**
+   * Sincroniza estado local de unlock com flags do GameStateManager
+   * @returns {boolean} se houve mudanças
+   */
+  syncWithGameState() {
+    if (!window.gameState?.getFlag || !window.gameState?.setFlag) {
+      return false;
+    }
+
+    let changed = false;
+
+    Object.keys(this.config.minigames).forEach((minigameId) => {
+      const progress = this.progress.get(minigameId) || this._createEmptyProgress(minigameId);
+      const unlockedByFlag = this._isUnlockedByFlag(minigameId);
+      const unlockedByMemory = this.unlocked.get(minigameId) === true;
+
+      // Migração de estado legado (storage local) para flags globais
+      if (!unlockedByFlag && unlockedByMemory) {
+        this._setUnlockFlag(minigameId, true);
+      }
+
+      const effectiveUnlock = this._isUnlockedByFlag(minigameId) === true;
+      if (this.unlocked.get(minigameId) !== effectiveUnlock) {
+        this.unlocked.set(minigameId, effectiveUnlock);
+        changed = true;
+      }
+
+      if (progress.unlocked !== effectiveUnlock) {
+        progress.unlocked = effectiveUnlock;
+        if (effectiveUnlock && !progress.unlockedAt) {
+          progress.unlockedAt = Date.now();
+        }
+        this.progress.set(minigameId, progress);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      this._saveToStorage();
+    }
+
+    return changed;
   }
   
   // ============================================
@@ -536,12 +594,40 @@ export default class MinigameManager {
     Object.keys(this.config.minigames).forEach(key => {
       this.unlocked.set(key, false);
       this.progress.set(key, this._createEmptyProgress(key));
+      this._setUnlockFlag(key, false);
     });
     
     localStorage.removeItem('janus_minigame_progress');
     
     this._emit('progress-reset');
     console.log('[MinigameManager] Progress reset');
+  }
+
+  /**
+   * @private
+   */
+  _getUnlockFlagKey(minigameId) {
+    return `minigame_unlocked_${minigameId}`;
+  }
+
+  /**
+   * @private
+   */
+  _isUnlockedByFlag(minigameId) {
+    if (!window.gameState?.getFlag) {
+      return false;
+    }
+    return window.gameState.getFlag(this._getUnlockFlagKey(minigameId)) === true;
+  }
+
+  /**
+   * @private
+   */
+  _setUnlockFlag(minigameId, unlocked) {
+    if (!window.gameState?.setFlag) {
+      return;
+    }
+    window.gameState.setFlag(this._getUnlockFlagKey(minigameId), unlocked === true);
   }
   
   // ============================================

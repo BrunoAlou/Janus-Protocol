@@ -3,6 +3,7 @@
  */
 
 import { NPC } from '../entities/NPC.js';
+import { NPC_TEXTS } from '../i18n/npcTexts.js';
 
 export default class NPCFactory {
   /**
@@ -15,7 +16,7 @@ export default class NPCFactory {
   static create(scene, x, y, config = {}) {
     const {
       id = 'npc_' + Date.now(),
-      name = 'NPC',
+      name = NPC_TEXTS.defaults.fallbackName,
       texture = 'npc_default',
       frame = 0,
       scale = 4,
@@ -101,33 +102,24 @@ export default class NPCFactory {
    */
   static templates = {
     receptionist: {
-      name: 'Recepcionista',
+      name: NPC_TEXTS.templates.receptionist.name,
       texture: 'npc_receptionist',
-      dialogues: [
-        { text: 'Bem-vindo ao Janus Protocol!', emotion: 'happy' },
-        { text: 'Como posso ajudá-lo hoje?', emotion: 'neutral' }
-      ],
+      dialogues: NPC_TEXTS.templates.receptionist.dialogues,
       canMove: false
     },
     
     manager: {
-      name: 'Gerente',
+      name: NPC_TEXTS.templates.manager.name,
       texture: 'npc_manager',
-      dialogues: [
-        { text: 'Olá! Precisa de alguma orientação?', emotion: 'professional' },
-        { text: 'Estou aqui para ajudar no seu treinamento.', emotion: 'happy' }
-      ],
+      dialogues: NPC_TEXTS.templates.manager.dialogues,
       canMove: true,
       patrol: { points: [[100, 100], [200, 100]], speed: 40 }
     },
 
     trainer: {
-      name: 'Instrutor',
+      name: NPC_TEXTS.templates.trainer.name,
       texture: 'npc_trainer',
-      dialogues: [
-        { text: 'Pronto para um desafio?', emotion: 'excited' },
-        { text: 'Vamos testar suas habilidades!', emotion: 'neutral' }
-      ],
+      dialogues: NPC_TEXTS.templates.trainer.dialogues,
       canMove: false
     }
   };

@@ -4,6 +4,7 @@ import Phaser from "phaser";
 import SceneManager from "./managers/SceneManager.js";
 import MinigameManager from "./managers/MinigameManager.js";
 import { GameStateManager } from './state/index.js';
+import { SCENE_NAMES } from './constants/SceneNames.js';
 
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
@@ -102,6 +103,31 @@ window.gameState = new GameStateManager();
 
 // Inicializar SceneManager global
 window.sceneManager = new SceneManager(game);
+
+// Fluxo global de reset de sessão disparado pela flag resetgame no modo debug
+window.gameState.on('resetgame-triggered', ({ source } = {}) => {
+  console.log('[Main] resetgame-triggered:', source || 'unknown');
+
+  const auth = window.gameState.getAuth?.() || {};
+  const user = auth.user || window.authManager?.getUser?.() || null;
+  const provider = auth.provider || window.authManager?.provider || user?.provider || null;
+
+  window.gameState.resetSessionData?.({ preserveAuth: true });
+
+  if (window.minigameManager) {
+    window.minigameManager.reset?.();
+    window.minigameManager.syncWithGameState?.();
+  }
+
+  if (user) {
+    window.gameState.setUser(user, provider);
+  }
+
+  window.sceneManager.startGameplay(SCENE_NAMES.RECEPTION, {
+    user,
+    spawnPoint: 'default'
+  });
+});
 
 // O Phaser já inicia LoginScene automaticamente (primeira da lista)
 // Apenas sincronizar o estado do SceneManager

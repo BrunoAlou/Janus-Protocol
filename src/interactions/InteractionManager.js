@@ -3,6 +3,7 @@
  */
 
 import { logAction } from '../utils/telemetry.js';
+import { NPC_TEXTS } from '../i18n/npcTexts.js';
 
 export default class InteractionManager {
   constructor(scene, player) {
@@ -73,6 +74,10 @@ export default class InteractionManager {
    * Processa interação quando tecla E é pressionada
    */
   handleInteraction() {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return;
+    }
+
     // Verificar primeiro se ElementManager processou a interação
     if (this.scene.elementManager?.currentInteractable) {
       // ElementManager tem algo para interagir, deixar ele processar
@@ -88,14 +93,17 @@ export default class InteractionManager {
     }
 
     const npc = this.currentInteractable;
+    if (npc?.contactFlagKey && window.gameState?.setFlag) {
+      window.gameState.setFlag(npc.contactFlagKey, true);
+    }
 
     if (npc.locked) {
       const dialogScene = this.scene.scene.get('DialogScene');
       if (dialogScene && typeof dialogScene.showDialog === 'function') {
         dialogScene.showDialog({
-          name: npc.npcName || 'NPC',
+          name: npc.npcName || NPC_TEXTS.defaults.fallbackName,
           dialogues: [{
-            text: npc.lockedMessage || 'Este personagem nao pode interagir agora.',
+            text: npc.lockedMessage || NPC_TEXTS.defaults.lockedFallbackMessage,
             emotion: 'neutral'
           }]
         });
@@ -147,6 +155,14 @@ export default class InteractionManager {
    * Atualiza distâncias (chamar no update)
    */
   update() {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      if (this.currentInteractable?.interactionIndicator) {
+        this.currentInteractable.interactionIndicator.setVisible(false);
+      }
+      this.currentInteractable = null;
+      return;
+    }
+
     // Verificar distância de todos os NPCs próximos
     const toRemove = [];
     

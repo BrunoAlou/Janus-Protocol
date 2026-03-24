@@ -152,6 +152,10 @@ export default class ElementManager {
    * @private
    */
   handleMouseClick(pointer) {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return;
+    }
+
     // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
     for (const element of this.elements.values()) {
       if (!element.visible) {
@@ -171,6 +175,10 @@ export default class ElementManager {
    * @private
    */
   handleRightClick(pointer) {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return;
+    }
+
     // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
     for (const element of this.elements.values()) {
       if (!element.visible) {
@@ -500,6 +508,10 @@ export default class ElementManager {
    * @returns {boolean} true se processou uma interação
    */
   handleInteraction() {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return false;
+    }
+
     if (!this.currentInteractable) {
       // Não logar aqui - deixar o InteractionManager tentar
       return false;
@@ -519,6 +531,13 @@ export default class ElementManager {
    * @param {number} delta
    */
   update(time, delta) {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      this.currentInteractable = null;
+      this._hoveredElement?.setHovered(false);
+      this._hoveredElement = null;
+      return;
+    }
+
     this._updateHoveredElement();
 
     const now = Date.now();

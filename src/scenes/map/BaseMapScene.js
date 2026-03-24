@@ -7,6 +7,7 @@ import CollisionDebugger from '../../utils/CollisionDebugger.js';
 import { ElementManager } from '../../elements/index.js';
 import { getTextureKeyForTileset } from '../../constants/TilesetAssets.js';
 import { resolveMapPath } from '../../utils/AssetResolver.js';
+import { NPC_TEXTS } from '../../i18n/npcTexts.js';
 
 /**
  * BaseMapScene - Classe base para todas as cenas de mapa
@@ -20,11 +21,17 @@ export default class BaseMapScene extends Phaser.Scene {
     this.defaultZoom = 3.0; // Zoom padrão - pode ser sobrescrito em subclasses
     this.npcs = [];
     this.layers = null;
+    this.resumePosition = null;
+    this._positionPersistElapsed = 0;
+    this._lastPersistedPosition = null;
   }
 
   init(data) {
     this.user = data.user;
     this.previousScene = data.previousScene;
+    this.resumePosition = data.playerPosition || null;
+    this._positionPersistElapsed = 0;
+    this._lastPersistedPosition = null;
   }
 
   preload() {
@@ -74,6 +81,33 @@ export default class BaseMapScene extends Phaser.Scene {
     
     // Manter rastreamento de DoorZones registradas para evitar duplicatas
     this._registeredDoorZones = new Set();
+
+    // Garantir persistência da última posição mesmo em reload imediato
+    this._beforeUnloadHandler = () => {
+      if (this.player && window.gameState?.setPlayerPosition) {
+        window.gameState.setPlayerPosition(this.player.x, this.player.y, null, this.sceneKey);
+      }
+    };
+    window.addEventListener('beforeunload', this._beforeUnloadHandler);
+
+    this.events.once('shutdown', () => {
+      if (this.player && window.gameState?.setPlayerPosition) {
+        window.gameState.setPlayerPosition(this.player.x, this.player.y, null, this.sceneKey);
+      }
+      if (this._beforeUnloadHandler) {
+        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+      }
+
+      this.playerController?.destroy?.();
+      this.interactionManager?.destroy?.();
+      this.elementManager?.destroy?.();
+      this.collisionDebugger?.destroy?.();
+
+      this.playerController = null;
+      this.interactionManager = null;
+      this.elementManager = null;
+      this.collisionDebugger = null;
+    });
   }
 
   setupMap() {
@@ -171,10 +205,20 @@ export default class BaseMapScene extends Phaser.Scene {
 
   setupPlayer() {
     // Posição inicial (pode ser sobrescrita)
-    const spawnX = this.getSpawnX();
-    const spawnY = this.getSpawnY();
+    const hasResumePosition =
+      Number.isFinite(Number(this.resumePosition?.x)) &&
+      Number.isFinite(Number(this.resumePosition?.y)) &&
+      this.resumePosition?.scene === this.sceneKey;
+
+    const spawnX = hasResumePosition ? Number(this.resumePosition.x) : this.getSpawnX();
+    const spawnY = hasResumePosition ? Number(this.resumePosition.y) : this.getSpawnY();
 
     this.player = createPlayer(this, spawnX, spawnY);
+
+    if (window.gameState?.setPlayerPosition) {
+      window.gameState.setPlayerPosition(this.player.x, this.player.y, null, this.sceneKey);
+      this._lastPersistedPosition = { x: this.player.x, y: this.player.y };
+    }
 
     // Configurar debugger de colisões
     this.collisionDebugger = new CollisionDebugger(this, this.player);
@@ -234,7 +278,35 @@ export default class BaseMapScene extends Phaser.Scene {
 
   setupNPCs() {
     this.npcs = this.createNPCsFromObjectLayer();
+    this.setupSpriteNpcContactFlags();
     console.log(`[${this.sceneKey}] Created ${this.npcs.length} NPCs from map object layer`);
+  }
+
+  /**
+   * Garante flags de contato para NPCs baseados em sprites (object layer).
+   */
+  setupSpriteNpcContactFlags() {
+    if (!Array.isArray(this.npcs) || this.npcs.length === 0) {
+      return;
+    }
+
+    if (!window.gameState?.setFlag || !window.gameState?.getFlag) {
+      return;
+    }
+
+    this.npcs.forEach((npc) => {
+      const npcId = npc?.npcId;
+      if (!npcId) {
+        return;
+      }
+
+      const contactFlagKey = `contacted_${npcId}`;
+      npc.contactFlagKey = contactFlagKey;
+
+      if (window.gameState.getFlag(contactFlagKey) === undefined) {
+        window.gameState.setFlag(contactFlagKey, false);
+      }
+    });
   }
 
   /**
@@ -365,7 +437,7 @@ export default class BaseMapScene extends Phaser.Scene {
     npc.locked = this.parseBooleanProperty(props.locked, false);
     npc.lockedMessage = typeof props.lockedMessage === 'string'
       ? props.lockedMessage
-      : 'Este personagem nao pode interagir agora.';
+      : NPC_TEXTS.defaults.lockedFallbackMessage;
 
     if (typeof props.animation === 'string' && props.animation && this.anims.exists(props.animation)) {
       npc.play(props.animation, true);
@@ -392,8 +464,44 @@ export default class BaseMapScene extends Phaser.Scene {
     // Carregar elementos do arquivo JSON
     const mapId = this.mapKey || this.sceneKey.toLowerCase().replace('scene', '');
     await this.elementManager.loadFromFile(mapId);
+    this.setupNpcContactFlags();
 
     console.log(`[${this.sceneKey}] Elements loaded for map: ${mapId}`);
+  }
+
+  /**
+   * Garante flag de contato para todo NPC interativo e marca automaticamente no primeiro contato.
+   * Padrão da flag: contacted_<npcElementId>
+   */
+  setupNpcContactFlags() {
+    const npcElements = this.elementManager?.getNPCs?.() || [];
+    if (!Array.isArray(npcElements) || npcElements.length === 0) {
+      return;
+    }
+
+    npcElements.forEach((npcElement) => {
+      if (!npcElement?.id || !window.gameState?.setFlag || !window.gameState?.getFlag) {
+        return;
+      }
+
+      const contactFlagKey = `contacted_${npcElement.id}`;
+      npcElement.contactFlagKey = contactFlagKey;
+
+      if (window.gameState.getFlag(contactFlagKey) === undefined) {
+        window.gameState.setFlag(contactFlagKey, false);
+      }
+
+      if (npcElement._hasContactFlagWrapper) {
+        return;
+      }
+
+      const originalInteract = npcElement.interact.bind(npcElement);
+      npcElement.interact = (trigger = 'manual') => {
+        window.gameState.setFlag(contactFlagKey, true);
+        return originalInteract(trigger);
+      };
+      npcElement._hasContactFlagWrapper = true;
+    });
   }
 
   setupCamera() {
@@ -466,6 +574,19 @@ export default class BaseMapScene extends Phaser.Scene {
       // Base depth de 100 + Y garante que objetos com Y maior ficam na frente
       // Dividir por 10 para não explodir o número
       this.player.setDepth(100 + Math.floor(this.player.y / 10));
+
+      this._positionPersistElapsed += delta || 0;
+      if (this._positionPersistElapsed >= 800 && window.gameState?.setPlayerPosition) {
+        const prev = this._lastPersistedPosition;
+        const movedEnough = !prev || Phaser.Math.Distance.Between(prev.x, prev.y, this.player.x, this.player.y) >= 4;
+
+        if (movedEnough) {
+          window.gameState.setPlayerPosition(this.player.x, this.player.y, null, this.sceneKey);
+          this._lastPersistedPosition = { x: this.player.x, y: this.player.y };
+        }
+
+        this._positionPersistElapsed = 0;
+      }
     }
     
     // Y-sorting para NPCs também
