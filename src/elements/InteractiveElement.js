@@ -90,6 +90,15 @@ export default class InteractiveElement {
     /** @type {ElementConfig} */
     this.config = config;
 
+    /** @type {boolean} */
+    this.visible = config.visible !== false;
+
+    /** @type {boolean} */
+    this.locked = config.locked === true;
+
+    /** @type {string} */
+    this.lockedMessage = config.lockedMessage || `${config.name} esta bloqueado no momento.`;
+
     /** @type {ElementOption[]} */
     this.options = config.options || [];
 
@@ -130,6 +139,9 @@ export default class InteractiveElement {
 
     /** @type {Phaser.GameObjects.Text|null} */
     this.indicatorText = null;
+
+    /** @type {string} */
+    this.defaultIndicatorText = '[E]';
 
     /** @private */
     this._isHovered = false;
@@ -178,6 +190,10 @@ export default class InteractiveElement {
    * @private
    */
   _createVisuals() {
+    if (!this.visible) {
+      return;
+    }
+
     const { sprite: spriteConfig, indicator: indicatorConfig } = this.config;
 
     // Retângulo de debug (visível apenas no modo debug)
@@ -194,13 +210,31 @@ export default class InteractiveElement {
           spriteConfig.key,
           spriteConfig.frame || 0
         );
-        
-        if (spriteConfig.scale) {
+
+        const matchPlayerScale = spriteConfig.matchPlayerScale === true;
+        const fallbackScale = Number.isFinite(spriteConfig.scale) ? spriteConfig.scale : 1;
+        const scaleMultiplier = Number.isFinite(spriteConfig.scaleMultiplier) ? spriteConfig.scaleMultiplier : 1;
+
+        if (matchPlayerScale) {
+          const playerScale = this.scene.player?.scaleX;
+          const resolvedScale = Number.isFinite(playerScale) && playerScale > 0
+            ? playerScale * scaleMultiplier
+            : fallbackScale * scaleMultiplier;
+          this.sprite.setScale(resolvedScale);
+        } else if (spriteConfig.scale) {
           this.sprite.setScale(spriteConfig.scale);
         }
         
         if (spriteConfig.animation) {
           this.sprite.play(spriteConfig.animation);
+        }
+
+        if (typeof spriteConfig.flipX === 'boolean') {
+          this.sprite.setFlipX(spriteConfig.flipX);
+        }
+
+        if (typeof spriteConfig.flipY === 'boolean') {
+          this.sprite.setFlipY(spriteConfig.flipY);
         }
         
         this.sprite.setDepth(this.area.y); // Depth baseado em Y para ordenação
@@ -211,9 +245,9 @@ export default class InteractiveElement {
       }
     }
 
-    // Criar retângulo de debug para elementos sem sprite (invisível por padrão)
+    // Criar retângulo de debug para todos os elementos interagíveis (invisível por padrão)
     // Será mostrado apenas quando o modo debug estiver ativo
-    if (!spriteCreated && this.type !== 'trigger') {
+    if (this.type !== 'trigger') {
       this.debugRect = this.scene.add.rectangle(
         this.area.x,
         this.area.y,
@@ -223,7 +257,7 @@ export default class InteractiveElement {
         0.3 // Alpha
       );
       this.debugRect.setStrokeStyle(2, 0x00ff00);
-      this.debugRect.setDepth(this.area.y);
+      this.debugRect.setDepth((this.sprite?.depth || this.area.y) + 1);
       this.debugRect.setVisible(false); // Invisível por padrão - só aparece no debug
       
       // Adicionar texto com nome do elemento (debug)
@@ -238,7 +272,7 @@ export default class InteractiveElement {
           backgroundColor: '#000000aa',
           padding: { x: 2, y: 1 }
         }
-      ).setOrigin(0.5).setDepth(this.area.y + 1);
+      ).setOrigin(0.5).setDepth((this.sprite?.depth || this.area.y) + 2);
       this.debugText.setVisible(false); // Invisível por padrão
     }
 
@@ -250,17 +284,19 @@ export default class InteractiveElement {
 
     // Criar indicador de interação (apenas para elementos interagíveis manualmente)
     const indConfig = indicatorConfig || {};
+    this.defaultIndicatorText = indConfig.text || '[E]';
     this.indicator = this.scene.add.container(this.area.x, this.area.y + (indConfig.offsetY || -40));
     
     // Fundo do indicador
-    this.indicatorBg = this.scene.add.rectangle(0, 0, 40, 24, 0x000000, 0.7)
-      .setStrokeStyle(1, 0x00d9ff);
+    this.indicatorBg = this.scene.add.rectangle(0, 0, 44, 20, 0x06121f, 0.9)
+      .setOrigin(0.5)
+      .setStrokeStyle(1, 0x3ab5f2, 0.9);
     
     // Texto do indicador
-    this.indicatorText = this.scene.add.text(0, 0, indConfig.text || '[E]', {
-      fontSize: '14px',
+    this.indicatorText = this.scene.add.text(0, 0, this.defaultIndicatorText, {
+      fontSize: '11px',
       fontFamily: 'Arial',
-      color: '#00d9ff'
+      color: '#cfefff'
     }).setOrigin(0.5);
 
     this.indicator.add([this.indicatorBg, this.indicatorText]);
@@ -277,11 +313,24 @@ export default class InteractiveElement {
       return;
     }
 
-    const label = this._isHovered ? '[CLICK]' : '[E]';
+    const label = this._isHovered ? this.name : this.defaultIndicatorText;
     this.indicatorText.setText(label);
+    this.indicatorText.setPosition(0, 0);
 
     const textWidth = this.indicatorText.width || 0;
-    this.indicatorBg.width = Math.max(40, textWidth + 16);
+    const textHeight = this.indicatorText.height || 0;
+    this.indicatorBg.setSize(Math.max(44, textWidth + 14), Math.max(20, textHeight + 6));
+    this.indicatorBg.setPosition(0, 0);
+
+    if (this._isHovered) {
+      this.indicatorBg.setFillStyle(0x11324a, 0.95);
+      this.indicatorBg.setStrokeStyle(1, 0x82d8ff, 1);
+      this.indicatorText.setColor('#eaf8ff');
+    } else {
+      this.indicatorBg.setFillStyle(0x06121f, 0.9);
+      this.indicatorBg.setStrokeStyle(1, 0x3ab5f2, 0.9);
+      this.indicatorText.setColor('#cfefff');
+    }
 
     this.indicator.setVisible(this._isPlayerNearby || this._isHovered);
   }
@@ -304,6 +353,10 @@ export default class InteractiveElement {
    * @private
    */
   _createInteractionZone() {
+    if (!this.visible) {
+      return;
+    }
+
     // Criar zona de interação
     this.interactionZone = this.scene.add.zone(
       this.area.x,
@@ -415,6 +468,15 @@ export default class InteractiveElement {
    * @param {string} [interactionType='keyboard'] - Tipo de interação ('keyboard' ou 'mouse')
    */
   interact(interactionType = 'keyboard') {
+    if (!this.visible) {
+      return;
+    }
+
+    if (this.locked) {
+      this.showLockedFeedback();
+      return;
+    }
+
     if (!this.canInteract) {
       console.log(`[InteractiveElement] ${this.name} em cooldown`);
       return;
@@ -459,6 +521,23 @@ export default class InteractiveElement {
     else {
       this.scene.events.emit('element-interact', { element: this });
     }
+  }
+
+  showLockedFeedback() {
+    const dialogScene = this.scene.scene.get(SCENE_NAMES.DIALOG);
+    if (dialogScene && typeof dialogScene.showDialog === 'function') {
+      dialogScene.showDialog({
+        name: this.name,
+        dialogues: [{ text: this.lockedMessage, emotion: 'neutral' }]
+      });
+      return;
+    }
+
+    this.scene.events.emit('element-locked', {
+      elementId: this.id,
+      name: this.name,
+      message: this.lockedMessage
+    });
   }
 
   /**

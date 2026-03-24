@@ -46,7 +46,7 @@ export default class MinimapScene extends Phaser.Scene {
       
       [SCENE_NAMES.ELEVATOR]: { x: 0, y: 0, name: 'Elevad.' },
       
-      [SCENE_NAMES.IT_ROOM]: { x: -45, y: 45, name: 'TI' },
+      [SCENE_NAMES.IT_ROOM]: { x: -45, y: 45, name: 'Ent.Elev' },
       [SCENE_NAMES.RECEPTION]: { x: 0, y: 45, name: 'Recep.' },
       [SCENE_NAMES.ARCHIVE_ROOM]: { x: 45, y: 45, name: 'Arquivo' }
     };

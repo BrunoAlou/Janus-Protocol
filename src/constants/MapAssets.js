@@ -118,7 +118,7 @@ export const MAP_ASSETS = Object.freeze({
     sceneKey: SCENE_NAMES.HALLWAY,
     mapKey: 'hallway',
     path: './src/assets/hallway.json',
-    displayName: 'Corredor',
+    displayName: 'Entrada Elevador',
     spawnX: 21,
     spawnY: 240
   }

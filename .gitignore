@@ -3,6 +3,7 @@ node_modules/
 
 # Build directory
 dist/
+build/
 
 # Environment variables
 .env

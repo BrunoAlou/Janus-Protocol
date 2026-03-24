@@ -154,7 +154,10 @@ export default class ElementManager {
   handleMouseClick(pointer) {
     // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
     for (const element of this.elements.values()) {
-      if (element.type === 'object' && this._isPointerOverElement(pointer, element)) {
+      if (!element.visible) {
+        continue;
+      }
+      if ((element.type === 'object' || element.type === 'npc') && this._isPointerOverElement(pointer, element)) {
         console.log('[ElementManager] Object clicked via mouse:', element.name);
         element.interact('mouse');
         return;
@@ -170,7 +173,10 @@ export default class ElementManager {
   handleRightClick(pointer) {
     // Buscar objetos sob o cursor em QUALQUER distância (não respeita proximidade)
     for (const element of this.elements.values()) {
-      if (element.type === 'object' && this._isPointerOverElement(pointer, element)) {
+      if (!element.visible) {
+        continue;
+      }
+      if ((element.type === 'object' || element.type === 'npc') && this._isPointerOverElement(pointer, element)) {
         this.showContextMenu(pointer.x, pointer.y, element);
         return;
       }
@@ -211,7 +217,11 @@ export default class ElementManager {
 
     if (pointer) {
       for (const element of this.elements.values()) {
-        if (element.type !== 'object') {
+        if (!element.visible) {
+          continue;
+        }
+
+        if (element.type !== 'object' && element.type !== 'npc') {
           continue;
         }
 
@@ -367,7 +377,9 @@ export default class ElementManager {
     elements.forEach(elementConfig => {
       try {
         const element = this.createElement(elementConfig);
-        loadedElements.push(element);
+        if (element) {
+          loadedElements.push(element);
+        }
       } catch (error) {
         console.error(`[ElementManager] Error creating element ${elementConfig.id}:`, error);
       }
@@ -383,6 +395,11 @@ export default class ElementManager {
    * @returns {InteractiveElement}
    */
   createElement(config) {
+    if (config?.visible === false) {
+      console.log(`[ElementManager] Element ${config.id || 'unknown'} hidden by config.visible=false`);
+      return null;
+    }
+
     const element = new InteractiveElement(this.scene, config);
     
     // Registrar no mapa

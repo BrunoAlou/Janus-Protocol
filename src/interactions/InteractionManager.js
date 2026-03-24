@@ -88,6 +88,20 @@ export default class InteractionManager {
     }
 
     const npc = this.currentInteractable;
+
+    if (npc.locked) {
+      const dialogScene = this.scene.scene.get('DialogScene');
+      if (dialogScene && typeof dialogScene.showDialog === 'function') {
+        dialogScene.showDialog({
+          name: npc.npcName || 'NPC',
+          dialogues: [{
+            text: npc.lockedMessage || 'Este personagem nao pode interagir agora.',
+            emotion: 'neutral'
+          }]
+        });
+      }
+      return;
+    }
     
     if (npc.isInteracting) {
       console.log('[InteractionManager] NPC already interacting');

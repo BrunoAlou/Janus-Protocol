@@ -1,7 +1,7 @@
 import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
-import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import DoorZone from '../../components/DoorZone.js';
 import { getTextureKeyForTileset, preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 import { resolveMapPath } from '../../utils/AssetResolver.js';
 
@@ -124,77 +124,37 @@ export default class ItRoomScene extends BaseMapScene {
 
   setupDoorTransitions() {
     // Mapa Ti: 32x32 tiles de 16x16 = 512x512px
-    // Porta de saída (voltar para recepção) - parte inferior
-    const exitDoor = this.add.zone(256, 500, 64, 16).setOrigin(0.5);
-    this.physics.world.enable(exitDoor);
-    exitDoor.body.setAllowGravity(false);
-    exitDoor.body.moves = false;
-
-    // Indicador visual
-    const doorIndicator = this.add.container(256, 480);
-    const eButton = this.add.circle(0, -20, 12, 0x000000, 0.8)
-      .setStrokeStyle(2, 0xffff00);
-    const eText = this.add.text(0, -20, 'E', {
-      fontSize: '14px',
-      color: '#ffff00',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    const actionText = this.add.text(0, 5, 'RECEPÇÃO', {
-      fontSize: '10px',
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5);
-    
-    doorIndicator.add([eButton, eText, actionText]);
-    doorIndicator.setDepth(1500);
-    doorIndicator.setAlpha(0);
-
-    this.doorZones = [{
-      zone: exitDoor,
-      indicator: doorIndicator,
-      action: () => this.transitionToReception(),
-      proximityDistance: 50
-    }];
+    this.doorZones = [
+      new DoorZone(this, {
+        x: 256,
+        y: 500,
+        width: 64,
+        height: 16,
+        label: 'RECEPCAO',
+        indicatorColor: 0xffff00,
+        indicatorTextColor: '#ffff00',
+        onInteract: () => this.transitionToReception(),
+        proximityDistance: 50
+      }),
+      new DoorZone(this, {
+        x: 256,
+        y: 24,
+        width: 64,
+        height: 16,
+        label: 'ENTRADA ELEVADOR',
+        indicatorColor: 0x00ff00,
+        indicatorTextColor: '#00ff00',
+        onInteract: () => this.transitionToElevator(),
+        proximityDistance: 50
+      })
+    ];
   }
 
   update(time, delta) {
     super.update(time, delta);
-    
-    // Verificar proximidade com portas
-    if (this.player && this.doorZones) {
-      this.doorZones.forEach(doorData => {
-        const distance = Phaser.Math.Distance.Between(
-          this.player.x, this.player.y,
-          doorData.zone.x, doorData.zone.y
-        );
 
-        if (distance < doorData.proximityDistance) {
-          doorData.indicator.setAlpha(1);
-          
-          if (!doorData.indicator.isTweening) {
-            doorData.indicator.isTweening = true;
-            this.tweens.add({
-              targets: doorData.indicator,
-              y: doorData.indicator.y - 5,
-              duration: 400,
-              yoyo: true,
-              repeat: -1,
-              ease: 'Sine.easeInOut'
-            });
-          }
-          
-          if (Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('E'))) {
-            doorData.action();
-          }
-        } else {
-          doorData.indicator.setAlpha(0);
-          if (doorData.indicator.isTweening) {
-            this.tweens.killTweensOf(doorData.indicator);
-            doorData.indicator.isTweening = false;
-          }
-        }
-      });
+    if (this.player && this.doorZones) {
+      this.doorZones.forEach((door) => door.update(this.player, this.input, this.tweens));
     }
   }
 
@@ -214,7 +174,29 @@ export default class ItRoomScene extends BaseMapScene {
     });
   }
 
+  transitionToElevator() {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
+    console.log('[ItRoomScene] Transitioning to Elevator...');
+
+    this.cameras.main.fadeOut(500, 0, 0, 0);
+
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      window.sceneManager.goToMap(SCENE_NAMES.ELEVATOR, {
+        user: this.user,
+        spawnPoint: 'fromItRoom'
+      });
+    });
+  }
+
   getSpawnX() {
+    if (this.spawnPoint === 'fromReceptionElevatorEntrance') {
+      return 256;
+    }
+    if (this.spawnPoint === 'fromElevator') {
+      return 256;
+    }
     if (this.spawnPoint === 'fromReception') {
       return 256; // Centro da sala
     }
@@ -222,6 +204,12 @@ export default class ItRoomScene extends BaseMapScene {
   }
 
   getSpawnY() {
+    if (this.spawnPoint === 'fromReceptionElevatorEntrance') {
+      return 96;
+    }
+    if (this.spawnPoint === 'fromElevator') {
+      return 96;
+    }
     if (this.spawnPoint === 'fromReception') {
       return 450; // Próximo à entrada
     }

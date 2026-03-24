@@ -107,14 +107,14 @@ export default class ElevatorScene extends BaseMapScene {
   } 
 
   setupDoorTransitions() {
-    // Zona de acesso rapido para o corredor e painel de destinos do elevador
+    // Zona de acesso rapido para a entrada do elevador e painel de destinos
     this.doorZones = [
       new DoorZone(this, {
         x: 8, y: 8, width: 16, height: 16, // Posição central do minimapa 16x16
-        label: 'CORREDOR',
+        label: 'ENTRADA ELEVADOR',
         indicatorColor: 0x00ff00,
         indicatorTextColor: '#00ff00',
-        onInteract: () => this.transitionToHallway(),
+        onInteract: () => this.transitionToItRoom(),
         proximityDistance: 24
       }),
       new DoorZone(this, {
@@ -168,9 +168,9 @@ export default class ElevatorScene extends BaseMapScene {
         },
         {
           id: 'hallway',
-          label: 'Corredor',
+          label: 'Entrada Elevador',
           icon: '🚪',
-          action: { type: 'scene', target: SCENE_NAMES.HALLWAY }
+          action: { type: 'scene', target: SCENE_NAMES.IT_ROOM }
         },
         {
           id: 'cancel',
@@ -292,12 +292,12 @@ export default class ElevatorScene extends BaseMapScene {
     }
   }
 
-  transitionToHallway() {
+  transitionToItRoom() {
     if (this.isTransitioning) return;
     this.isTransitioning = true;
     this.cameras.main.fadeOut(400, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      window.sceneManager.goToMap(SCENE_NAMES.HALLWAY, {
+      window.sceneManager.goToMap(SCENE_NAMES.IT_ROOM, {
         user: this.user,
         spawnPoint: 'fromElevator'
       });

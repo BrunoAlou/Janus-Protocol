@@ -19,6 +19,7 @@ export default class BaseMinigame extends Phaser.Scene {
     this.metrics = {};
     this.fromMenu = false;
     this.isFirstAttempt = false;
+    this.finalTelemetrySent = false;
   }
 
   init(data) {
@@ -168,6 +169,9 @@ export default class BaseMinigame extends Phaser.Scene {
     // Registrar tentativa no MinigameManager
     this.recordAttemptToManager(true, duration);
 
+    // Enviar somente o report final após concluir a fase/level.
+    this.sendTelemetryToServer();
+
     // Mostrar tela de vitória
     this.showCompletionScreen(true, duration);
   }
@@ -187,9 +191,6 @@ export default class BaseMinigame extends Phaser.Scene {
       // Registrar tentativa incompleta
       this.recordAttemptToManager(false, duration);
     }
-
-    // Enviar telemetria para o servidor
-    this.sendTelemetryToServer();
 
     // Usar SceneManager para finalizar minigame
     window.sceneManager.endMinigame({
@@ -380,6 +381,10 @@ export default class BaseMinigame extends Phaser.Scene {
    * Envia telemetria para o servidor
    */
   async sendTelemetryToServer() {
+    if (!this.completed || this.finalTelemetrySent) {
+      return;
+    }
+
     try {
       const payload = {
         user: this.user,
@@ -400,6 +405,7 @@ export default class BaseMinigame extends Phaser.Scene {
       });
 
       if (response.ok) {
+        this.finalTelemetrySent = true;
         console.log('[Telemetry] Data sent successfully');
       }
     } catch (err) {

@@ -1,9 +1,12 @@
 import BaseMapScene from './BaseMapScene.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
-import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
 import DoorZone from '../../components/DoorZone.js';
 import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
+import {
+  createSitGuyAnimations,
+  loadSitGuyAssets
+} from '../../npcs/sitGuyAnimations.js';
 
 /**
  * ReceptionScene - Cena da recepção (antiga GameScene)
@@ -23,6 +26,7 @@ export default class ReceptionScene extends BaseMapScene {
     preloadRegisteredTilesets(this);
     // Carregar mapa via resolver compatível com Vite/GitHub Pages
     super.preload();
+    loadSitGuyAssets(this);
     
     console.log('[ReceptionScene] Preload finished - loading reception map');
   }
@@ -34,6 +38,8 @@ export default class ReceptionScene extends BaseMapScene {
   }
 
   create() {
+    createSitGuyAnimations(this);
+
     super.create(); // Chama o create da BaseMapScene
     
     // Fade in da câmera
@@ -61,17 +67,14 @@ export default class ReceptionScene extends BaseMapScene {
     }
   }
 
+  setupNPCs() {
+    // Reception usa NPCs interativos via ElementManager (reception.json).
+    // Evita duplicar sprites da object layer do Tiled.
+    this.npcs = [];
+  }
+
   setupDoorTransitions() {
     this.doorZones = [
-      new DoorZone(this, {
-        x: 624, y: 225, width: 16, height: 64,
-        label: 'ARQUIVO',
-        indicatorColor: 0xffff00,
-        indicatorTextColor: '#ffff00',
-        indicatorOffsetX: -14,
-        onInteract: () => this.transitionToArchiveRoom(),
-        proximityDistance: 50
-      }),
       new DoorZone(this, {
         x: 16, y: 240, width: 16, height: 64,
         label: 'SALA TI',
@@ -83,23 +86,7 @@ export default class ReceptionScene extends BaseMapScene {
         proximityDistance: 50
       })
     ];
-    console.log('[ReceptionScene] Door transitions: Archive (624,240), IT Room (16,240)');
-  }
-
-  transitionToArchiveRoom() {
-    if (this.isTransitioning) return;
-    this.isTransitioning = true;
-
-    console.log('[ReceptionScene] Transitioning to Archive Room...');
-    
-    this.cameras.main.fadeOut(500, 0, 0, 0);
-    
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      window.sceneManager.goToMap(SCENE_NAMES.ARCHIVE_ROOM, {
-        user: this.user,
-        spawnPoint: 'fromReception'
-      });
-    });
+    console.log('[ReceptionScene] Door transitions: IT Room (16,240)');
   }
 
   transitionToItRoom() {
@@ -120,9 +107,6 @@ export default class ReceptionScene extends BaseMapScene {
 
   getSpawnX() {
     // Ajustar spawn baseado de onde o player veio
-    if (this.spawnPoint === 'fromArchiveRoom') {
-      return 600; // Próximo à porta direita
-    }
     if (this.spawnPoint === 'fromItRoom') {
       return 50; // Próximo à porta esquerda
     }
@@ -130,28 +114,10 @@ export default class ReceptionScene extends BaseMapScene {
   }
 
   getSpawnY() {
-    if (this.spawnPoint === 'fromArchiveRoom') {
-      return 240; // Meio da porta direita
-    }
     if (this.spawnPoint === 'fromItRoom') {
       return 240; // Meio da porta esquerda
     }
     return 469; // Posição inicial na recepção (default)
-  }
-
-  setupNPCs() {
-    // NPCs da recepção - temporariamente desabilitado até ter sprites
-    this.npcs = [];
-    
-    // TODO: Adicionar NPCs quando sprites estiverem disponíveis
-    // this.npcs = [
-    //   NPCFactory.create(this, 320, 200, {
-    //     ...NPCFactory.templates.receptionist,
-    //     dialogues: [...]
-    //   })
-    // ];
-
-    console.log('[ReceptionScene] Created', this.npcs.length, 'NPCs');
   }
 
   /**

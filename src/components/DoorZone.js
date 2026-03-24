@@ -10,6 +10,10 @@ export default class DoorZone {
    */
   constructor(scene, config) {
     this.scene = scene;
+    this.visible = config.visible !== false;
+    this.locked = config.locked === true;
+    this.lockedMessage = config.lockedMessage || 'Esta porta esta trancada.';
+
     this.zone = scene.add.zone(config.x, config.y, config.width, config.height).setOrigin(0.5);
     scene.physics.world.enable(this.zone);
     this.zone.body.setAllowGravity(false);
@@ -36,14 +40,34 @@ export default class DoorZone {
     this.indicator.add([eButton, eText, actionText]);
     this.indicator.setDepth(1500);
     this.indicator.setAlpha(0);
+    this.indicator.setVisible(this.visible);
 
     this.onInteract = config.onInteract;
     this.label = config.label || 'Porta';
     this.proximityDistance = config.proximityDistance || 50;
     this.isTweening = false;
+
+    if (!this.visible && this.zone.body) {
+      this.zone.body.enable = false;
+    }
+  }
+
+  showLockedFeedback() {
+    const dialogScene = this.scene.scene.get('DialogScene');
+    if (dialogScene && typeof dialogScene.showDialog === 'function') {
+      dialogScene.showDialog({
+        name: this.label,
+        dialogues: [{ text: this.lockedMessage, emotion: 'neutral' }]
+      });
+    }
   }
 
   update(player, input, tweens) {
+    if (!this.visible || !this.zone?.body?.enable) {
+      this.indicator?.setVisible(false);
+      return;
+    }
+
     const distance = Phaser.Math.Distance.Between(
       player.x, player.y,
       this.zone.x, this.zone.y
@@ -62,6 +86,10 @@ export default class DoorZone {
         });
       }
       if (Phaser.Input.Keyboard.JustDown(input.keyboard.addKey('E'))) {
+        if (this.locked) {
+          this.showLockedFeedback();
+          return;
+        }
         this.onInteract && this.onInteract();
       }
     } else {

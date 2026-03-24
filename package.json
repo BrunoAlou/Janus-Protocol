@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "optimize:assets": "node scripts/optimize-assets.js --json --images --write",
+    "optimize:assets:dry": "node scripts/optimize-assets.js --json --images",
+    "optimize:json": "node scripts/optimize-assets.js --json --write",
+    "optimize:images": "node scripts/optimize-assets.js --images --write"
   },
   "engines": {
     "node": "22.x",
@@ -30,6 +34,7 @@
     "mongodb": "^6.3.0"
   },
   "devDependencies": {
+    "sharp": "^0.34.4",
     "vite": "^7.1.3"
   }
 }
