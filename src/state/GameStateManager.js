@@ -11,7 +11,14 @@
  *   const state = stateManager.getState();
  */
 
-import { SCENE_NAMES, isValidSceneName } from '../constants/SceneNames.js';
+import { isValidSceneName } from '../constants/SceneNames.js';
+import { deepClone, deepMerge } from './stateUtils.js';
+import { createDefaultState } from './defaultState.js';
+import {
+  resolveUserProgressKey,
+  getProgressStorageKey,
+  getCandidateProgressStorageKeys
+} from './progressStorage.js';
 
 /**
  * @typedef {Object} AuthState
@@ -840,17 +847,7 @@ export default class GameStateManager {
    * @private
    */
   _deepMerge(target, source) {
-    const result = { ...target };
-    
-    for (const key in source) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-        result[key] = this._deepMerge(result[key] || {}, source[key]);
-      } else {
-        result[key] = source[key];
-      }
-    }
-    
-    return result;
+    return deepMerge(target, source);
   }
   
   /**
@@ -860,19 +857,7 @@ export default class GameStateManager {
    * @private
    */
   _deepClone(obj) {
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
-    }
-    
-    if (Array.isArray(obj)) {
-      return obj.map(item => this._deepClone(item));
-    }
-    
-    const cloned = {};
-    for (const key in obj) {
-      cloned[key] = this._deepClone(obj[key]);
-    }
-    return cloned;
+    return deepClone(obj);
   }
   
   /**
@@ -882,48 +867,7 @@ export default class GameStateManager {
    * @private
    */
   _mergeWithDefaults(updates) {
-    const defaults = {
-      auth: {
-        isAuthenticated: false,
-        user: null,
-        provider: null
-      },
-      scenes: {
-        current: SCENE_NAMES.LOGIN,
-        previous: null,
-        active: []
-      },
-      minigame: {
-        active: null,
-        score: 0,
-        completed: false,
-        stats: {}
-      },
-      settings: {
-        volume: 1,
-        difficulty: 'normal',
-        musicEnabled: true,
-        sfxEnabled: true
-      },
-      player: {
-        position: { x: 0, y: 0 },
-        inventory: {},
-        quests: {},
-        stats: {},
-        flags: {
-          contacted_receptionist: false,
-          reception_intro_modal_seen: false,
-          reception_intro_dialog_seen: false,
-          reception_intro_modal_active: false,
-          reception_intro_dialog_active: false,
-          resetgame: true
-        },
-        lastLocation: null,
-        lastPosition: null
-      }
-    };
-    
-    return this._deepMerge(defaults, updates);
+    return this._deepMerge(createDefaultState(), updates);
   }
   
   // ============================================
@@ -974,71 +918,21 @@ export default class GameStateManager {
    * @private
    */
   _resolveUserProgressKey(user, provider = null) {
-    if (!user) {
-      return null;
-    }
-
-    const candidate =
-      user.id ||
-      user.sub ||
-      user.email ||
-      user.username ||
-      user.name;
-
-    if (!candidate) {
-      return null;
-    }
-
-    const normalized = String(candidate).toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
-    // Chave estável por identidade do usuário (independente de provider)
-    return `user:${normalized}`;
+    return resolveUserProgressKey(user);
   }
 
   /**
    * @private
    */
   _getProgressStorageKey() {
-    return this._progressUserKey ? `janus_progress_${this._progressUserKey}` : null;
+    return getProgressStorageKey(this._progressUserKey);
   }
 
   /**
    * @private
    */
   _getCandidateProgressStorageKeys(user, provider = null) {
-    const keys = [];
-    const stable = this._resolveUserProgressKey(user, provider);
-    if (stable) {
-      keys.push(`janus_progress_${stable}`);
-    }
-
-    // Compatibilidade com formato legado: "provider:identity"
-    if (user) {
-      const candidate =
-        user.id ||
-        user.sub ||
-        user.email ||
-        user.username ||
-        user.name;
-
-      if (candidate) {
-        const normalized = String(candidate).toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
-        const providerCandidates = [
-          provider,
-          user.provider,
-          this._state?.auth?.provider,
-          'google',
-          'linkedin',
-          'dev',
-          'local'
-        ].filter(Boolean);
-
-        providerCandidates.forEach((prefix) => {
-          keys.push(`janus_progress_${prefix}:${normalized}`);
-        });
-      }
-    }
-
-    return [...new Set(keys)];
+    return getCandidateProgressStorageKeys(user, provider, this._state?.auth?.provider);
   }
   
   /**

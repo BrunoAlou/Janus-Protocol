@@ -13,50 +13,8 @@
 
 import InteractiveElement from './InteractiveElement.js';
 import FloatingMenu from '../ui/FloatingMenu.js';
-
-// Carrega os JSON de elementos no bundle para funcionar em dev e produção (GitHub Pages).
-const ELEMENT_CONFIGS = import.meta.glob('../data/elements/*.json', {
-  eager: true,
-  import: 'default'
-});
-
-const ELEMENT_CONFIG_URLS = import.meta.glob('../data/elements/*.json', {
-  eager: true,
-  query: '?url',
-  import: 'default'
-});
-
-function normalizeMapId(value) {
-  return String(value || '')
-    .replace(/\.json$/i, '')
-    .replace(/[_\s]+/g, '-')
-    .toLowerCase();
-}
-
-function resolveBundledElementConfig(mapId) {
-  const raw = String(mapId || '');
-  const fileName = raw.endsWith('.json') ? raw : `${raw}.json`;
-  const exactKey = `../data/elements/${fileName}`;
-
-  if (ELEMENT_CONFIGS[exactKey]) {
-    return { data: ELEMENT_CONFIGS[exactKey], url: ELEMENT_CONFIG_URLS[exactKey] || null };
-  }
-
-  const wanted = normalizeMapId(fileName);
-  const matchedKey = Object.keys(ELEMENT_CONFIGS).find((key) => {
-    const assetFile = key.split('/').pop() || '';
-    return normalizeMapId(assetFile) === wanted;
-  });
-
-  if (!matchedKey) {
-    return { data: null, url: null };
-  }
-
-  return {
-    data: ELEMENT_CONFIGS[matchedKey],
-    url: ELEMENT_CONFIG_URLS[matchedKey] || null
-  };
-}
+import { resolveBundledElementConfig } from './manager/configResolver.js';
+import { showElementContextMenu } from './manager/contextMenu.js';
 
 export default class ElementManager {
   /**
@@ -259,63 +217,7 @@ export default class ElementManager {
     if (!this.floatingMenu) {
       this.floatingMenu = new FloatingMenu(this.scene);
     }
-
-    // Criar opções baseadas no elemento e suas reações
-    const options = [];
-
-    // Opção principal (interagir)
-    if (element.options && element.options.length > 0) {
-      element.options.forEach(opt => {
-        options.push({
-          label: opt.label || 'Interact',
-          icon: opt.icon || '◎',
-          disabled: opt.disabled || false,
-          action: () => {
-            if (opt.action && typeof opt.action === 'function') {
-              opt.action();
-            } else {
-              element.interact('mouse');
-            }
-          }
-        });
-      });
-    } else {
-      // Opção padrão se não houver opções customizadas
-      options.push({
-        label: `Interact with ${element.name}`,
-        icon: '◎',
-        action: () => element.interact('mouse')
-      });
-    }
-
-    // Adicionar separador
-    if (options.length > 0) {
-      options.push({ label: '', icon: '', disabled: true });
-    }
-
-    // Opções adicionais
-    options.push({
-      label: 'Examine',
-      icon: '◉',
-      action: () => {
-        console.log(`[ElementManager] Examined: ${element.name}`);
-        if (element.description) {
-          // Aqui você pode mostrar uma UI com a descrição
-          console.log(`Description: ${element.description}`);
-        }
-      }
-    });
-
-    options.push({
-      label: 'Cancel',
-      icon: '✕',
-      action: () => {
-        this.floatingMenu.hide();
-      }
-    });
-
-    // Mostrar menu
-    this.floatingMenu.show(x, y, options);
+    showElementContextMenu(this, x, y, element);
   }
 
   // ============================================

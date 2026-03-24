@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
 import { SCENE_NAMES } from '../constants/SceneNames.js';
+import { startTyping, skipTyping } from './dialog/typingHelpers.js';
+import {
+  createOptionButton as createOptionButtonHelper,
+  updateVisibleOptions as updateVisibleOptionsHelper,
+  highlightOption as highlightOptionHelper
+} from './dialog/optionsHelpers.js';
 
 /**
  * DialogScene - Hub de conversas na parte inferior
@@ -279,38 +285,8 @@ export default class DialogScene extends Phaser.Scene {
 
     const dialogue = this.currentDialogue[this.dialogueIndex];
     const text = dialogue.text || dialogue;
-    
-    // Guardar texto completo para skip
-    this.currentFullText = text;
 
-    this.isTyping = true;
-    this.continueIndicator.setVisible(false);
-    this.dialogText.setText('');
-
-    // Efeito de digitação
-    let charIndex = 0;
-    const typingSpeed = 30; // ms por caractere
-
-    this.typeTimer = this.time.addEvent({
-      delay: typingSpeed,
-      callback: () => {
-        if (charIndex < text.length) {
-          this.dialogText.setText(text.substring(0, charIndex + 1));
-          charIndex++;
-        } else {
-          if (this.typeTimer) {
-            this.typeTimer.remove();
-            this.typeTimer = null;
-          }
-          this.isTyping = false;
-          // Verificar se currentDialogue ainda existe antes de acessar
-          this.continueIndicator.setVisible(
-            this.currentDialogue && this.dialogueIndex < this.currentDialogue.length - 1
-          );
-        }
-      },
-      loop: true
-    });
+    startTyping(this, text);
   }
 
   /**
@@ -318,21 +294,7 @@ export default class DialogScene extends Phaser.Scene {
    */
   advanceDialogue() {
     // Se está digitando, completar o texto atual (skip da animação)
-    if (this.isTyping) {
-      // Cancelar timer de digitação
-      if (this.typeTimer) {
-        this.typeTimer.remove();
-        this.typeTimer = null;
-      }
-      
-      // Mostrar texto completo imediatamente
-      this.dialogText.setText(this.currentFullText);
-      this.isTyping = false;
-      
-      // Mostrar indicador de continuar se houver mais diálogos
-      this.continueIndicator.setVisible(
-        this.currentDialogue && this.dialogueIndex < this.currentDialogue.length - 1
-      );
+    if (skipTyping(this)) {
       return;
     }
 
@@ -492,127 +454,21 @@ export default class DialogScene extends Phaser.Scene {
    * Atualiza a visibilidade e posição das opções baseado no scroll
    */
   updateVisibleOptions() {
-    const endIndex = Math.min(this.visibleStartIndex + this.maxVisibleOptions, this.currentOptions.length);
-
-    this.optionButtons.forEach((button, index) => {
-      if (index >= this.visibleStartIndex && index < endIndex) {
-        // Opção visível - posicionar
-        const visibleIndex = index - this.visibleStartIndex;
-        const y = this.optionsStartY + (visibleIndex * (this.buttonHeight + this.buttonSpacing));
-        button.setY(y);
-        button.setVisible(true);
-      } else {
-        // Opção fora da área visível
-        button.setVisible(false);
-      }
-    });
-
-    // Atualizar indicadores de scroll
-    const hasMoreAbove = this.visibleStartIndex > 0;
-    const hasMoreBelow = endIndex < this.currentOptions.length;
-    
-    this.scrollUpIndicator.setVisible(hasMoreAbove);
-    this.scrollDownIndicator.setVisible(hasMoreBelow);
+    updateVisibleOptionsHelper(this);
   }
 
   /**
    * Cria um botão de opção individual
    */
   createOptionButton(option, index, x, y, width, height) {
-    const container = this.add.container(x, y);
-
-    const isDisabled = option.disabled || false;
-    const bgColor = isDisabled ? 0x333333 : 0x2a2a3e;
-    const textColor = isDisabled ? '#666666' : '#ffffff';
-
-    // Fundo do botão
-    const bg = this.add.rectangle(width / 2, height / 2, width, height, bgColor)
-      .setStrokeStyle(1, 0x00d9ff)
-      .setInteractive({ useHandCursor: !isDisabled });
-
-    // Ícone (se houver)
-    let iconOffset = 0;
-    if (option.icon) {
-      const icon = this.add.text(10, height / 2, option.icon, {
-        fontSize: '16px'
-      }).setOrigin(0, 0.5);
-      container.add(icon);
-      iconOffset = 28;
-    }
-
-    // Texto do label
-    const label = this.add.text(10 + iconOffset, height / 2, option.label, {
-      fontSize: '14px',
-      fontFamily: 'Arial',
-      color: textColor
-    }).setOrigin(0, 0.5);
-
-    // Texto de descrição (se houver)
-    if (option.description) {
-      const desc = this.add.text(width - 8, height / 2, option.description, {
-        fontSize: '11px',
-        fontFamily: 'Arial',
-        color: '#888888'
-      }).setOrigin(1, 0.5);
-      container.add(desc);
-    }
-
-    // Indicador de desabilitado
-    if (isDisabled && option.disabledReason) {
-      const reason = this.add.text(width - 8, height / 2, `🔒 ${option.disabledReason}`, {
-        fontSize: '10px',
-        fontFamily: 'Arial',
-        color: '#ff6666'
-      }).setOrigin(1, 0.5);
-      container.add(reason);
-    }
-
-    container.add([bg, label]);
-
-    // Eventos do botão
-    if (!isDisabled) {
-      bg.on('pointerover', () => {
-        this.selectedOptionIndex = index;
-        this.highlightOption(index);
-      });
-
-      bg.on('pointerdown', () => {
-        this.selectOption(option);
-      });
-    }
-
-    // Guardar referência ao background para highlight
-    container.bg = bg;
-    container.option = option;
-    container.isDisabled = isDisabled;
-
-    return container;
+    return createOptionButtonHelper(this, option, index, x, y, width, height);
   }
 
   /**
    * Destaca a opção selecionada e ajusta scroll se necessário
    */
   highlightOption(index) {
-    // Ajustar scroll para garantir que a opção selecionada esteja visível
-    if (index < this.visibleStartIndex) {
-      this.visibleStartIndex = index;
-      this.updateVisibleOptions();
-    } else if (index >= this.visibleStartIndex + this.maxVisibleOptions) {
-      this.visibleStartIndex = index - this.maxVisibleOptions + 1;
-      this.updateVisibleOptions();
-    }
-
-    this.optionButtons.forEach((button, i) => {
-      if (button.isDisabled) return;
-      
-      if (i === index) {
-        button.bg.setFillStyle(0x3a3a4e);
-        button.bg.setStrokeStyle(2, 0x00ffff);
-      } else {
-        button.bg.setFillStyle(0x2a2a3e);
-        button.bg.setStrokeStyle(1, 0x00d9ff);
-      }
-    });
+    highlightOptionHelper(this, index);
   }
 
   /**

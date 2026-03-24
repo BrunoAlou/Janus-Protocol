@@ -11,6 +11,16 @@
 
 import minigamesConfig from '../data/config/minigames-config.json';
 import { getApiUrl } from '../config/apiConfig.js';
+import { generateHRReport, extractMetricsForReport, formatMetricValue } from './minigame/reporting.js';
+import {
+  saveMinigameStorage,
+  readMinigameStorage,
+  clearMinigameStorage,
+  getUnlockFlagKey,
+  isUnlockedByFlag,
+  setUnlockFlag,
+  getMockPublicAverages
+} from './minigame/storage.js';
 
 export default class MinigameManager {
   constructor() {
@@ -417,40 +427,12 @@ export default class MinigameManager {
    * @returns {HRReport}
    */
   generateHRReport() {
-    const report = {
-      generatedAt: Date.now(),
-      minigames: [],
-      summary: {
-        totalUnlocked: 0,
-        totalAttempts: 0,
-        averageEngagement: 0
-      }
-    };
-    
-    this.progress.forEach((progress, minigameId) => {
-      if (!progress.unlocked || !this.isEnabled(minigameId)) return;
-      
-      const config = this.getConfig(minigameId);
-      const stats = this.getStats(minigameId);
-      
-      report.minigames.push({
-        id: minigameId,
-        displayName: config.displayName,
-        icon: config.icon,
-        stats,
-        metrics: this._extractMetricsForReport(minigameId, progress)
-      });
-      
-      report.summary.totalUnlocked++;
-      report.summary.totalAttempts += progress.totalAttempts;
+    return generateHRReport({
+      progressMap: this.progress,
+      isEnabled: (id) => this.isEnabled(id),
+      getConfig: (id) => this.getConfig(id),
+      getStats: (id) => this.getStats(id)
     });
-    
-    if (report.summary.totalUnlocked > 0) {
-      report.summary.averageEngagement = 
-        report.summary.totalAttempts / report.summary.totalUnlocked;
-    }
-    
-    return report;
   }
   
   /**
@@ -458,26 +440,11 @@ export default class MinigameManager {
    * @private
    */
   _extractMetricsForReport(minigameId, progress) {
-    if (!progress.firstAttempt) return null;
-    
-    const config = this.getConfig(minigameId);
-    const metrics = progress.firstAttempt.metrics || {};
-    const labels = config.metrics?.reportLabels || {};
-    
-    const result = [];
-    
-    Object.entries(metrics).forEach(([key, value]) => {
-      if (labels[key]) {
-        result.push({
-          key,
-          label: labels[key],
-          value,
-          formatted: this._formatMetricValue(key, value)
-        });
-      }
+    return extractMetricsForReport({
+      minigameId,
+      progress,
+      getConfig: (id) => this.getConfig(id)
     });
-    
-    return result;
   }
   
   /**
@@ -485,18 +452,7 @@ export default class MinigameManager {
    * @private
    */
   _formatMetricValue(key, value) {
-    if (key.includes('Time') || key.includes('duration')) {
-      // Tempo em segundos
-      return `${Math.round(value / 1000)}s`;
-    }
-    if (key.includes('accuracy') || key.includes('Rate')) {
-      // Porcentagem
-      return `${Math.round(value)}%`;
-    }
-    if (key === 'wpm') {
-      return `${value} PPM`;
-    }
-    return String(value);
+    return formatMetricValue(key, value);
   }
   
   // ============================================
@@ -509,11 +465,7 @@ export default class MinigameManager {
    */
   _saveToStorage() {
     try {
-      const data = {
-        unlocked: Object.fromEntries(this.unlocked),
-        progress: Object.fromEntries(this.progress)
-      };
-      localStorage.setItem('janus_minigame_progress', JSON.stringify(data));
+      saveMinigameStorage(this.unlocked, this.progress);
     } catch (err) {
       console.error('[MinigameManager] Failed to save:', err);
     }
@@ -525,10 +477,8 @@ export default class MinigameManager {
    */
   _loadFromStorage() {
     try {
-      const saved = localStorage.getItem('janus_minigame_progress');
-      if (!saved) return;
-      
-      const data = JSON.parse(saved);
+      const data = readMinigameStorage();
+      if (!data) return;
       
       // Restaurar unlocked
       if (data.unlocked) {
@@ -573,15 +523,7 @@ export default class MinigameManager {
    * @private
    */
   _setMockPublicAverages() {
-    this.publicAverages = {
-      QuizGame: { averageScore: 65, standardDeviation: 18, totalPlayers: 500 },
-      MemoryGame: { averageScore: 70, standardDeviation: 15, totalPlayers: 450 },
-      PuzzleGame: { averageScore: 60, standardDeviation: 20, totalPlayers: 400 },
-      TypingGame: { averageScore: 55, standardDeviation: 22, totalPlayers: 380 },
-      SnakeGame: { averageScore: 50, standardDeviation: 25, totalPlayers: 200 },
-      TetrisGame: { averageScore: 58, standardDeviation: 20, totalPlayers: 180 },
-      WhackAMoleGame: { averageScore: 72, standardDeviation: 12, totalPlayers: 220 }
-    };
+    this.publicAverages = getMockPublicAverages();
   }
   
   /**
@@ -597,7 +539,7 @@ export default class MinigameManager {
       this._setUnlockFlag(key, false);
     });
     
-    localStorage.removeItem('janus_minigame_progress');
+    clearMinigameStorage();
     
     this._emit('progress-reset');
     console.log('[MinigameManager] Progress reset');
@@ -607,27 +549,21 @@ export default class MinigameManager {
    * @private
    */
   _getUnlockFlagKey(minigameId) {
-    return `minigame_unlocked_${minigameId}`;
+    return getUnlockFlagKey(minigameId);
   }
 
   /**
    * @private
    */
   _isUnlockedByFlag(minigameId) {
-    if (!window.gameState?.getFlag) {
-      return false;
-    }
-    return window.gameState.getFlag(this._getUnlockFlagKey(minigameId)) === true;
+    return isUnlockedByFlag(minigameId);
   }
 
   /**
    * @private
    */
   _setUnlockFlag(minigameId, unlocked) {
-    if (!window.gameState?.setFlag) {
-      return;
-    }
-    window.gameState.setFlag(this._getUnlockFlagKey(minigameId), unlocked === true);
+    setUnlockFlag(minigameId, unlocked);
   }
   
   // ============================================

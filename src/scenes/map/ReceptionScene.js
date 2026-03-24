@@ -9,6 +9,8 @@ import {
 } from '../../npcs/sitGuyAnimations.js';
 import { RECEPTION_TEXTS } from '../../i18n/receptionTexts.js';
 import { NPC_TEXTS } from '../../i18n/npcTexts.js';
+import { ReceptionDialogueManager } from './services/reception/ReceptionDialogueManager.js';
+import { ReceptionIntroducer } from './services/reception/ReceptionIntroducer.js';
 
 /**
  * ReceptionScene - Cena da recepção (antiga GameScene)
@@ -158,7 +160,11 @@ export default class ReceptionScene extends BaseMapScene {
       if (!receptionist._hasContactTrackingWrapper) {
         const originalInteract = receptionist.interact.bind(receptionist);
         receptionist.interact = (trigger = 'manual') => {
-          this.applyReceptionistConditionalTexts();
+          // Use novo manager para aplicar textos condicionais
+          if (!this.dialogueManager) {
+            this.dialogueManager = new ReceptionDialogueManager(this);
+          }
+          this.dialogueManager.applyConditionalTexts(receptionist, receptionistTexts);
           this.setFlowFlag(this.receptionistContactFlagKey, true);
           this.applyCaioConditionalTexts();
           return originalInteract(trigger);
@@ -166,7 +172,11 @@ export default class ReceptionScene extends BaseMapScene {
         receptionist._hasContactTrackingWrapper = true;
       }
 
-      this.applyReceptionistConditionalTexts();
+      // Aplicar textos iniciais
+      if (!this.dialogueManager) {
+        this.dialogueManager = new ReceptionDialogueManager(this);
+      }
+      this.dialogueManager.applyConditionalTexts(receptionist, receptionistTexts);
     }
 
     const caio = this.elementManager?.getElement?.(NPC_TEXTS.reception.caio.id);
@@ -179,330 +189,21 @@ export default class ReceptionScene extends BaseMapScene {
         const originalInteract = caio.interact.bind(caio);
         caio.interact = (trigger = 'manual') => {
           this.applyCaioConditionalTexts();
-          this.applyReceptionistConditionalTexts();
+          if (!this.dialogueManager) {
+            this.dialogueManager = new ReceptionDialogueManager(this);
+          }
+          const receptionistTexts = NPC_TEXTS.reception.receptionist;
+          const receptionist = this.elementManager?.getElement?.(NPC_TEXTS.reception.receptionist.id);
+          if (receptionist) {
+            this.dialogueManager.applyConditionalTexts(receptionist, receptionistTexts);
+          }
           return originalInteract(trigger);
         };
         caio._hasConditionalGreetingWrapper = true;
       }
 
       this.applyCaioConditionalTexts();
-      this.applyReceptionistConditionalTexts();
     }
-  }
-
-  applyReceptionistConditionalTexts() {
-    const receptionist = this.elementManager?.getElement?.(NPC_TEXTS.reception.receptionist.id);
-    if (!receptionist) {
-      return;
-    }
-
-    const receptionistTexts = NPC_TEXTS.reception.receptionist;
-    const hasTalkedToCaio = window.gameState?.getFlag?.(this.caioContactFlagKey) === true;
-    const conditionalGreetings = receptionistTexts.greetings || {};
-    const baseOptions = Array.isArray(receptionist._baseOptionsSnapshot)
-      ? receptionist._baseOptionsSnapshot
-      : (receptionist.options || []);
-
-    const buildOptionFromConfig = (config, fallbackOption = {}) => {
-      const baseActionData = fallbackOption.action?.data ? { ...fallbackOption.action.data } : {};
-      const option = {
-        ...fallbackOption,
-        id: config.id,
-        label: config.label,
-        description: config.description,
-        axis: config.axis,
-        condition: config.condition || undefined,
-        action: {
-          ...(fallbackOption.action || {}),
-          ...(config.action || {}),
-          data: {
-            ...baseActionData,
-            ...(config.action?.data || {}),
-            ...(typeof config.axis === 'string' ? { axis: config.axis } : {})
-          }
-        }
-      };
-
-      if (!option.action?.type) {
-        option.action = {
-          type: 'dialog',
-          data: {
-            ...(typeof config.axis === 'string' ? { axis: config.axis } : {}),
-            dialogues: (config.dialogues || []).map((text) => ({ text }))
-          }
-        };
-      } else if (Array.isArray(config.dialogues)) {
-        option.action = {
-          ...option.action,
-          data: {
-            ...(option.action.data || {}),
-            dialogues: config.dialogues.map((text) => ({ text }))
-          }
-        };
-      }
-
-      return option;
-    };
-
-    receptionist.greeting = hasTalkedToCaio
-      ? (conditionalGreetings.afterCaio || receptionistTexts.greeting)
-      : (conditionalGreetings.beforeCaio || receptionistTexts.greeting);
-
-    if (!hasTalkedToCaio) {
-      // Use beforeCaioFlow with axis-aligned options
-      const flow = receptionistTexts.beforeCaioFlow || {};
-      const followUpOptions = Array.isArray(flow.followUp) ? flow.followUp : [];
-      
-      console.log('[ReceptionScene] beforeCaioFlow - Total followUp options:', followUpOptions.length);
-      console.log('[ReceptionScene] beforeCaioFlow - Following options IDs:', followUpOptions.map(o => o.id));
-      
-      // Get selected options from storage
-      const selectedOptionsStr = window.gameState?.getFlag?.(this.receptionistSelectedOptionsKey) || '';
-      const selectedOptions = selectedOptionsStr ? selectedOptionsStr.split(',').filter(Boolean) : [];
-      
-      console.log('[ReceptionScene] beforeCaioFlow - Selected options to filter:', selectedOptions);
-      
-      // Filter out already selected options
-      const availableFollowUpOptions = followUpOptions.filter(config => !selectedOptions.includes(config.id));
-      
-      console.log('[ReceptionScene] beforeCaioFlow - Available options after filtering:', availableFollowUpOptions.map(o => o.id));
-      
-      receptionist.options = availableFollowUpOptions.map((config) => {
-        const fallbackOption = baseOptions.find((item) => item.id === config.id) || baseOptions[0] || {};
-        const builtOption = buildOptionFromConfig(config, fallbackOption);
-        
-        // Wrap the action to track selection and unlocks
-        const originalAction = builtOption.action;
-        builtOption.action = {
-          type: 'custom',
-          data: {
-            axis: config.axis,
-            callback: ({ element, scene }) => {
-              console.log('[ReceptionScene] beforeCaioFlow - CALLBACK EXECUTED for option:', config.id);
-              // Mark this option as selected
-              const currentSelected = window.gameState?.getFlag?.(this.receptionistSelectedOptionsKey) || '';
-              const newSelected = currentSelected ? `${currentSelected},${config.id}` : config.id;
-              console.log('[ReceptionScene] Option selected - ID:', config.id);
-              console.log('[ReceptionScene] Current selected:', currentSelected);
-              console.log('[ReceptionScene] New selected:', newSelected);
-              this.setFlowFlag(this.receptionistSelectedOptionsKey, newSelected);
-              console.log('[ReceptionScene] Flag saved. Current value in GameState:', window.gameState?.getFlag?.(this.receptionistSelectedOptionsKey));
-              
-              // Register priority axis (first selection)
-              const currentAxis = window.gameState?.getFlag?.(this.receptionistPriorityAxisKey);
-              if (!currentAxis) {
-                this.setFlowFlag(this.receptionistPriorityAxisKey, config.axis);
-              }
-              
-              // Unlock all receptionist paths
-              if (Array.isArray(config.unlocksFlags)) {
-                config.unlocksFlags.forEach(flag => {
-                  this.setFlowFlag(flag, true);
-                });
-              }
-              
-              // Handle specific actions
-              if (config.actionOnSelect?.type === 'wait-room') {
-                const dialogScene = scene.scene.get('DialogScene');
-                if (dialogScene) {
-                  dialogScene.showDialog({
-                    name: receptionistTexts.name,
-                    dialogues: (config.dialogues || []).map((text) => ({ text })),
-                    onComplete: () => {
-                      console.log('[ReceptionScene] Opening info panel with minigame option');
-                    }
-                  });
-                }
-              } else if (config.actionOnSelect?.type === 'event') {
-                const dialogScene = scene.scene.get('DialogScene');
-                if (dialogScene) {
-                  dialogScene.showDialog({
-                    name: receptionistTexts.name,
-                    dialogues: (config.dialogues || []).map((text) => ({ text })),
-                    onComplete: () => {
-                      this.events.emit(config.actionOnSelect.target || 'meet-it-team');
-                    }
-                  });
-                }
-              } else if (config.actionOnSelect?.type === 'element-unlock') {
-                const dialogScene = scene.scene.get('DialogScene');
-                if (dialogScene) {
-                  dialogScene.showDialog({
-                    name: receptionistTexts.name,
-                    dialogues: (config.dialogues || []).map((text) => ({ text })),
-                    onComplete: () => {
-                      console.log('[ReceptionScene] Form element unlocked, minigame quiz enabled');
-                    }
-                  });
-                }
-              } else if (config.actionOnSelect?.type === 'mission-unlock') {
-                const dialogScene = scene.scene.get('DialogScene');
-                if (dialogScene) {
-                  dialogScene.showDialog({
-                    name: receptionistTexts.name,
-                    dialogues: (config.dialogues || []).map((text) => ({ text })),
-                    onComplete: () => {
-                      this.setFlowFlag('main_mission_janus_ai_unlocked', true);
-                      if (config.actionOnSelect.bugHint) {
-                        console.log('[ReceptionScene] Bug hint revealed: Strange code detected in Janus AI description');
-                      }
-                    }
-                  });
-                }
-              } else {
-                const dialogScene = scene.scene.get('DialogScene');
-                if (dialogScene) {
-                  dialogScene.showDialog({
-                    name: receptionistTexts.name,
-                    dialogues: (config.dialogues || []).map((text) => ({ text }))
-                  });
-                }
-              }
-            }
-          }
-        };
-        
-        return builtOption;
-      });
-      return;
-    }
-
-    const flow = receptionistTexts.afterCaioFlow || {};
-    const apologyDone = window.gameState?.getFlag?.(this.receptionistAfterCaioApologyFlagKey) === true;
-
-    if (!apologyDone && flow.apology) {
-      const fallbackOption = baseOptions.find((item) => item.id === 'opt_info') || baseOptions[0] || {};
-      const apologyOption = buildOptionFromConfig(flow.apology, fallbackOption);
-
-      apologyOption.action = {
-        type: 'custom',
-        data: {
-          axis: flow.apology.axis,
-          callback: ({ element, scene }) => {
-            const dialogScene = scene.scene.get('DialogScene');
-            if (!dialogScene) return;
-
-            dialogScene.showDialog({
-              name: receptionistTexts.name,
-              dialogues: (flow.apology.dialogues || []).map((text) => ({ text })),
-              onComplete: () => {
-                this.setFlowFlag(this.receptionistAfterCaioApologyFlagKey, true);
-                this.applyReceptionistConditionalTexts();
-                element.showOptionsDialog();
-              }
-            });
-          }
-        }
-      };
-
-      receptionist.options = [apologyOption];
-      return;
-    }
-
-    const followUpOptions = Array.isArray(flow.followUp) ? flow.followUp : [];
-    
-    // Get selected options from storage
-    const selectedOptionsStr = window.gameState?.getFlag?.(this.receptionistSelectedOptionsKey) || '';
-    const selectedOptions = selectedOptionsStr ? selectedOptionsStr.split(',').filter(Boolean) : [];
-    
-    console.log('[ReceptionScene] afterCaioFlow - Selected options to filter:', selectedOptions);
-    
-    // Filter out already selected options
-    const availableFollowUpOptions = followUpOptions.filter(config => !selectedOptions.includes(config.id));
-    
-    console.log('[ReceptionScene] afterCaioFlow - Available options after filtering:', availableFollowUpOptions.map(o => o.id));
-    
-    receptionist.options = availableFollowUpOptions.map((config) => {
-      const fallbackOption = baseOptions.find((item) => item.id === config.id) || baseOptions[0] || {};
-      const builtOption = buildOptionFromConfig(config, fallbackOption);
-      
-      // Wrap the action to track selection and unlocks
-      const originalAction = builtOption.action;
-      builtOption.action = {
-        type: 'custom',
-        data: {
-          axis: config.axis,
-          callback: ({ element, scene }) => {
-              console.log('[ReceptionScene] afterCaioFlow - CALLBACK EXECUTED for option:', config.id);
-            if (!currentAxis) {
-              this.setFlowFlag(this.receptionistPriorityAxisKey, config.axis);
-            }
-            
-            // Unlock all receptionist paths
-            if (Array.isArray(config.unlocksFlags)) {
-              config.unlocksFlags.forEach(flag => {
-                this.setFlowFlag(flag, true);
-              });
-            }
-            
-            // Handle specific actions
-            if (config.actionOnSelect?.type === 'wait-room') {
-              const dialogScene = scene.scene.get('DialogScene');
-              if (dialogScene) {
-                dialogScene.showDialog({
-                  name: receptionistTexts.name,
-                  dialogues: (config.dialogues || []).map((text) => ({ text })),
-                  onComplete: () => {
-                    // Show info panel with minigame option
-                    console.log('[ReceptionScene] Opening info panel with minigame option');
-                  }
-                });
-              }
-            } else if (config.actionOnSelect?.type === 'event') {
-              const dialogScene = scene.scene.get('DialogScene');
-              if (dialogScene) {
-                dialogScene.showDialog({
-                  name: receptionistTexts.name,
-                  dialogues: (config.dialogues || []).map((text) => ({ text })),
-                  onComplete: () => {
-                    // Trigger event
-                    this.events.emit(config.actionOnSelect.target || 'meet-it-team');
-                  }
-                });
-              }
-            } else if (config.actionOnSelect?.type === 'element-unlock') {
-              const dialogScene = scene.scene.get('DialogScene');
-              if (dialogScene) {
-                dialogScene.showDialog({
-                  name: receptionistTexts.name,
-                  dialogues: (config.dialogues || []).map((text) => ({ text })),
-                  onComplete: () => {
-                    // Unlock form element
-                    console.log('[ReceptionScene] Form element unlocked, minigame quiz enabled');
-                  }
-                });
-              }
-            } else if (config.actionOnSelect?.type === 'mission-unlock') {
-              const dialogScene = scene.scene.get('DialogScene');
-              if (dialogScene) {
-                dialogScene.showDialog({
-                  name: receptionistTexts.name,
-                  dialogues: (config.dialogues || []).map((text) => ({ text })),
-                  onComplete: () => {
-                    // Unlock main mission
-                    this.setFlowFlag('main_mission_janus_ai_unlocked', true);
-                    if (config.actionOnSelect.bugHint) {
-                      console.log('[ReceptionScene] Bug hint revealed: Strange code detected in Janus AI description');
-                    }
-                  }
-                });
-              }
-            } else {
-              // Default action handling
-              const dialogScene = scene.scene.get('DialogScene');
-              if (dialogScene) {
-                dialogScene.showDialog({
-                  name: receptionistTexts.name,
-                  dialogues: (config.dialogues || []).map((text) => ({ text }))
-                });
-              }
-            }
-          }
-        }
-      };
-      
-      return builtOption;
-    });
   }
 
   applyNpcOptionTranslation(element, optionTexts) {
@@ -700,251 +401,21 @@ export default class ReceptionScene extends BaseMapScene {
    * Mostrar diálogo de introdução ao chegar na recepção
    */
   showIntroductionDialogue() {
-    // Esperar o fade in completar antes de mostrar o diálogo
     this.time.delayedCall(600, () => {
-      const modalSeen = window.gameState?.getFlag?.(this.modalSeenFlagKey) === true;
-      const dialogSeen = window.gameState?.getFlag?.(this.dialogSeenFlagKey) === true;
-
-      if (!modalSeen) {
-        this.showPreWelcomeModal(() => {
-          if (!dialogSeen) {
-            this.startWelcomeDialog();
-          }
-        });
-        return;
+      if (!this.introducer) {
+        this.introducer = new ReceptionIntroducer(this);
       }
-
-      if (!dialogSeen) {
-        this.startWelcomeDialog();
-      }
+      this.introducer.showIntroductionFlow();
     });
-  }
-
-  startWelcomeDialog() {
-    if (this.onboardingModalOpen) {
-      return;
-    }
-
-    const dialogScene = this.scene.get('DialogScene');
-
-    console.log('[ReceptionScene] Trying to show intro dialogue');
-    console.log('[ReceptionScene] DialogScene:', dialogScene);
-    console.log('[ReceptionScene] DialogScene active?', this.scene.isActive('DialogScene'));
-
-    if (dialogScene && this.scene.isActive('DialogScene')) {
-      this.onboardingDialogOpen = true;
-      this.setFlowFlag(this.dialogFlowFlagKey, true);
-
-      const introData = {
-        name: RECEPTION_TEXTS.introDialog.name,
-        dialogues: RECEPTION_TEXTS.introDialog.dialogues.map((text, index) => ({
-          text,
-          emotion: index === 1 ? 'determined' : 'neutral'
-        })),
-        onComplete: () => {
-          this.onboardingDialogOpen = false;
-          this.setFlowFlag(this.dialogFlowFlagKey, false);
-          this.setFlowFlag(this.dialogSeenFlagKey, true);
-        }
-      };
-
-      dialogScene.showDialog(introData);
-      console.log('[ReceptionScene] Introduction dialogue started');
-    } else {
-      this.onboardingDialogOpen = false;
-      this.setFlowFlag(this.dialogFlowFlagKey, false);
-      console.error('[ReceptionScene] DialogScene not found or not active!');
-    }
   }
 
   setFlowFlag(flagKey, value) {
     if (window.gameState?.setFlag && flagKey) {
-      window.gameState.setFlag(flagKey, value === true);
+      window.gameState.setFlag(flagKey, value);
     }
   }
 
   isInteractionBlocked() {
     return this.onboardingModalOpen || this.onboardingDialogOpen;
-  }
-
-  showPreWelcomeModal(onContinue) {
-    if (this.onboardingModalOpen) {
-      return;
-    }
-
-    this.onboardingModalOpen = true;
-    this.setFlowFlag(this.modalFlowFlagKey, true);
-    this.playerController && (this.playerController.enabled = false);
-
-    const camera = this.cameras.main;
-    const width = camera.width;
-    const height = camera.height;
-    const container = this.add.container(0, 0).setDepth(25000).setScrollFactor(0);
-
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.72)
-      .setScrollFactor(0)
-      .setInteractive();
-    overlay.on('pointerdown', (pointer, localX, localY, event) => {
-      event?.stopPropagation?.();
-    });
-
-    const panel = this.add.rectangle(
-      width / 2,
-      height / 2,
-      Math.min(550, Math.max(320, width * 0.9)),
-      Math.min(260, Math.max(260, height * 0.86)),
-      0x10172a,
-      0.98
-    )
-      .setStrokeStyle(3, 0x00d9ff)
-      .setScrollFactor(0)
-      .setInteractive();
-    panel.on('pointerdown', (pointer, localX, localY, event) => {
-      event?.stopPropagation?.();
-    });
-
-    const title = this.add.text(width / 2, panel.y - panel.height / 2 + 18, RECEPTION_TEXTS.modal.title, {
-      fontSize: '20px',
-      color: '#00d9ff',
-      fontStyle: 'bold'
-    }).setOrigin(0.5, 0).setScrollFactor(0);
-
-    const pages = RECEPTION_TEXTS.modal.pages;
-
-    let pageIndex = 0;
-    const body = this.add.text(panel.x - panel.width / 2 + 24, title.y + 42, pages[0],
-      {
-        fontSize: '16px',
-        color: '#e6f4ff',
-        wordWrap: { width: panel.width - 48 },
-        lineSpacing: 5
-      }
-    ).setOrigin(0, 0).setScrollFactor(0);
-
-    const pageCounter = this.add.text(panel.x, panel.y + panel.height / 2 - 42, `1/${pages.length}`, {
-      fontSize: '15px',
-      color: '#9cc4ff'
-    }).setOrigin(0.5).setScrollFactor(0);
-
-    const prevButton = this.add.text(panel.x - 92, panel.y + panel.height / 2 - 42, RECEPTION_TEXTS.modal.previousButton, {
-      fontSize: '22px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-      backgroundColor: '#2a3f6b',
-      padding: { x: 12, y: 6 }
-    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
-
-    const nextButton = this.add.text(panel.x + 92, panel.y + panel.height / 2 - 42, RECEPTION_TEXTS.modal.nextButton, {
-      fontSize: '22px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-      backgroundColor: '#2a3f6b',
-      padding: { x: 12, y: 6 }
-    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
-
-    const button = this.add.text(width / 2, panel.y + panel.height / 2 - 42, RECEPTION_TEXTS.modal.continueButton, {
-      fontSize: '18px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-      backgroundColor: '#2a3f6b',
-      padding: { x: 18, y: 8 }
-    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
-
-    button.setVisible(false);
-
-    const updatePage = () => {
-      body.setText(pages[pageIndex]);
-      pageCounter.setText(`${pageIndex + 1}/${pages.length}`);
-
-      prevButton.setAlpha(pageIndex === 0 ? 0.45 : 1);
-      button.setVisible(pageIndex === pages.length - 1);
-      pageCounter.setVisible(pageIndex !== pages.length - 1);
-      prevButton.setVisible(pageIndex !== pages.length - 1);
-      nextButton.setVisible(pageIndex !== pages.length - 1);
-    };
-
-    button.on('pointerover', () => button.setBackgroundColor('#36548f'));
-    button.on('pointerout', () => button.setBackgroundColor('#2a3f6b'));
-    prevButton.on('pointerover', () => prevButton.setBackgroundColor('#36548f'));
-    prevButton.on('pointerout', () => prevButton.setBackgroundColor('#2a3f6b'));
-    nextButton.on('pointerover', () => nextButton.setBackgroundColor('#36548f'));
-    nextButton.on('pointerout', () => nextButton.setBackgroundColor('#2a3f6b'));
-
-    const closeModal = () => {
-      if (!this.onboardingModalOpen) return;
-      this.onboardingModalOpen = false;
-      this.setFlowFlag(this.modalFlowFlagKey, false);
-      this.setFlowFlag(this.modalSeenFlagKey, true);
-
-      if (this._onboardingContinueKey && this._onboardingSpaceHandler) {
-        this._onboardingContinueKey.off('down', this._onboardingSpaceHandler);
-      }
-      if (this._onboardingPrevKey && this._onboardingPrevHandler) {
-        this._onboardingPrevKey.off('down', goPrevPage);
-      }
-      if (this._onboardingNextKey && this._onboardingNextHandler) {
-        this._onboardingNextKey.off('down', goNextPage);
-      }
-
-      this._onboardingSpaceHandler = null;
-      this._onboardingPrevHandler = null;
-      this._onboardingNextHandler = null;
-
-      this.onboardingModalContainer?.destroy(true);
-      this.onboardingModalContainer = null;
-
-      if (typeof onContinue === 'function') {
-        onContinue();
-      }
-    };
-
-    const goPrevPage = () => {
-      if (pageIndex > 0) {
-        pageIndex -= 1;
-        updatePage();
-      }
-    };
-
-    const goNextPage = () => {
-      if (pageIndex < pages.length - 1) {
-        pageIndex += 1;
-        updatePage();
-      }
-    };
-
-    button.on('pointerdown', (pointer, localX, localY, event) => {
-      event?.stopPropagation?.();
-      closeModal();
-    });
-    prevButton.on('pointerdown', (pointer, localX, localY, event) => {
-      event?.stopPropagation?.();
-      goPrevPage();
-    });
-    nextButton.on('pointerdown', (pointer, localX, localY, event) => {
-      event?.stopPropagation?.();
-      goNextPage();
-    });
-
-    this._onboardingContinueKey = this.input.keyboard.addKey('SPACE');
-    this._onboardingPrevKey = this.input.keyboard.addKey('LEFT');
-    this._onboardingNextKey = this.input.keyboard.addKey('RIGHT');
-
-    this._onboardingSpaceHandler = () => {
-      if (pageIndex === pages.length - 1) {
-        closeModal();
-      } else {
-        goNextPage();
-      }
-    };
-    this._onboardingPrevHandler = goPrevPage;
-    this._onboardingNextHandler = goNextPage;
-
-    this._onboardingContinueKey.on('down', this._onboardingSpaceHandler);
-    this._onboardingPrevKey.on('down', this._onboardingPrevHandler);
-    this._onboardingNextKey.on('down', this._onboardingNextHandler);
-
-    updatePage();
-    container.add([overlay, panel, title, body, pageCounter, prevButton, nextButton, button]);
-    this.onboardingModalContainer = container;
   }
 }

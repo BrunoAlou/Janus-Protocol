@@ -12,6 +12,23 @@
 
 import { SCENE_NAMES } from '../constants/SceneNames.js';
 import { logAction } from '../utils/telemetry.js';
+import {
+  getAvailableOptions as getAvailableOptionsUtil,
+  checkCondition as checkConditionUtil,
+  checkQuestCondition as checkQuestConditionUtil,
+  checkItemCondition as checkItemConditionUtil,
+  checkFlagCondition as checkFlagConditionUtil,
+  checkStatCondition as checkStatConditionUtil,
+  compareValues as compareValuesUtil,
+  executeAction as executeActionUtil,
+  executeDialogAction as executeDialogActionUtil,
+  executeSceneAction as executeSceneActionUtil,
+  executeMinigameAction as executeMinigameActionUtil,
+  executeEventAction as executeEventActionUtil,
+  executeItemAction as executeItemActionUtil,
+  executeQuestAction as executeQuestActionUtil,
+  executeCustomAction as executeCustomActionUtil
+} from './interactive/actionUtils.js';
 
 /**
  * @typedef {Object} ElementArea
@@ -616,14 +633,7 @@ export default class InteractiveElement {
    * @returns {ElementOption[]}
    */
   getAvailableOptions() {
-    return this.options.map(option => {
-      const available = this.checkCondition(option.condition);
-      return {
-        ...option,
-        disabled: option.disabled || !available,
-        disabledReason: !available ? 'Condição não atendida' : option.disabledReason
-      };
-    });
+    return getAvailableOptionsUtil(this);
   }
 
   /**
@@ -632,65 +642,32 @@ export default class InteractiveElement {
    * @returns {boolean}
    */
   checkCondition(condition) {
-    if (!condition) return true;
-
-    // Obter GameStateManager
-    const gameState = window.gameState;
-    if (!gameState) return true;
-
-    const { type, id, operator, value } = condition;
-
-    switch (type) {
-      case 'quest':
-        return this._checkQuestCondition(gameState, id, operator, value);
-      case 'item':
-        return this._checkItemCondition(gameState, id, operator, value);
-      case 'flag':
-        return this._checkFlagCondition(gameState, id, operator, value);
-      case 'stat':
-        return this._checkStatCondition(gameState, id, operator, value);
-      default:
-        return true;
-    }
+    return checkConditionUtil(this, condition);
   }
 
   /** @private */
   _checkQuestCondition(gameState, id, operator, value) {
-    const questStatus = gameState.getQuestStatus?.(id);
-    return this._compareValues(questStatus, operator, value);
+    return checkQuestConditionUtil(gameState, id, operator, value);
   }
 
   /** @private */
   _checkItemCondition(gameState, id, operator, value) {
-    const hasItem = gameState.hasItem?.(id);
-    if (operator === 'has') return hasItem;
-    if (operator === '!has') return !hasItem;
-    return this._compareValues(gameState.getItemCount?.(id) || 0, operator, value);
+    return checkItemConditionUtil(gameState, id, operator, value);
   }
 
   /** @private */
   _checkFlagCondition(gameState, id, operator, value) {
-    const flagValue = gameState.getFlag?.(id);
-    return this._compareValues(flagValue, operator, value);
+    return checkFlagConditionUtil(gameState, id, operator, value);
   }
 
   /** @private */
   _checkStatCondition(gameState, id, operator, value) {
-    const statValue = gameState.getStat?.(id) || 0;
-    return this._compareValues(statValue, operator, value);
+    return checkStatConditionUtil(gameState, id, operator, value);
   }
 
   /** @private */
   _compareValues(a, operator, b) {
-    switch (operator) {
-      case '==': return a == b;
-      case '!=': return a != b;
-      case '>': return a > b;
-      case '<': return a < b;
-      case '>=': return a >= b;
-      case '<=': return a <= b;
-      default: return a == b;
-    }
+    return compareValuesUtil(a, operator, b);
   }
 
   /**
@@ -731,172 +708,42 @@ export default class InteractiveElement {
       optionLabel: option?.label || null
     });
 
-    switch (action.type) {
-      case 'dialog':
-        this._executeDialogAction(action);
-        break;
-      case 'scene':
-        this._executeSceneAction(action);
-        break;
-      case 'minigame':
-        this._executeMinigameAction(action);
-        break;
-      case 'event':
-        this._executeEventAction(action, option);
-        break;
-      case 'item':
-        this._executeItemAction(action);
-        break;
-      case 'quest':
-        this._executeQuestAction(action);
-        break;
-      case 'custom':
-        this._executeCustomAction(action, option);
-        break;
-      default:
-        console.warn(`[InteractiveElement] Unknown action type: ${action.type}`);
-    }
+    executeActionUtil(this, action, option);
   }
 
   /** @private */
   _executeDialogAction(action) {
-    // Mostrar diálogos adicionais
-    const dialogData = {
-      name: this.name,
-      dialogues: action.data?.dialogues || [{ text: action.target }],
-      onComplete: () => this.endInteraction()
-    };
-    
-    // Chamar diretamente o DialogScene
-    const dialogScene = this.scene.scene.get(SCENE_NAMES.DIALOG);
-    if (dialogScene) {
-      dialogScene.showDialog(dialogData);
-    } else {
-      // Fallback: emitir evento
-      this.scene.events.emit('npc-interact', dialogData);
-    }
+    executeDialogActionUtil(this, action);
   }
 
   /** @private */
   _executeSceneAction(action) {
-    // Mudar de cena/mapa
-    this.endInteraction();
-    
-    const sceneKey = action.target;
-    const sceneData = action.data || {};
-
-    if (window.sceneManager) {
-      window.sceneManager.goToMap(sceneKey, sceneData);
-    } else {
-      this.scene.scene.start(sceneKey, sceneData);
-    }
+    executeSceneActionUtil(this, action);
   }
 
   /** @private */
   _executeMinigameAction(action) {
-    // Iniciar minigame
-    const minigameKey = action.target;
-
-    // Garantir unlock usando a mesma estrutura de flags globais
-    if (window.minigameManager?.unlock) {
-      window.minigameManager.unlock(minigameKey, {
-        source: 'interactive-element',
-        elementId: this.id,
-        scene: this.scene?.scene?.key || null
-      });
-      window.minigameManager.syncWithGameState?.();
-    }
-
-    const minigameData = {
-      ...action.data,
-      returnScene: this.scene.scene.key,
-      elementId: this.id,
-      onComplete: (result) => {
-        this.scene.events.emit('minigame-complete', {
-          elementId: this.id,
-          minigame: minigameKey,
-          result
-        });
-      }
-    };
-
-    if (window.sceneManager) {
-      window.sceneManager.startMinigame(minigameKey, minigameData);
-    } else {
-      this.scene.scene.launch(minigameKey, minigameData);
-    }
+    executeMinigameActionUtil(this, action);
   }
 
   /** @private */
   _executeEventAction(action, option) {
-    // Emitir evento customizado
-    const eventName = action.target;
-    const eventData = {
-      ...action.data,
-      elementId: this.id,
-      elementName: this.name,
-      option
-    };
-    
-    this.scene.events.emit(eventName, eventData);
-    
-    // Também emitir globalmente
-    if (window.gameEvents) {
-      window.gameEvents.emit(eventName, eventData);
-    }
+    executeEventActionUtil(this, action, option);
   }
 
   /** @private */
   _executeItemAction(action) {
-    // Dar/remover item
-    const itemId = action.target;
-    const quantity = action.data?.quantity || 1;
-    const remove = action.data?.remove || false;
-
-    if (window.gameState) {
-      if (remove) {
-        window.gameState.removeItem(itemId, quantity);
-      } else {
-        window.gameState.addItem(itemId, quantity);
-      }
-    }
-    
-    // Emitir evento de item
-    this.scene.events.emit('item-acquired', {
-      itemId,
-      quantity,
-      removed: remove,
-      elementId: this.id
-    });
+    executeItemActionUtil(this, action);
   }
 
   /** @private */
   _executeQuestAction(action) {
-    // Atualizar quest
-    const questId = action.target;
-    const status = action.data?.status || 'started';
-
-    if (window.gameState) {
-      window.gameState.setQuestStatus(questId, status);
-    }
-
-    this.scene.events.emit('quest-updated', {
-      questId,
-      status,
-      elementId: this.id
-    });
+    executeQuestActionUtil(this, action);
   }
 
   /** @private */
   _executeCustomAction(action, option) {
-    // Ação customizada - callback
-    if (typeof action.data?.callback === 'function') {
-      action.data.callback({
-        element: this,
-        option,
-        scene: this.scene
-      });
-    }
+    executeCustomActionUtil(this, action, option);
   }
 
   /**
