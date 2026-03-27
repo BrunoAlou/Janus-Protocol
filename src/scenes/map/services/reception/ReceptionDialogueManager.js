@@ -171,6 +171,18 @@ export class ReceptionDialogueManager {
     if (!currentAxis) {
       this.scene.setFlowFlag(this.priorityAxisKey, config.axis);
       console.log('[ReceptionDialogueManager] Priority axis registered:', config.axis);
+
+      if (typeof window.gameState?.appendAxisChoiceEntry === 'function') {
+        window.gameState.appendAxisChoiceEntry({
+          axis: config.axis,
+          source: receptionistTexts?.name || 'Recepcionista',
+          sourceId: element?.id || 'npc_receptionist',
+          label: config.label,
+          optionId: config.id,
+          scene: this.scene?.scene?.key || null,
+          influenceType: 'priority_axis'
+        });
+      }
     }
     
     // Desbloquear todos os caminhos

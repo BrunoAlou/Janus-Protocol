@@ -39,6 +39,8 @@ export default class ReceptionScene extends BaseMapScene {
     super.init(data);
     this.spawnPoint = data.spawnPoint || 'default';
     this.isTransitioning = false; // Reset flag de transição
+    this._introFlowScheduled = false;
+    this._introFlowStarted = false;
     this.onboardingModalOpen = false;
     this.onboardingDialogOpen = false;
     this.onboardingModalContainer = null;
@@ -98,10 +100,9 @@ export default class ReceptionScene extends BaseMapScene {
     // Registrar zonas de portas no debugger de colisão
     this.registerDoorZonesToDebugger();
     
-    // Mostrar diálogo de introdução apenas no spawn inicial (não ao voltar)
-    if (this.spawnPoint === 'default') {
-      this.showIntroductionDialogue();
-    }
+    // Sempre avaliar onboarding na entrada da recepção.
+    // A própria introdução decide por flags se deve exibir ou não.
+    this.showIntroductionDialogue();
     
     console.log('[ReceptionScene] Reception loaded, spawn:', this.spawnPoint);
   }
@@ -122,6 +123,55 @@ export default class ReceptionScene extends BaseMapScene {
           dialogues: NPC_TEXTS.reception.receptionist.itTeamUnlockedDialogues.map((text) => ({ text }))
         });
       }
+    });
+
+    this.events.on('read-magazine-topic', (eventData = {}) => {
+      const { axis, title, dialogues, elementId } = eventData;
+      const axisName = typeof axis === 'string' ? axis : null;
+
+      if (axisName && typeof window.gameState?.appendAxisChoiceEntry === 'function') {
+        window.gameState.appendAxisChoiceEntry({
+          axis: axisName,
+          source: title || 'Stand de Revistas',
+          sourceId: elementId || 'magazine_stand',
+          label: title || 'Leitura de revista',
+          optionId: eventData?.option?.id || null,
+          scene: this.scene?.key || null,
+          influenceType: 'magazine_topic'
+        });
+      }
+
+      if (axisName && window.gameState?.setStat && window.gameState?.getStat) {
+        const statKey = `axis_points_${axisName}`;
+        const currentPoints = Number(window.gameState.getStat(statKey) || 0);
+        window.gameState.setStat(statKey, currentPoints + 1);
+      }
+
+      if (axisName) {
+        const currentPriorityAxis = window.gameState?.getFlag?.(this.receptionistPriorityAxisKey);
+        if (!currentPriorityAxis) {
+          this.setFlowFlag(this.receptionistPriorityAxisKey, axisName);
+        }
+      }
+
+      const element = elementId ? this.elementManager?.getElement?.(elementId) : null;
+      const dialogScene = this.scene.get('DialogScene');
+      if (!dialogScene || !this.scene.isActive('DialogScene')) {
+        element?.endInteraction?.();
+        return;
+      }
+
+      const safeDialogues = Array.isArray(dialogues) && dialogues.length > 0
+        ? dialogues
+        : [{ text: 'Voce folheia rapidamente, mas nao encontra nada relevante agora.' }];
+
+      dialogScene.showDialog({
+        name: title || 'Stand de Revistas',
+        dialogues: safeDialogues,
+        onComplete: () => {
+          element?.endInteraction?.();
+        }
+      });
     });
   }
 
@@ -334,12 +384,12 @@ export default class ReceptionScene extends BaseMapScene {
         y: 240,
         width: 16,
         height: 64,
-        label: RECEPTION_TEXTS.doors.elevatorLabel,
+        label: RECEPTION_TEXTS.doors.archiveAccessLabel,
         indicatorColor: 0xff7777,
         indicatorTextColor: '#ffcccc',
         indicatorOffsetX: -14,
         locked: true,
-        lockedMessage: RECEPTION_TEXTS.doors.elevatorLockedMessage,
+        lockedMessage: RECEPTION_TEXTS.doors.archiveLockedMessage,
         onInteract: () => {},
         proximityDistance: 50
       }),
@@ -401,12 +451,46 @@ export default class ReceptionScene extends BaseMapScene {
    * Mostrar diálogo de introdução ao chegar na recepção
    */
   showIntroductionDialogue() {
-    this.time.delayedCall(600, () => {
+    if (this._introFlowScheduled || this._introFlowStarted) {
+      return;
+    }
+
+    const modalSeen = window.gameState?.getFlag?.(this.modalSeenFlagKey) === true;
+    const dialogSeen = window.gameState?.getFlag?.(this.dialogSeenFlagKey) === true;
+
+    console.log('[ReceptionScene] showIntroductionDialogue called', {
+      spawnPoint: this.spawnPoint,
+      modalSeen,
+      dialogSeen
+    });
+
+    this._introFlowScheduled = true;
+
+    const runIntroFlow = () => {
+      if (this._introFlowStarted) {
+        return;
+      }
+
+      if (!this.sys?.isActive?.()) {
+        window.setTimeout(runIntroFlow, 120);
+        return;
+      }
+
+      this._introFlowStarted = true;
+      this._introFlowScheduled = false;
+
       if (!this.introducer) {
         this.introducer = new ReceptionIntroducer(this);
       }
+
       this.introducer.showIntroductionFlow();
-    });
+    };
+
+    // Trigger principal no clock da cena.
+    this.time.delayedCall(600, runIntroFlow);
+
+    // Fallback para cenários em que o timer da cena não dispara no boot.
+    window.setTimeout(runIntroFlow, 900);
   }
 
   setFlowFlag(flagKey, value) {

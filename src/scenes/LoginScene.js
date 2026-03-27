@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import AuthManager from '../auth/AuthManager.js';
 import { SCENE_NAMES } from '../constants/SceneNames.js';
 
+const LOGIN_INPUT_SESSION_KEY = 'janus_login_first_input_at';
+
 /**
  * LoginScene - Tela de login com OAuth
  */
@@ -52,7 +54,10 @@ export default class LoginScene extends Phaser.Scene {
       'Login com LinkedIn',
       0x0077b5
     );
-    linkedInBtn.on('pointerdown', () => this.authManager.loginWithLinkedIn());
+    linkedInBtn.on('pointerdown', () => {
+      this.markFirstLoginInput('linkedin');
+      this.authManager.loginWithLinkedIn();
+    });
 
     // Botão Google
     const googleBtn = this.createButton(
@@ -61,7 +66,10 @@ export default class LoginScene extends Phaser.Scene {
       'Login com Google',
       0xdb4437
     );
-    googleBtn.on('pointerdown', () => this.authManager.loginWithGoogle());
+    googleBtn.on('pointerdown', () => {
+      this.markFirstLoginInput('google');
+      this.authManager.loginWithGoogle();
+    });
 
     // Botão Dev (apenas desenvolvimento)
     if (import.meta.env.DEV || window.location.hostname === 'localhost') {
@@ -72,6 +80,7 @@ export default class LoginScene extends Phaser.Scene {
         0x666666
       );
       devBtn.on('pointerdown', () => {
+        this.markFirstLoginInput('dev');
         const result = this.authManager.devLogin();
         if (result.success) {
           this.startGame();
@@ -83,6 +92,36 @@ export default class LoginScene extends Phaser.Scene {
     if (window.location.search.includes('code=')) {
       this.handleOAuthCallback();
     }
+  }
+
+  markFirstLoginInput(source = 'unknown') {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return;
+    }
+
+    const existing = Number(window.sessionStorage.getItem(LOGIN_INPUT_SESSION_KEY) || 0);
+    if (Number.isFinite(existing) && existing > 0) {
+      return;
+    }
+
+    const now = Date.now();
+    window.sessionStorage.setItem(LOGIN_INPUT_SESSION_KEY, String(now));
+    console.log(`[LoginScene] first login input captured via ${source} at ${now}`);
+  }
+
+  resolveFirstLoginInputAt() {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return Date.now();
+    }
+
+    const fromSession = Number(window.sessionStorage.getItem(LOGIN_INPUT_SESSION_KEY) || 0);
+    if (Number.isFinite(fromSession) && fromSession > 0) {
+      return fromSession;
+    }
+
+    const fallback = Date.now();
+    window.sessionStorage.setItem(LOGIN_INPUT_SESSION_KEY, String(fallback));
+    return fallback;
   }
 
   createButton(x, y, text, color) {
@@ -147,6 +186,12 @@ export default class LoginScene extends Phaser.Scene {
     if (window.gameState) {
       window.gameState.setUser(user, provider);
       window.gameState.loadProgressForUser(user, provider);
+
+      const firstLoginInputAt = this.resolveFirstLoginInputAt();
+      if (!window.gameState.getStat('session_login_input_at_ms')) {
+        window.gameState.setStat('session_login_input_at_ms', firstLoginInputAt);
+      }
+      window.gameState.setStat('session_last_auth_at_ms', Date.now());
     }
 
     const lastLocation = window.gameState?.getPlayerLastLocation?.();

@@ -198,6 +198,98 @@ export default class InteractiveElement {
     }
   }
 
+  /**
+   * Persiste metricas de sessao para analise do report DEBUG.
+   * @param {string} actionName
+   * @param {Object} extra
+   * @private
+   */
+  _trackSessionMetrics(actionName, extra = {}) {
+    const gameState = window.gameState;
+    if (!gameState || typeof gameState.setState !== 'function') {
+      return;
+    }
+
+    const now = Date.now();
+    const state = gameState.getState?.() || {};
+    const player = state.player || {};
+    const stats = { ...(player.stats || {}) };
+
+    if (actionName === 'interact_start') {
+      const interactionCount = Number(stats.session_interaction_count || 0) + 1;
+      const lastInteractionAt = Number(stats.session_last_interaction_at_ms || 0);
+      const previousGap = Number.isFinite(lastInteractionAt) && lastInteractionAt > 0 ? now - lastInteractionAt : null;
+
+      stats.session_first_interaction_at_ms = Number(stats.session_first_interaction_at_ms || 0) || now;
+      stats.session_last_interaction_at_ms = now;
+      stats.session_interaction_count = interactionCount;
+
+      if (previousGap !== null && previousGap >= 0) {
+        stats.session_interaction_gap_sum_ms = Number(stats.session_interaction_gap_sum_ms || 0) + previousGap;
+        stats.session_interaction_gap_count = Number(stats.session_interaction_gap_count || 0) + 1;
+        stats.session_last_interaction_gap_ms = previousGap;
+
+        const recentGaps = Array.isArray(stats.session_recent_interaction_gaps_ms)
+          ? stats.session_recent_interaction_gaps_ms.slice(-9)
+          : [];
+        recentGaps.push(previousGap);
+        stats.session_recent_interaction_gaps_ms = recentGaps;
+      }
+
+      const interactionTimeline = Array.isArray(stats.session_interaction_timeline)
+        ? stats.session_interaction_timeline.slice(-24)
+        : [];
+      interactionTimeline.push({
+        at: now,
+        scene: this.scene?.scene?.key || null,
+        elementId: this.id,
+        elementName: this.name,
+        interactionType: extra.interactionType || null
+      });
+      stats.session_interaction_timeline = interactionTimeline;
+    }
+
+    if (actionName === 'option_selected') {
+      const axis = extra.optionAxis;
+      if (axis && ['execution', 'collaboration', 'resilience', 'innovation'].includes(axis)) {
+        if (typeof gameState.appendAxisChoiceEntry === 'function') {
+          gameState.appendAxisChoiceEntry({
+            at: now,
+            axis,
+            source: this.name,
+            sourceId: this.id,
+            label: extra.optionLabel || null,
+            optionId: extra.optionId || null,
+            scene: this.scene?.scene?.key || null,
+            influenceType: 'option_selected'
+          });
+          return;
+        }
+
+        const axisTimeline = Array.isArray(stats.axis_choice_timeline)
+          ? stats.axis_choice_timeline.slice(-29)
+          : [];
+        axisTimeline.push({
+          at: now,
+          axis,
+          source: this.name,
+          sourceId: this.id,
+          label: extra.optionLabel || null,
+          optionId: extra.optionId || null
+        });
+        stats.axis_choice_timeline = axisTimeline;
+      }
+    }
+
+    gameState.setState({
+      player: {
+        ...player,
+        stats
+      }
+    });
+    gameState.saveProgress?.();
+  }
+
   // ============================================
   // CRIAÇÃO DE ELEMENTOS VISUAIS
   // ============================================
@@ -509,6 +601,7 @@ export default class InteractiveElement {
     
     console.log(`[InteractiveElement] Interacting with: ${this.name} (type: ${interactionType})`);
     this._trackInteraction('interact_start', { interactionType });
+    this._trackSessionMetrics('interact_start', { interactionType });
 
     // Usar clickDialogues para interação por mouse, dialogues para teclado
     const dialoguesToUse = interactionType === 'mouse' && this.clickDialogues.length > 0
@@ -577,12 +670,40 @@ export default class InteractiveElement {
 
     // Emitir evento para DialogScene
     this.scene.events.emit('show-options-dialog', dialogData);
-    
-    // Também tentar chamar diretamente o DialogScene
+
+    this._openOptionsDialogWithRetry(dialogData, 0);
+  }
+
+  /**
+   * Abre menu de opções aguardando o DialogScene estar pronto.
+   * @param {Object} dialogData
+   * @param {number} attempt
+   * @private
+   */
+  _openOptionsDialogWithRetry(dialogData, attempt = 0) {
+    const maxAttempts = 6;
     const dialogScene = this.scene.scene.get(SCENE_NAMES.DIALOG);
-    if (dialogScene) {
-      dialogScene.showOptionsDialog(dialogData);
+    const isActive = this.scene.scene.isActive(SCENE_NAMES.DIALOG);
+    const isReady = !!dialogScene?.optionsContainer;
+
+    if (!dialogScene || !isActive || !isReady) {
+      if (!isActive) {
+        this.scene.scene.launch(SCENE_NAMES.DIALOG);
+      }
+
+      if (attempt >= maxAttempts) {
+        console.warn('[InteractiveElement] DialogScene not ready for options dialog:', this.id);
+        this.endInteraction();
+        return;
+      }
+
+      this.scene.time.delayedCall(120, () => {
+        this._openOptionsDialogWithRetry(dialogData, attempt + 1);
+      });
+      return;
     }
+
+    dialogScene.showOptionsDialog(dialogData);
   }
 
   /**
@@ -676,12 +797,14 @@ export default class InteractiveElement {
    */
   handleOptionSelect(option) {
     console.log(`[InteractiveElement] Option selected: ${option.label}`);
-    this._trackInteraction('option_selected', {
+    const trackingPayload = {
       optionId: option?.id || null,
       optionLabel: option?.label || null,
       optionAxis: option?.axis || option?.action?.data?.axis || null,
       optionDisabled: !!option?.disabled
-    });
+    };
+    this._trackInteraction('option_selected', trackingPayload);
+    this._trackSessionMetrics('option_selected', trackingPayload);
     
     if (option.disabled) {
       console.log(`[InteractiveElement] Option disabled: ${option.disabledReason}`);

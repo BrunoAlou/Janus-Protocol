@@ -105,12 +105,30 @@ export default class ElementManager {
   }
 
   /**
+   * Verifica se interações devem ser bloqueadas (onboarding/dialog/options).
+   * @returns {boolean}
+   * @private
+   */
+  _isInteractionBlocked() {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return true;
+    }
+
+    const dialogScene = this.scene.scene.get('DialogScene');
+    if (dialogScene && typeof dialogScene.isDialogOpen === 'function' && dialogScene.isDialogOpen()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Processa click esquerdo do mouse em elementos (objetos) - sem restrição de proximidade
    * @param {Phaser.Input.Pointer} pointer
    * @private
    */
   handleMouseClick(pointer) {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       return;
     }
 
@@ -119,7 +137,7 @@ export default class ElementManager {
       if (!element.visible) {
         continue;
       }
-      if ((element.type === 'object' || element.type === 'npc') && this._isPointerOverElement(pointer, element)) {
+      if ((element.type === 'object' || element.type === 'npc' || element.type === 'terminal') && this._isPointerOverElement(pointer, element)) {
         console.log('[ElementManager] Object clicked via mouse:', element.name);
         element.interact('mouse');
         return;
@@ -133,7 +151,7 @@ export default class ElementManager {
    * @private
    */
   handleRightClick(pointer) {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       return;
     }
 
@@ -142,7 +160,7 @@ export default class ElementManager {
       if (!element.visible) {
         continue;
       }
-      if ((element.type === 'object' || element.type === 'npc') && this._isPointerOverElement(pointer, element)) {
+      if ((element.type === 'object' || element.type === 'npc' || element.type === 'terminal') && this._isPointerOverElement(pointer, element)) {
         this.showContextMenu(pointer.x, pointer.y, element);
         return;
       }
@@ -187,7 +205,7 @@ export default class ElementManager {
           continue;
         }
 
-        if (element.type !== 'object' && element.type !== 'npc') {
+        if (element.type !== 'object' && element.type !== 'npc' && element.type !== 'terminal') {
           continue;
         }
 
@@ -410,7 +428,7 @@ export default class ElementManager {
    * @returns {boolean} true se processou uma interação
    */
   handleInteraction() {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       return false;
     }
 
@@ -433,7 +451,7 @@ export default class ElementManager {
    * @param {number} delta
    */
   update(time, delta) {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       this.currentInteractable = null;
       this._hoveredElement?.setHovered(false);
       this._hoveredElement = null;

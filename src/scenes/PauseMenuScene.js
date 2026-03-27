@@ -7,6 +7,8 @@ import { SCENE_NAMES } from '../constants/SceneNames.js';
 export default class PauseMenuScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENE_NAMES.PAUSE_MENU, active: false });
+    this.isMenuOpen = false;
+    this._onEscDown = null;
   }
 
   create() {
@@ -21,7 +23,7 @@ export default class PauseMenuScene extends Phaser.Scene {
     this.menuContainer.setDepth(1000);
 
     // Painel do menu
-    const menuBg = this.add.rectangle(0, 0, 400, 550, 0x1a1a2e, 1);
+    const menuBg = this.add.rectangle(0, 0, 400, 630, 0x1a1a2e, 1);
     menuBg.setStrokeStyle(3, 0x00d9ff);
 
     // Título
@@ -38,7 +40,8 @@ export default class PauseMenuScene extends Phaser.Scene {
     const musicBtn = this.createMenuItem(0, 0, 'Música: Ligada');
     const debugBtn = this.createMenuItem(0, 70, 'Debug: Desligado');
     const controlsBtn = this.createMenuItem(0, 140, 'Controles');
-    const quitBtn = this.createMenuItem(0, 210, 'Sair do Jogo', 0xff0000);
+    const reportBtn = this.createMenuItem(0, 210, 'Gerar Report Base');
+    const quitBtn = this.createMenuItem(0, 280, 'Sair do Jogo', 0xff0000);
 
     // Guardar referência ao botão de debug para atualizar texto
     this.debugBtn = debugBtn;
@@ -49,6 +52,7 @@ export default class PauseMenuScene extends Phaser.Scene {
     musicBtn.bg.on('pointerdown', () => this.toggleMusic(musicBtn));
     debugBtn.bg.on('pointerdown', () => this.toggleDebug(debugBtn));
     controlsBtn.bg.on('pointerdown', () => this.showControls());
+    reportBtn.bg.on('pointerdown', () => this.openBaseReport());
     quitBtn.bg.on('pointerdown', () => this.quitGame());
 
     this.menuContainer.add([
@@ -59,15 +63,23 @@ export default class PauseMenuScene extends Phaser.Scene {
       musicBtn,
       debugBtn,
       controlsBtn,
+      reportBtn,
       quitBtn
     ]);
 
     // Esconder inicialmente
     this.setVisible(false);
 
-    // Tecla ESC para abrir/fechar
-    this.escKey = this.input.keyboard.addKey('ESC');
-    this.escKey.on('down', () => this.handleEscKey());
+    // Tecla ESC para abrir/fechar (listener global da cena)
+    this._onEscDown = () => this.handleEscKey();
+    this.input.keyboard.on('keydown-ESC', this._onEscDown);
+
+    this.events.once('shutdown', () => {
+      if (this._onEscDown) {
+        this.input.keyboard.off('keydown-ESC', this._onEscDown);
+      }
+      this._onEscDown = null;
+    });
 
     console.log('[PauseMenuScene] Created');
   }
@@ -76,6 +88,15 @@ export default class PauseMenuScene extends Phaser.Scene {
    * Processa a tecla ESC - verifica se DialogScene está ativo antes de abrir menu
    */
   handleEscKey() {
+    // Bloquear pause durante fluxos de onboarding/introducao
+    const currentMap = window.sceneManager?.currentState?.map;
+    if (currentMap) {
+      const mapScene = this.game.scene.getScene(currentMap);
+      if (typeof mapScene?.isInteractionBlocked === 'function' && mapScene.isInteractionBlocked()) {
+        return;
+      }
+    }
+
     // Verificar se o DialogScene consumiu o ESC
     const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
     if (dialogScene) {
@@ -124,10 +145,10 @@ export default class PauseMenuScene extends Phaser.Scene {
   }
 
   toggleMenu() {
-    const isVisible = this.overlay.visible;
-    this.setVisible(!isVisible);
+    this.isMenuOpen = !this.isMenuOpen;
+    this.setVisible(this.isMenuOpen);
 
-    if (!isVisible) {
+    if (this.isMenuOpen) {
       this.pauseGame();
     } else {
       this.resumeGame();
@@ -137,6 +158,7 @@ export default class PauseMenuScene extends Phaser.Scene {
   setVisible(visible) {
     this.overlay.setVisible(visible);
     this.menuContainer.setVisible(visible);
+    this.isMenuOpen = visible;
   }
 
   pauseGame() {
@@ -220,7 +242,30 @@ export default class PauseMenuScene extends Phaser.Scene {
 
   showControls() {
     // Mostrar tela de controles
-    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nP - Toggle Debug');
+    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nP - Toggle Debug\nGerar Report Base: Menu ESC (com Debug ligado)');
+  }
+
+  async openBaseReport() {
+    if (window.debugEnabled !== true) {
+      alert('Ative o Debug antes de gerar o report em modo de analise.');
+      return;
+    }
+
+    try {
+      const module = await import('../report/openBaseReport.js');
+      const openBaseReportFromGame = module?.openBaseReportFromGame;
+      if (typeof openBaseReportFromGame !== 'function') {
+        throw new Error('openBaseReportFromGame not available');
+      }
+
+      openBaseReportFromGame({
+        debugEnabled: true,
+        mode: 'debug'
+      });
+    } catch (error) {
+      console.error('[PauseMenuScene] Falha ao abrir report base:', error);
+      alert('Nao foi possivel gerar o report agora. Verifique o console para detalhes.');
+    }
   }
 
   quitGame() {

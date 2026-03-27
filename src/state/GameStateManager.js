@@ -20,6 +20,28 @@ import {
   getCandidateProgressStorageKeys
 } from './progressStorage.js';
 
+function fnv1aHash(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)) >>> 0;
+  }
+  return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+}
+
 /**
  * @typedef {Object} AuthState
  * @property {boolean} isAuthenticated
@@ -562,6 +584,9 @@ export default class GameStateManager {
   setStat(id, value) {
     if (!id) return;
 
+    const isAxisStat = typeof id === 'string' && id.startsWith('axis_points_');
+    const axisName = isAxisStat ? id.replace('axis_points_', '') : null;
+
     this.setState({
       player: {
         ...this._state.player,
@@ -572,7 +597,126 @@ export default class GameStateManager {
       }
     });
 
+    if (isAxisStat && ['execution', 'collaboration', 'resilience', 'innovation'].includes(axisName)) {
+      const chain = this._state?.player?.stats?.axis_choice_blockchain;
+      const lastBlock = Array.isArray(chain) && chain.length > 0 ? chain[chain.length - 1] : null;
+      const lastAxis = lastBlock?.payload?.axis || null;
+      const lastAt = lastBlock?.insertedAt ? new Date(lastBlock.insertedAt).getTime() : 0;
+      const recentlyCaptured =
+        lastAxis === axisName &&
+        Number.isFinite(lastAt) &&
+        (Date.now() - lastAt) < 1500;
+
+      if (!recentlyCaptured) {
+        this.appendAxisChoiceEntry({
+          axis: axisName,
+          source: 'Axis Stat Update',
+          sourceId: id,
+          label: `${id}=${Number(value)}`,
+          optionId: null,
+          scene: this._state?.scenes?.current || null,
+          influenceType: 'axis_points_stat_update'
+        });
+      }
+    }
+
     this.saveProgress();
+  }
+
+  /**
+   * Registra escolha de eixo em trilha temporal e cadeia hash (estilo blockchain).
+   * @param {{
+   *  axis:string,
+   *  source?:string,
+   *  sourceId?:string,
+   *  label?:string,
+   *  optionId?:string,
+   *  scene?:string,
+   *  influenceType?:string,
+   *  at?:number
+   * }} entry
+   */
+  appendAxisChoiceEntry(entry = {}) {
+    const allowedAxis = ['execution', 'collaboration', 'resilience', 'innovation'];
+    const axis = typeof entry.axis === 'string' ? entry.axis : null;
+    if (!axis || !allowedAxis.includes(axis)) {
+      return null;
+    }
+
+    const now = Number.isFinite(Number(entry.at)) ? Number(entry.at) : Date.now();
+    const player = this._state.player || {};
+    const stats = { ...(player.stats || {}) };
+
+    const timeline = Array.isArray(stats.axis_choice_timeline)
+      ? [...stats.axis_choice_timeline]
+      : [];
+
+    const chain = Array.isArray(stats.axis_choice_blockchain)
+      ? [...stats.axis_choice_blockchain]
+      : [];
+
+    const lastBlock = chain.length > 0 ? chain[chain.length - 1] : null;
+    const prevHash = lastBlock?.hash || null;
+    const seq = Number(stats.axis_choice_chain_seq || 0) + 1;
+    const sessionId = typeof window !== 'undefined'
+      ? window.sessionStorage?.getItem('janus_session_id') || null
+      : null;
+
+    const block = {
+      _id: `axis-${now}-${seq}`,
+      insertedAt: new Date(now).toISOString(),
+      session_id: sessionId,
+      seq_in_session: seq,
+      type_event: 'axis_choice',
+      payload: {
+        axis,
+        source: entry.source || 'Fonte',
+        sourceId: entry.sourceId || null,
+        label: entry.label || null,
+        optionId: entry.optionId || null,
+        scene: entry.scene || this._state?.scenes?.current || null,
+        influenceType: entry.influenceType || 'axis_points'
+      },
+      prev_hash: prevHash
+    };
+
+    block.hash = fnv1aHash(
+      stableStringify({
+        _id: block._id,
+        session_id: block.session_id,
+        seq_in_session: block.seq_in_session,
+        type_event: block.type_event,
+        payload: block.payload,
+        prev_hash: block.prev_hash,
+        insertedAt: block.insertedAt
+      })
+    );
+
+    timeline.push({
+      at: now,
+      axis,
+      source: block.payload.source,
+      sourceId: block.payload.sourceId,
+      label: block.payload.label,
+      optionId: block.payload.optionId
+    });
+
+    chain.push(block);
+
+    stats.axis_choice_timeline = timeline.slice(-60);
+    stats.axis_choice_blockchain = chain.slice(-120);
+    stats.axis_choice_chain_seq = seq;
+    stats.axis_choice_last_hash = block.hash;
+
+    this.setState({
+      player: {
+        ...player,
+        stats
+      }
+    });
+
+    this.saveProgress();
+    return block;
   }
 
   /**

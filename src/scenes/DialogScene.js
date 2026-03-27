@@ -236,6 +236,11 @@ export default class DialogScene extends Phaser.Scene {
    * Mostra diálogo do NPC
    */
   showDialog(data) {
+    if (this.isDialogOpen()) {
+      console.log('[DialogScene] Ignoring showDialog because another dialog/options is already open');
+      return;
+    }
+
     console.log('[DialogScene] showDialog called with data:', data);
     console.log('[DialogScene] dialogContainer visible before:', this.dialogContainer.visible);
     
@@ -387,6 +392,11 @@ export default class DialogScene extends Phaser.Scene {
    * @param {Function} [data.onClose] - Callback quando menu é fechado
    */
   showOptionsDialog(data) {
+    if (this.isDialogOpen()) {
+      console.log('[DialogScene] Ignoring showOptionsDialog because another dialog/options is already open');
+      return;
+    }
+
     console.log('[DialogScene] showOptionsDialog called with data:', data);
 
     // Trazer DialogScene para o topo

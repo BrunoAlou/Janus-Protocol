@@ -71,10 +71,28 @@ export default class InteractionManager {
   }
 
   /**
+   * Verifica se interações devem ser bloqueadas (onboarding/dialog/options).
+   * @returns {boolean}
+   * @private
+   */
+  _isInteractionBlocked() {
+    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+      return true;
+    }
+
+    const dialogScene = this.scene.scene.get('DialogScene');
+    if (dialogScene && typeof dialogScene.isDialogOpen === 'function' && dialogScene.isDialogOpen()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Processa interação quando tecla E é pressionada
    */
   handleInteraction() {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       return;
     }
 
@@ -155,7 +173,7 @@ export default class InteractionManager {
    * Atualiza distâncias (chamar no update)
    */
   update() {
-    if (typeof this.scene.isInteractionBlocked === 'function' && this.scene.isInteractionBlocked()) {
+    if (this._isInteractionBlocked()) {
       if (this.currentInteractable?.interactionIndicator) {
         this.currentInteractable.interactionIndicator.setVisible(false);
       }

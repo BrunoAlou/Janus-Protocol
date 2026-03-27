@@ -1,10 +1,10 @@
 export const RECEPTION_TEXTS = {
   doors: {
-    elevatorLabel: 'ENTRADA ELEVADOR',
-    elevatorLockedMessage: 'A entrada do elevador ainda nao esta disponivel para voce.',
+    archiveAccessLabel: 'Arquivo',
+    archiveLockedMessage: 'A porta da sala de arquivos esta bloqueada.',
     itRoomLabel: 'SALA TI',
     itRoomLockedMessage:
-      'A porta da TI esta bloqueada. Fale com a recepcionista e selecione "Conhecer equipe de TI".'
+      'A porta da TI esta bloqueada".'
   },
   introDialog: {
     name: 'Recepcao',
