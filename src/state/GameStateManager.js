@@ -370,6 +370,9 @@ export default class GameStateManager {
   setFlag(id, value = true) {
     if (!id) return;
 
+    const previousValue = this._state.player.flags?.[id];
+    const nextValue = value;
+
     this.setState({
       player: {
         ...this._state.player,
@@ -381,6 +384,10 @@ export default class GameStateManager {
     });
 
     this.saveProgress();
+
+    if (id === 'resetgame' && previousValue === true && nextValue === false) {
+      this._emit('resetgame-triggered', { source: 'set-flag' });
+    }
   }
 
   /**

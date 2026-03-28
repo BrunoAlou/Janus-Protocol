@@ -16,13 +16,10 @@ import MinigameMenuScene from "./scenes/MinigameMenuScene.js";
 
 // Cenas de mapa
 import ReceptionScene from "./scenes/map/ReceptionScene.js";
-import OfficeScene from "./scenes/map/OfficeScene.js";
-import LabScene from "./scenes/map/LabScene.js";
-import MeetingRoomScene from "./scenes/map/MeetingRoomScene.js";
 import ArchiveRoomScene from "./scenes/map/HallwayScene.js";
 import ItRoomScene from "./scenes/map/ItRoomScene.js";
-import RhRoomScene from "./scenes/map/RhRoomScene.js";
 import ElevatorScene from "./scenes/map/ElevatorScene.js";
+import QuantumObjectivesScene from "./scenes/map/QuantumObjectivesScene.js";
 import GardenScene from "./scenes/map/GardenScene.js";
 import CoffeeRoomScene from "./scenes/map/CoffeeRoomScene.js";
 import BossRoomScene from "./scenes/map/BossRoomScene.js";
@@ -65,13 +62,10 @@ const config = {
     
     // Mapas
     ReceptionScene,
-    OfficeScene,
-    LabScene,
-    MeetingRoomScene,
     ArchiveRoomScene,
     ItRoomScene,
-    RhRoomScene,
     ElevatorScene,
+    QuantumObjectivesScene,
     GardenScene,
     CoffeeRoomScene,
     BossRoomScene,

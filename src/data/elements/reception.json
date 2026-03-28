@@ -122,13 +122,13 @@
         "height": 62
       },
       "sprite": {
-        "key": "sit_guy_reception",
+        "key": "caio_reception",
         "frame": 0,
         "scale": 1,
         "matchPlayerScale": true,
         "scaleMultiplier": 1,
         "flipX": true,
-        "animation": "sit_guy_sit"
+        "animation": "caio_sit"
       },
       "indicator": {
         "text": "[E]",

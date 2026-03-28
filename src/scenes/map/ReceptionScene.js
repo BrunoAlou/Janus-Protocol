@@ -48,6 +48,7 @@ export default class ReceptionScene extends BaseMapScene {
     this.dialogFlowFlagKey = 'reception_intro_dialog_active';
     this.modalSeenFlagKey = 'reception_intro_modal_seen';
     this.dialogSeenFlagKey = 'reception_intro_dialog_seen';
+    this.archiveDoorUnlockFlagKey = 'reception_archive_door_unlocked';
     this.receptionistContactFlagKey =
       NPC_TEXTS.reception.receptionist.contactFlagKey || `contacted_${NPC_TEXTS.reception.receptionist.id}`;
     this.caioContactFlagKey =
@@ -81,6 +82,10 @@ export default class ReceptionScene extends BaseMapScene {
 
     if (window.gameState?.getFlag?.(this.receptionistPriorityAxisKey) === undefined) {
       this.setFlowFlag(this.receptionistPriorityAxisKey, null);
+    }
+
+    if (window.gameState?.getFlag?.(this.archiveDoorUnlockFlagKey) === undefined) {
+      this.setFlowFlag(this.archiveDoorUnlockFlagKey, false);
     }
   }
 
@@ -172,6 +177,18 @@ export default class ReceptionScene extends BaseMapScene {
           element?.endInteraction?.();
         }
       });
+    });
+
+    this.events.on('unlock-archive-room', () => {
+      this.setFlowFlag(this.archiveDoorUnlockFlagKey, true);
+
+      const dialogScene = this.scene.get('DialogScene');
+      if (dialogScene && this.scene.isActive('DialogScene')) {
+        dialogScene.showDialog({
+          name: NPC_TEXTS.reception.receptionist.name,
+          dialogues: [{ text: 'Acesso liberado. A sala de arquivo ja esta disponivel.' }]
+        });
+      }
     });
   }
 
@@ -389,8 +406,9 @@ export default class ReceptionScene extends BaseMapScene {
         indicatorTextColor: '#ffcccc',
         indicatorOffsetX: -14,
         locked: true,
-        lockedMessage: RECEPTION_TEXTS.doors.archiveLockedMessage,
-        onInteract: () => {},
+        lockedCondition: () => window.gameState?.getFlag?.(this.archiveDoorUnlockFlagKey) !== true,
+        lockedMessageResolver: () => RECEPTION_TEXTS.doors.archiveLockedMessage,
+        onInteract: () => this.transitionToArchiveRoom(),
         proximityDistance: 50
       }),
       new DoorZone(this, {
@@ -414,6 +432,22 @@ export default class ReceptionScene extends BaseMapScene {
       })
     ];
     console.log('[ReceptionScene] Door transitions: Elevator (locked), IT Room (conditional)');
+  }
+
+  transitionToArchiveRoom() {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
+    console.log('[ReceptionScene] Transitioning to Archive Room...');
+
+    this.cameras.main.fadeOut(500, 0, 0, 0);
+
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      window.sceneManager.goToMap(SCENE_NAMES.ARCHIVE_ROOM, {
+        user: this.user,
+        spawnPoint: 'fromReception'
+      });
+    });
   }
 
   transitionToItRoom() {

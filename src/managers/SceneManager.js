@@ -118,15 +118,29 @@ export default class SceneManager {
    */
   startGameplay(initialMapScene = SCENE_NAMES.RECEPTION, userData = {}) {
     console.log(`[SceneManager] Starting gameplay at: ${initialMapScene}`);
+
+    // Limpeza defensiva: em fluxos de reset pode haver mapa anterior ainda ativo.
+    // Paramos todas as cenas ativas para evitar sobreposição visual/interativa.
+    const activeScenes = this.game.scene.getScenes(true).map(scene => scene.scene.key);
+    activeScenes.forEach(sceneKey => {
+      if (sceneKey !== initialMapScene) {
+        this.game.scene.stop(sceneKey);
+      }
+    });
+
+    if (activeScenes.includes(initialMapScene)) {
+      this.game.scene.stop(initialMapScene);
+    }
     
-    // Parar cena de auth
+    // Parar cena de auth (caso ainda exista após a limpeza acima)
     if (this.currentState.auth) {
       this.game.scene.stop(this.currentState.auth);
       this.currentState.auth = null;
     }
     
-    // Limpar lista de cenas de sistema
+    // Resetar estado rastreado de cenas
     this.currentState.system = [];
+    this.currentState.minigame = null;
     
     // Dados da cena
     const sceneData = {

@@ -1,16 +1,16 @@
 const SIT_GUY_FRAME_WIDTH = 32;
 const SIT_GUY_FRAME_HEIGHT = 64;
 
-const SIT_GUY_TEXTURE_KEY = 'sit_guy_reception';
+const SIT_GUY_TEXTURE_KEY = 'caio_reception';
 
 export const SIT_GUY_ANIMS = Object.freeze({
-  SIT: 'sit_guy_sit'
+  SIT: 'caio_sit'
 });
 
 export function loadSitGuyAssets(scene) {
   scene.load.spritesheet(
     SIT_GUY_TEXTURE_KEY,
-    new URL('../assets/sitguy_reception/sitguy_sit.png', import.meta.url).href,
+    new URL('../assets/caio_reception/caio_sit.png', import.meta.url).href,
     {
       frameWidth: SIT_GUY_FRAME_WIDTH,
       frameHeight: SIT_GUY_FRAME_HEIGHT

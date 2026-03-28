@@ -196,6 +196,11 @@ export const NpcSetupMixin = {
    * Configura o sistema de interações com NPCs
    */
   setupInteractions() {
+    if (this.useLegacyNpcInteractionManager !== true) {
+      this.interactionManager = null;
+      return;
+    }
+
     this.interactionManager = new InteractionManager(this, this.player);
     if (this.npcs.length > 0) {
       this.interactionManager.registerNPCs(this.npcs);

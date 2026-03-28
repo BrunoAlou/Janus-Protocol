@@ -11,6 +11,13 @@ const MAP_JSON_URLS = import.meta.glob('../assets/*.json', {
   import: 'default'
 });
 
+// Mapa estático de todos os assets para garantir paths válidos (com hash) no build.
+const ASSET_URLS = import.meta.glob('../assets/**/*', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+});
+
 function normalizeMapId(value) {
   return String(value || '')
     .replace(/\.json$/i, '')
@@ -19,12 +26,27 @@ function normalizeMapId(value) {
 }
 
 export function resolveAssetPath(relativePath) {
-  // Para GitHub Pages com base '/Janus-Protocol/', 
-  // os assets estão em /assets/ depois do build
-  // Durante desenvolvimento (Vite), estão em ./assets/
-  
-  // Use import.meta.url para obter o caminho correto em ambos os modos
-  return new URL(`../assets/${relativePath}`, import.meta.url).href;
+  if (!relativePath) {
+    console.error('[AssetResolver] resolveAssetPath recebeu valor inválido:', relativePath);
+    return null;
+  }
+
+  const normalized = String(relativePath)
+    .replace(/^\.?\//, '')
+    .replace(/^assets\//i, '');
+
+  const exactKey = `../assets/${normalized}`;
+  if (ASSET_URLS[exactKey]) {
+    return ASSET_URLS[exactKey];
+  }
+
+  const matchedKey = Object.keys(ASSET_URLS).find((key) => key.endsWith(`/${normalized}`));
+  if (matchedKey) {
+    return ASSET_URLS[matchedKey];
+  }
+
+  // Fallback para manter compatibilidade em dev para caminhos dinâmicos.
+  return new URL(`../assets/${normalized}`, import.meta.url).href;
 }
 
 export function resolveMapPath(mapFileOrId) {

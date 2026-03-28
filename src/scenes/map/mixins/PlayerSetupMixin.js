@@ -59,9 +59,28 @@ export const PlayerSetupMixin = {
    * Configura a câmera para seguir o player
    */
   setupCamera() {
-    this.cameras.main.startFollow(this.player);
-    this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.cameras.main.setZoom(this.defaultZoom); // Usar zoom da cena
+    const camera = this.cameras.main;
+    camera.setZoom(this.defaultZoom); // Usar zoom da cena
+
+    const mapWidth = this.map.widthInPixels;
+    const mapHeight = this.map.heightInPixels;
+    const viewWorldWidth = camera.width / camera.zoom;
+    const viewWorldHeight = camera.height / camera.zoom;
+
+    // Quando a viewport em unidades de mundo for maior que o mapa,
+    // adiciona margens para permitir centralizacao correta.
+    const marginX = Math.max(0, (viewWorldWidth - mapWidth) / 2);
+    const marginY = Math.max(0, (viewWorldHeight - mapHeight) / 2);
+
+    camera.setBounds(
+      -marginX,
+      -marginY,
+      mapWidth + (marginX * 2),
+      mapHeight + (marginY * 2)
+    );
+
+    camera.startFollow(this.player);
+    camera.centerOn(this.player.x, this.player.y);
   },
 
   /**

@@ -114,13 +114,17 @@ export default class BaseMapScene extends Phaser.Scene {
         continue;
       }
 
-      const key = `${zone.label}|${zone.x}|${zone.y}`;
+      const zoneNode = zone.zone || zone;
+      const label = zone.label || zoneNode?.label || 'DOOR_ZONE';
+      const x = Number.isFinite(zoneNode?.x) ? zoneNode.x : 0;
+      const y = Number.isFinite(zoneNode?.y) ? zoneNode.y : 0;
+      const key = `${label}|${x}|${y}`;
       if (this._registeredDoorZones.has(key)) {
         continue;
       }
 
       this._registeredDoorZones.add(key);
-      this.collisionDebugger.registerDoorZone(zone);
+      this.collisionDebugger.registerDoorZone(zone, label);
     }
 
     const total = this._registeredDoorZones.size;

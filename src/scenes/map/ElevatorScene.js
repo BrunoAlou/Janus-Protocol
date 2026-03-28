@@ -2,7 +2,10 @@ import BaseMapScene from './BaseMapScene.js';
 import DoorZone from '../../components/DoorZone.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
 import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
-import { resolveAssetPath } from '../../utils/AssetResolver.js';
+import loadPlayerAssets from '../../player/loadPlayerAssets.js';
+import { SceneDialogueFlowService } from './services/SceneDialogueFlowService.js';
+import { ElevatorIntroducer } from './services/elevator/ElevatorIntroducer.js';
+import { ELEVATOR_TEXTS } from '../../i18n/elevatorTexts.js';
 
 /**
  * ElevatorScene - Cena do elevador (minimapa)
@@ -11,12 +14,83 @@ export default class ElevatorScene extends BaseMapScene {
   constructor() {
     super(SCENE_NAMES.ELEVATOR, 'elevator');
     this.defaultZoom = 2.0; // Zoom menor = mapa menor aparece maior na tela (centralizado)
+    this.janusCompletedFlagKey = 'elevator_janus_assessment_completed';
+    this.janusRunningFlagKey = 'elevator_janus_assessment_running';
+    this.elevatorModalFlowFlagKey = 'elevator_intro_modal_active';
+    this.elevatorDialogFlowFlagKey = 'elevator_intro_dialog_active';
+    this.elevatorModalSeenFlagKey = 'elevator_intro_modal_seen';
+    this.elevatorDialogSeenFlagKey = 'elevator_intro_dialog_seen';
+    this.elevatorQuantumIntroCompletedFlagKey = 'elevator_quantum_intro_completed';
+    this.elevatorObjectiveChoiceFlagKey = 'elevator_primary_objective_choice';
+    this.elevatorObjectiveAxisFlagKey = 'elevator_primary_objective_axis';
+    this.elevatorBossObjectiveActiveFlagKey = 'objective_talk_to_boss_active';
+    this.elevatorBossObjectiveCompletedFlagKey = 'objective_talk_to_boss_completed';
+    this.elevatorTeamObjectiveActiveFlagKey = 'objective_talk_to_team_active';
+    this.elevatorTeamObjectiveCompletedFlagKey = 'objective_talk_to_team_completed';
+    this.elevatorSolveObjectiveActiveFlagKey = 'objective_solve_anomaly_active';
+    this.elevatorSolveObjectiveCompletedFlagKey = 'objective_solve_anomaly_completed';
+    this.elevatorStabilizeObjectiveActiveFlagKey = 'objective_stabilize_system_active';
+    this.elevatorStabilizeObjectiveCompletedFlagKey = 'objective_stabilize_system_completed';
+    this.dialogSceneKey = SCENE_NAMES.DIALOG;
+    this._janusAssessmentRunning = false;
+  }
+
+  init(data) {
+    super.init(data);
+    this.isTransitioning = false;
+    this._janusAssessmentRunning = false;
+    this.dialogueFlow = new SceneDialogueFlowService(this);
+    this.introducer = new ElevatorIntroducer(this);
+    this.onboardingModalOpen = false;
+    this.onboardingDialogOpen = false;
+
+    this.setElevatorFlag(this.elevatorModalFlowFlagKey, false);
+    this.setElevatorFlag(this.elevatorDialogFlowFlagKey, false);
+
+    if (window.gameState?.getFlag?.(this.elevatorModalSeenFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorModalSeenFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorDialogSeenFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorDialogSeenFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorQuantumIntroCompletedFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorQuantumIntroCompletedFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorObjectiveChoiceFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorObjectiveChoiceFlagKey, null);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorObjectiveAxisFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorObjectiveAxisFlagKey, null);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorBossObjectiveActiveFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorBossObjectiveActiveFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorBossObjectiveCompletedFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorBossObjectiveCompletedFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorTeamObjectiveActiveFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorTeamObjectiveActiveFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorTeamObjectiveCompletedFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorTeamObjectiveCompletedFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorSolveObjectiveActiveFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorSolveObjectiveActiveFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorSolveObjectiveCompletedFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorSolveObjectiveCompletedFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorStabilizeObjectiveActiveFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorStabilizeObjectiveActiveFlagKey, false);
+    }
+    if (window.gameState?.getFlag?.(this.elevatorStabilizeObjectiveCompletedFlagKey) === undefined) {
+      this.setElevatorFlag(this.elevatorStabilizeObjectiveCompletedFlagKey, false);
+    }
   }
 
   preload() {
+    loadPlayerAssets(this);
     preloadRegisteredTilesets(this);
-    // Carregar assets específicos do elevador, se houver
-    this.load.image('elevator_minimap', resolveAssetPath('elevator_minimap_16x16.png'));
     // Carregar tilemap do elevador via resolver
     super.preload();
   }
@@ -31,11 +105,42 @@ export default class ElevatorScene extends BaseMapScene {
 
     this.cameras.main.fadeIn(400, 0, 0, 0);
     this.setupDoorTransitions();
+    this.registerDoorZonesToDebugger();
     // Centralizar câmera no mapa (override do setupCamera da base)
     this.setupCameraForMinimap();
     // Adicionar animações de partículas ao redor do elevador
     this.setupElevatorParticles();
+    this.showQuantumIntroFlow();
     // Outras inicializações específicas do elevador
+  }
+
+  showQuantumIntroFlow() {
+    this.introducer?.showIntroductionFlow(() => {
+      this.scheduleAutoJanusAssessment();
+    });
+  }
+
+  scheduleAutoJanusAssessment(attempt = 0) {
+    if (this.isJanusAssessmentCompleted() || this._janusAssessmentRunning) {
+      return;
+    }
+
+    const dialogReady = this.dialogueFlow?.ensureDialogScene(
+      SCENE_NAMES.DIALOG,
+      10,
+      attempt,
+      () => {
+        this.time.delayedCall(220, () => {
+          if (!this._janusAssessmentRunning && !this.isJanusAssessmentCompleted()) {
+            this.startJanusAssessment();
+          }
+        });
+      }
+    );
+
+    if (!dialogReady && attempt >= 10) {
+      console.warn('[ElevatorScene] DialogScene not ready for automatic Janus dialog');
+    }
   }
 
   /**
@@ -111,18 +216,18 @@ export default class ElevatorScene extends BaseMapScene {
     this.doorZones = [
       new DoorZone(this, {
         x: 8, y: 8, width: 16, height: 16, // Posição central do minimapa 16x16
-        label: 'ENTRADA ELEVADOR',
+        label: ELEVATOR_TEXTS.doors.entryLabel,
         indicatorColor: 0x00ff00,
         indicatorTextColor: '#00ff00',
         onInteract: () => this.transitionToItRoom(),
         proximityDistance: 24
       }),
       new DoorZone(this, {
-        x: 8,
-        y: 24,
-        width: 16,
-        height: 16,
-        label: 'DESTINOS',
+        x: 215,
+        y: 43,
+        width: 40,
+        height: 40,
+        label: ELEVATOR_TEXTS.doors.destinationsLabel,
         indicatorColor: 0xffcc00,
         indicatorTextColor: '#ffcc00',
         onInteract: () => this.openElevatorDestinations(),
@@ -134,6 +239,10 @@ export default class ElevatorScene extends BaseMapScene {
   openElevatorDestinations() {
     if (this.isTransitioning) return;
 
+    if (this._janusAssessmentRunning) {
+      return;
+    }
+
     const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
     if (!dialogScene) {
       console.warn('[ElevatorScene] DialogScene indisponivel para destinos');
@@ -144,37 +253,296 @@ export default class ElevatorScene extends BaseMapScene {
       this.scene.launch(SCENE_NAMES.DIALOG);
     }
 
-    dialogScene.showOptionsDialog({
-      name: 'Painel do Elevador',
-      greeting: 'Selecione seu destino:',
+    if (window.gameState?.getFlag?.(this.elevatorQuantumIntroCompletedFlagKey) !== true) {
+      this.showQuantumIntroFlow();
+      return;
+    }
+
+    if (!this.isJanusAssessmentCompleted()) {
+      this.startJanusAssessment();
+      return;
+    }
+
+    if (!this.hasPrimaryObjectiveSelected()) {
+      this.showObjectiveDefinitionMenu();
+      return;
+    }
+
+    this.showDestinationMenu();
+  }
+
+  hasPrimaryObjectiveSelected() {
+    return !!window.gameState?.getFlag?.(this.elevatorObjectiveChoiceFlagKey);
+  }
+
+  isJanusAssessmentCompleted() {
+    return window.gameState?.getFlag?.(this.janusCompletedFlagKey) === true;
+  }
+
+  setJanusFlag(flagKey, value) {
+    if (window.gameState?.setFlag) {
+      window.gameState.setFlag(flagKey, value);
+    }
+  }
+
+  createLikertOptions(questionId, positiveAxis, negativeAxis) {
+    const labels = ELEVATOR_TEXTS.janus.likertLabels;
+    return this.dialogueFlow?.createLikertOptions(questionId, positiveAxis, negativeAxis, labels) || [];
+  }
+
+  getJanusQuestions() {
+    return (ELEVATOR_TEXTS.janus.questions || []).map((question) => {
+      if (!question.likert) {
+        return question;
+      }
+
+      return {
+        id: question.id,
+        prompt: question.prompt,
+        options: this.createLikertOptions(
+          question.likert.id,
+          question.likert.positiveAxis,
+          question.likert.negativeAxis
+        )
+      };
+    });
+  }
+
+  startJanusAssessment() {
+    const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
+    if (!dialogScene) {
+      return;
+    }
+
+    this._janusAssessmentRunning = true;
+    this.setJanusFlag(this.janusRunningFlagKey, true);
+
+    this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
+      name: 'Janus IA',
+      dialogues: ELEVATOR_TEXTS.janus.introDialogues.map((text, index) => ({
+        text,
+        emotion: index === 0 ? 'neutral' : 'professional'
+      })),
+      onComplete: () => {
+        this.showJanusQuestion(0);
+      }
+    });
+  }
+
+  showJanusQuestion(questionIndex) {
+    const questions = this.getJanusQuestions();
+    if (questionIndex >= questions.length) {
+      this.finishJanusAssessment();
+      return;
+    }
+
+    const question = questions[questionIndex];
+    const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
+    if (!dialogScene) {
+      this._janusAssessmentRunning = false;
+      this.setJanusFlag(this.janusRunningFlagKey, false);
+      return;
+    }
+
+    this.dialogueFlow?.showOptionsDialog(SCENE_NAMES.DIALOG, {
+      name: 'Janus IA',
+      greeting: `${ELEVATOR_TEXTS.janus.questionPrefix} ${questionIndex + 1}/${questions.length}: ${question.prompt}`,
+      options: question.options.map((choice) => ({
+        id: choice.id,
+        label: choice.label,
+        action: {
+          type: 'event',
+          target: 'janus-answer',
+          data: {
+            axis: choice.axis,
+            points: choice.points
+          }
+        }
+      })),
+      onSelect: (option) => {
+        this.handleJanusAnswer(question, option, questionIndex);
+      },
+      onClose: () => {
+        // Mantem o fluxo obrigatorio: se fechar sem responder, reabre a mesma pergunta.
+        if (this._janusAssessmentRunning) {
+          this.time.delayedCall(80, () => this.showJanusQuestion(questionIndex));
+        }
+      }
+    });
+  }
+
+  handleJanusAnswer(question, option, questionIndex) {
+    const selectedOption = question.options.find((choice) => choice.id === option?.id);
+    if (!selectedOption) {
+      this.showJanusQuestion(questionIndex);
+      return;
+    }
+
+    this.setJanusFlag(`elevator_${question.id}_answer`, selectedOption.id);
+
+    const axis = selectedOption.axis;
+    const points = Number(selectedOption.points || 0);
+
+    this.dialogueFlow?.addAxisPoints(axis, points);
+    this.dialogueFlow?.appendAxisChoiceEntry({
+      axis,
+      source: 'Janus IA',
+      sourceId: 'elevator_janus_assessment',
+      label: selectedOption.label,
+      optionId: selectedOption.id,
+      influenceType: 'janus_assessment'
+    });
+
+    this.showJanusQuestion(questionIndex + 1);
+  }
+
+  finishJanusAssessment() {
+    const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
+
+    this._janusAssessmentRunning = false;
+    this.setJanusFlag(this.janusCompletedFlagKey, true);
+    this.setJanusFlag(this.janusRunningFlagKey, false);
+
+    if (!dialogScene) {
+      return;
+    }
+
+    this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
+      name: 'Janus IA',
+      dialogues: ELEVATOR_TEXTS.janus.completionDialogues.map((text, index) => ({
+        text,
+        emotion: index === 0 ? 'professional' : 'neutral'
+      })),
+      onComplete: () => {
+        this.showObjectiveDefinitionMenu();
+      }
+    });
+  }
+
+  showObjectiveDefinitionMenu() {
+    const objectiveOptions = Object.values(ELEVATOR_TEXTS.objectiveSelection.options || {});
+
+    this.dialogueFlow?.showOptionsDialog(SCENE_NAMES.DIALOG, {
+      name: ELEVATOR_TEXTS.objectiveSelection.name,
+      greeting: ELEVATOR_TEXTS.objectiveSelection.greeting,
+      options: objectiveOptions.map((item) => ({
+        id: item.id,
+        label: item.label,
+        action: {
+          type: 'event',
+          target: 'objective-select',
+          data: {
+            objectiveKey: item.objectiveKey,
+            axis: item.axis,
+            points: item.points
+          }
+        }
+      })),
+      onSelect: (option) => {
+        const choice = objectiveOptions.find((item) => item.id === option?.id);
+        if (!choice) {
+          return;
+        }
+        this.applyPrimaryObjectiveChoice(choice);
+      },
+      onClose: () => {
+        if (!this.hasPrimaryObjectiveSelected()) {
+          this.time.delayedCall(80, () => this.showObjectiveDefinitionMenu());
+        }
+      }
+    });
+  }
+
+  applyPrimaryObjectiveChoice(choice) {
+    const objectiveKey = choice.objectiveKey;
+    const axis = choice.axis;
+    const points = Number(choice.points || 0);
+
+    this.setElevatorFlag(this.elevatorObjectiveChoiceFlagKey, objectiveKey);
+    this.setElevatorFlag(this.elevatorObjectiveAxisFlagKey, axis);
+
+    this.setElevatorFlag(this.elevatorBossObjectiveActiveFlagKey, objectiveKey === 'boss');
+    this.setElevatorFlag(this.elevatorBossObjectiveCompletedFlagKey, false);
+
+    this.setElevatorFlag(this.elevatorTeamObjectiveActiveFlagKey, objectiveKey === 'team');
+    this.setElevatorFlag(this.elevatorTeamObjectiveCompletedFlagKey, false);
+
+    this.setElevatorFlag(this.elevatorSolveObjectiveActiveFlagKey, objectiveKey === 'solve');
+    this.setElevatorFlag(this.elevatorSolveObjectiveCompletedFlagKey, false);
+
+    this.setElevatorFlag(this.elevatorStabilizeObjectiveActiveFlagKey, objectiveKey === 'stabilize');
+    this.setElevatorFlag(this.elevatorStabilizeObjectiveCompletedFlagKey, false);
+
+    this.dialogueFlow?.addAxisPoints(axis, points);
+    this.dialogueFlow?.appendAxisChoiceEntry({
+      axis,
+      source: 'Janus IA',
+      sourceId: 'elevator_primary_objective',
+      label: choice.label,
+      optionId: choice.id,
+      influenceType: 'objective_definition',
+      extra: {
+        objectiveKey
+      }
+    });
+
+    this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
+      name: ELEVATOR_TEXTS.objectiveSelection.name,
+      dialogues: [
+        {
+          text: `${ELEVATOR_TEXTS.objectiveSelection.confirmationPrefix} ${choice.label}`,
+          emotion: 'professional'
+        },
+        {
+          text: `Eixo priorizado: ${axis}. Destinos do elevador atualizados.`,
+          emotion: 'neutral'
+        }
+      ],
+      onComplete: () => {
+        this.showDestinationMenu();
+      }
+    });
+  }
+
+  showDestinationMenu() {
+
+    this.dialogueFlow?.showOptionsDialog(SCENE_NAMES.DIALOG, {
+      name: ELEVATOR_TEXTS.destinationMenu.name,
+      greeting: ELEVATOR_TEXTS.destinationMenu.greeting,
       options: [
         {
           id: 'garden',
-          label: 'Jardim',
+          label: ELEVATOR_TEXTS.destinationMenu.options.garden,
           icon: '🌳',
           action: { type: 'scene', target: SCENE_NAMES.GARDEN }
         },
         {
           id: 'coffee-room',
-          label: 'Cafeteria',
+          label: ELEVATOR_TEXTS.destinationMenu.options.coffeeRoom,
           icon: '☕',
           action: { type: 'scene', target: SCENE_NAMES.COFFEE_ROOM }
         },
         {
           id: 'boss-room',
-          label: 'Sala do Chefe',
+          label: ELEVATOR_TEXTS.destinationMenu.options.bossRoom,
           icon: '👔',
           action: { type: 'scene', target: SCENE_NAMES.BOSS_ROOM }
         },
         {
+          id: 'active-objectives',
+          label: ELEVATOR_TEXTS.destinationMenu.options.activeObjectives,
+          icon: '🎯',
+          action: { type: 'scene', target: SCENE_NAMES.QUANTUM_OBJECTIVES }
+        },
+        {
           id: 'hallway',
-          label: 'Entrada Elevador',
+          label: ELEVATOR_TEXTS.destinationMenu.options.itRoom,
           icon: '🚪',
           action: { type: 'scene', target: SCENE_NAMES.IT_ROOM }
         },
         {
           id: 'cancel',
-          label: 'Cancelar',
+          label: ELEVATOR_TEXTS.destinationMenu.options.cancel,
           icon: '↩️',
           action: { type: 'cancel' }
         }
@@ -314,5 +682,11 @@ export default class ElevatorScene extends BaseMapScene {
 
   setupNPCs() {
     this.npcs = [];
+  }
+
+  setElevatorFlag(flagKey, value) {
+    if (flagKey && window.gameState?.setFlag) {
+      window.gameState.setFlag(flagKey, value);
+    }
   }
 }

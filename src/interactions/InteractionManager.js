@@ -10,13 +10,103 @@ export default class InteractionManager {
     this.scene = scene;
     this.player = player;
     this.nearbyNPCs = new Set();
+    this.registeredNPCs = [];
     this.currentInteractable = null;
+    this.hoveredNPC = null;
     
     // Tecla E para interação
     this.interactKey = scene.input.keyboard.addKey('E');
     this.interactKey.on('down', () => this.handleInteraction());
 
+    this._setupMouseListeners();
+
     console.log('[InteractionManager] Initialized');
+  }
+
+  _setupMouseListeners() {
+    this.scene.input.on('pointerdown', (pointer) => {
+      if (pointer.button !== 0) {
+        return;
+      }
+
+      this.handleMouseClick(pointer);
+    });
+  }
+
+  _getPointerWorldPoint(pointer) {
+    const camera = this.scene.cameras?.main;
+    if (camera && typeof camera.getWorldPoint === 'function') {
+      return camera.getWorldPoint(pointer.x, pointer.y);
+    }
+
+    return {
+      x: pointer.worldX,
+      y: pointer.worldY
+    };
+  }
+
+  _isPointerOverNPC(pointer, npc) {
+    if (!npc || !npc.active || !npc.visible || typeof npc.getBounds !== 'function') {
+      return false;
+    }
+
+    const worldPoint = this._getPointerWorldPoint(pointer);
+    const bounds = npc.getBounds();
+    return bounds.contains(worldPoint.x, worldPoint.y);
+  }
+
+  _getHoveredNPC(pointer) {
+    let hoveredNpc = null;
+
+    for (const npc of this.registeredNPCs) {
+      if (!this._isPointerOverNPC(pointer, npc)) {
+        continue;
+      }
+
+      if (!hoveredNpc || (npc.depth || 0) >= (hoveredNpc.depth || 0)) {
+        hoveredNpc = npc;
+      }
+    }
+
+    return hoveredNpc;
+  }
+
+  _updateHoveredNPC() {
+    const pointer = this.scene.input?.activePointer;
+    const nextHoveredNpc = pointer ? this._getHoveredNPC(pointer) : null;
+
+    if (this.hoveredNPC === nextHoveredNpc) {
+      return;
+    }
+
+    if (this.hoveredNPC && !this.nearbyNPCs.has(this.hoveredNPC)) {
+      this.hoveredNPC.interactionIndicator?.setVisible(false);
+    }
+
+    this.hoveredNPC = nextHoveredNpc;
+
+    if (this.hoveredNPC) {
+      this.hoveredNPC.interactionIndicator?.setVisible(true);
+    }
+  }
+
+  handleMouseClick(pointer) {
+    if (this._isInteractionBlocked()) {
+      return;
+    }
+
+    // Mantém prioridade para elementos quando o cursor está sobre eles.
+    if (this.scene.elementManager?._hoveredElement) {
+      return;
+    }
+
+    const npc = this._getHoveredNPC(pointer);
+    if (!npc) {
+      return;
+    }
+
+    this.currentInteractable = npc;
+    this._interactWithNpc(npc, { ignoreElementPriority: true });
   }
 
   /**
@@ -24,6 +114,7 @@ export default class InteractionManager {
    */
   registerNPCs(npcs) {
     if (!Array.isArray(npcs)) npcs = [npcs];
+    this.registeredNPCs = [...npcs];
 
     npcs.forEach(npc => {
       if (!npc.interactionZone) {
@@ -96,12 +187,6 @@ export default class InteractionManager {
       return;
     }
 
-    // Verificar primeiro se ElementManager processou a interação
-    if (this.scene.elementManager?.currentInteractable) {
-      // ElementManager tem algo para interagir, deixar ele processar
-      return;
-    }
-
     if (!this.currentInteractable) {
       // Só logar se não houver nada em nenhum dos sistemas
       if (!this.scene.elementManager || this.scene.elementManager.elements.size === 0) {
@@ -111,6 +196,47 @@ export default class InteractionManager {
     }
 
     const npc = this.currentInteractable;
+    this._interactWithNpc(npc);
+  }
+
+  _interactWithNpc(npc, options = {}) {
+    if (!npc) {
+      return;
+    }
+
+    const { ignoreElementPriority = false } = options;
+
+    // Quando há elemento e NPC próximos, prioriza o mais perto do player.
+    if (!ignoreElementPriority) {
+      const currentElement = this.scene.elementManager?.currentInteractable;
+      if (currentElement) {
+        const npcDistance = Phaser.Math.Distance.Between(
+          this.player.x,
+          this.player.y,
+          npc.x,
+          npc.y
+        );
+
+        const elementCenterX = Number.isFinite(currentElement.area?.x)
+          ? currentElement.area.x
+          : currentElement.x;
+        const elementCenterY = Number.isFinite(currentElement.area?.y)
+          ? currentElement.area.y
+          : currentElement.y;
+
+        const elementDistance = Phaser.Math.Distance.Between(
+          this.player.x,
+          this.player.y,
+          elementCenterX,
+          elementCenterY
+        );
+
+        if (Number.isFinite(elementDistance) && elementDistance < npcDistance) {
+          return;
+        }
+      }
+    }
+
     if (npc?.contactFlagKey && window.gameState?.setFlag) {
       window.gameState.setFlag(npc.contactFlagKey, true);
     }
@@ -173,10 +299,18 @@ export default class InteractionManager {
    * Atualiza distâncias (chamar no update)
    */
   update() {
+    this._updateHoveredNPC();
+
     if (this._isInteractionBlocked()) {
       if (this.currentInteractable?.interactionIndicator) {
         this.currentInteractable.interactionIndicator.setVisible(false);
       }
+
+      if (this.hoveredNPC?.interactionIndicator && this.hoveredNPC !== this.currentInteractable) {
+        this.hoveredNPC.interactionIndicator.setVisible(false);
+      }
+
+      this.hoveredNPC = null;
       this.currentInteractable = null;
       return;
     }
@@ -207,6 +341,8 @@ export default class InteractionManager {
   destroy() {
     this.interactKey?.destroy();
     this.nearbyNPCs.clear();
+    this.registeredNPCs = [];
+    this.hoveredNPC = null;
     this.currentInteractable = null;
   }
 }

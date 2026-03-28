@@ -4,6 +4,7 @@
 
 import { NPC } from '../entities/NPC.js';
 import { NPC_TEXTS } from '../i18n/npcTexts.js';
+import { normalizeNpcConfig } from './npcConfig.js';
 
 export default class NPCFactory {
   /**
@@ -14,23 +15,41 @@ export default class NPCFactory {
    * @param {Object} config - Configuração do NPC
    */
   static create(scene, x, y, config = {}) {
-    const {
-      id = 'npc_' + Date.now(),
-      name = NPC_TEXTS.defaults.fallbackName,
-      texture = 'npc_default',
-      frame = 0,
-      scale = 4,
-      depth = 4,
-      dialogues = [],
-      canMove = false,
-      patrol = null, // { points: [[x1,y1], [x2,y2]], speed: 50 }
-      interactionRadius = 32
-    } = config;
+    const normalized = normalizeNpcConfig(config, {
+      id: 'npc_' + Date.now(),
+      name: NPC_TEXTS.defaults.fallbackName,
+      x,
+      y,
+      texture: 'npc_default',
+      frame: 0,
+      scale: 4,
+      scaleMultiplier: 1,
+      depth: 4,
+      dialogues: [],
+      canMove: false,
+      patrol: null,
+      interactionRadius: 32,
+      flipX: false
+    });
+
+    const id = normalized.id;
+    const name = normalized.name;
+    const texture = normalized.texture;
+    const frame = normalized.frame;
+    const scale = Number.isFinite(normalized.scale)
+      ? normalized.scale
+      : 4 * normalized.scaleMultiplier;
+    const depth = normalized.depth;
+    const dialogues = normalized.dialogues;
+    const canMove = normalized.canMove;
+    const patrol = normalized.patrol;
+    const interactionRadius = normalized.interactionRadius;
 
     // Criar sprite do NPC
     const npc = scene.physics.add.sprite(x, y, texture, frame);
     npc.setScale(scale);
     npc.setDepth(depth);
+    npc.setFlipX(Boolean(normalized.flipX));
     npc.setCollideWorldBounds(true);
 
     // Propriedades customizadas
@@ -41,6 +60,9 @@ export default class NPCFactory {
     npc.canMove = canMove;
     npc.patrol = patrol;
     npc.isInteracting = false;
+    npc.role = normalized.role;
+    npc.interactionAreaWidth = Number.isFinite(normalized.interactionAreaWidth) ? normalized.interactionAreaWidth : 0;
+    npc.interactionAreaHeight = Number.isFinite(normalized.interactionAreaHeight) ? normalized.interactionAreaHeight : 0;
 
     // Criar zona de interação (círculo invisível)
     npc.interactionZone = scene.add.circle(x, y, interactionRadius, 0x00ff00, 0);
@@ -48,8 +70,11 @@ export default class NPCFactory {
     npc.interactionZone.body.setCircle(interactionRadius);
     npc.interactionZone.npcRef = npc; // Referência ao NPC
 
+    const getNameTagOffset = () => Math.max(32, Math.round((npc.displayHeight || 64) * 0.55));
+    const getIndicatorOffset = () => getNameTagOffset() + 16;
+
     // Indicador de interação (tecla E)
-    npc.interactionIndicator = scene.add.container(x, y - 50);
+    npc.interactionIndicator = scene.add.container(x, y - getIndicatorOffset());
     const indicatorBg = scene.add.circle(0, 0, 12, 0x000000, 0.7);
     const indicatorText = scene.add.text(0, 0, 'E', {
       fontSize: '14px',
@@ -57,22 +82,28 @@ export default class NPCFactory {
       fontStyle: 'bold'
     }).setOrigin(0.5);
     npc.interactionIndicator.add([indicatorBg, indicatorText]);
-    npc.interactionIndicator.setDepth(10);
+    npc.interactionIndicator.setDepth(Math.max(12, depth + 2));
     npc.interactionIndicator.setVisible(false);
 
     // Balão de nome
-    npc.nameTag = scene.add.text(x, y - 35, name, {
+    npc.nameTag = scene.add.text(x, y - getNameTagOffset(), name, {
       fontSize: '12px',
       color: '#ffffff',
       backgroundColor: '#000000',
       padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(10);
+    }).setOrigin(0.5).setDepth(Math.max(11, depth + 1));
 
     // Atualizar posições dos elementos
     npc.updateElements = function() {
-      this.interactionZone.setPosition(this.x, this.y);
-      this.interactionIndicator.setPosition(this.x, this.y - 50);
-      this.nameTag.setPosition(this.x, this.y - 35);
+      const npcDepth = Number.isFinite(this.depth) ? this.depth : depth;
+      const nameTagOffset = Math.max(32, Math.round((this.displayHeight || 64) * 0.55));
+      const indicatorOffset = nameTagOffset + 16;
+
+      this.interactionZone?.setPosition(this.x, this.y);
+      this.interactionIndicator?.setPosition(this.x, this.y - indicatorOffset);
+      this.interactionIndicator?.setDepth(npcDepth + 2);
+      this.nameTag?.setPosition(this.x, this.y - nameTagOffset);
+      this.nameTag?.setDepth(npcDepth + 1);
     };
 
     // Limpar elementos ao destruir

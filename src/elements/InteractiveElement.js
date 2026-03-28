@@ -125,6 +125,12 @@ export default class InteractiveElement {
     /** @type {Object[]} */
     this.clickDialogues = config.clickDialogues || [];
 
+    /** @type {Phaser.GameObjects.Sprite|null} */
+    this.followSprite = config.followSprite || null;
+
+    /** @type {boolean} */
+    this.ownsSprite = false;
+
     /** @type {string} */
     this.greeting = config.greeting || '';
 
@@ -348,10 +354,14 @@ export default class InteractiveElement {
         
         this.sprite.setDepth(this.area.y); // Depth baseado em Y para ordenação
         this.sprite.setVisible(spriteConfig.visible !== false);
+        this.ownsSprite = true;
         spriteCreated = true;
       } else {
         console.warn(`[InteractiveElement] Texture '${spriteConfig.key}' not found for ${this.id}`);
       }
+    } else if (this.followSprite) {
+      this.sprite = this.followSprite;
+      spriteCreated = true;
     }
 
     // Criar retângulo de debug para todos os elementos interagíveis (invisível por padrão)
@@ -888,8 +898,26 @@ export default class InteractiveElement {
    */
   updateIndicatorPosition() {
     if (this.sprite && this.indicator) {
+      this.area.x = this.sprite.x;
+      this.area.y = this.sprite.y;
+
+      if (this.interactionZone) {
+        this.interactionZone.setPosition(this.sprite.x, this.sprite.y);
+      }
+
+      if (this.debugRect) {
+        this.debugRect.setPosition(this.sprite.x, this.sprite.y);
+        this.debugRect.setDepth((this.sprite?.depth || this.area.y) + 1);
+      }
+
+      if (this.debugText) {
+        this.debugText.setPosition(this.sprite.x, this.sprite.y);
+        this.debugText.setDepth((this.sprite?.depth || this.area.y) + 2);
+      }
+
       const offsetY = this.config.indicator?.offsetY || -40;
       this.indicator.setPosition(this.sprite.x, this.sprite.y + offsetY);
+      this.indicator.setDepth((this.sprite?.depth || this.area.y) + 3);
     }
   }
 
@@ -911,9 +939,13 @@ export default class InteractiveElement {
    * Destrói o elemento e limpa recursos
    */
   destroy() {
-    this.sprite?.destroy();
+    if (this.ownsSprite) {
+      this.sprite?.destroy();
+    }
     this.indicator?.destroy();
     this.interactionZone?.destroy();
+    this.debugRect?.destroy();
+    this.debugText?.destroy();
     
     console.log(`[InteractiveElement] Destroyed: ${this.id}`);
   }

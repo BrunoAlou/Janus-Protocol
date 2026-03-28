@@ -50,7 +50,7 @@ export default class CollisionDebugger {
     this.flagItemRows = [];
     this._lastFlagsSignature = null;
     this.flagsPageIndex = 0;
-    this.flagsPageSize = 9;
+    this.flagsPageSize = 10;
     this.flagsPrevPageBg = null;
     this.flagsNextPageBg = null;
     this.flagsPrevPageText = null;

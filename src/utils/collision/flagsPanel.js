@@ -1,3 +1,53 @@
+const KNOWN_FEATURE_FLAGS = [
+  'resetgame',
+  'contacted_receptionist',
+  'contacted_npc_receptionist',
+  'reception_intro_modal_seen',
+  'reception_intro_dialog_seen',
+  'reception_intro_modal_active',
+  'reception_intro_dialog_active',
+  'reception_archive_door_unlocked',
+  'reception_ti_door_unlocked',
+  'receptionist_after_caio_apology_done',
+  'receptionist_main_mission_unlocked',
+  'receptionist_ti_room_unlocked',
+  'receptionist_form_unlocked',
+  'receptionist_info_panel_unlocked',
+  'receptionist_priority_axis',
+  'receptionist_selected_options',
+  'met_it_team',
+  'ti_axis_round',
+  'ti_axis_journey_completed',
+  'ti_axis_manager_intro_bonus',
+  'elevator_janus_assessment_completed',
+  'elevator_janus_assessment_running',
+  'elevator_intro_modal_active',
+  'elevator_intro_dialog_active',
+  'elevator_intro_modal_seen',
+  'elevator_intro_dialog_seen',
+  'elevator_quantum_intro_completed',
+  'objective_talk_to_boss_active',
+  'objective_talk_to_boss_completed',
+  'quantum_objective_hub_intro_seen',
+  'minigame_unlocked_QuizGame',
+  'minigame_unlocked_MemoryGame',
+  'minigame_unlocked_PuzzleGame',
+  'minigame_unlocked_TypingGame',
+  'minigame_unlocked_SnakeGame',
+  'minigame_unlocked_TetrisGame',
+  'minigame_unlocked_WhackAMoleGame'
+];
+
+function buildFlagsCatalog(runtimeFlags) {
+  const runtimeKeys = Object.keys(runtimeFlags || {});
+  const catalog = Array.from(new Set([...KNOWN_FEATURE_FLAGS, ...runtimeKeys])).sort((a, b) => a.localeCompare(b));
+
+  return catalog.map((key) => {
+    const hasRuntimeValue = Object.prototype.hasOwnProperty.call(runtimeFlags, key);
+    return [key, hasRuntimeValue ? runtimeFlags[key] : false];
+  });
+}
+
 export function createFlagsDebugUI(d) {
   d.flagsMenuScene = d.scene.scene.get('UIScene') || d.scene;
 
@@ -11,12 +61,12 @@ export function createFlagsDebugUI(d) {
   d.flagsMenu.setScrollFactor(0);
   d.flagsMenu.setVisible(false);
 
-  const menuBg = d.flagsMenuScene.add.rectangle(0, 0, 300, 360, 0x1a1a2e, 0.96)
+  const menuBg = d.flagsMenuScene.add.rectangle(0, 0, 430, 410, 0x1a1a2e, 0.96)
     .setOrigin(0, 0)
     .setStrokeStyle(3, 0x00d9ff)
     .setScrollFactor(0);
 
-  const title = d.flagsMenuScene.add.text(150, 18, 'DEBUG FLAGS', {
+  const title = d.flagsMenuScene.add.text(215, 18, 'DEBUG FEATURE FLAGS', {
     fontSize: '22px',
     color: '#00d9ff',
     fontStyle: 'bold'
@@ -24,36 +74,36 @@ export function createFlagsDebugUI(d) {
 
   const line = d.flagsMenuScene.add.graphics().setScrollFactor(0);
   line.lineStyle(2, 0x3a3a4e);
-  line.lineBetween(20, 52, 280, 52);
+  line.lineBetween(20, 52, 410, 52);
 
   d.flagsListText = d.flagsMenuScene.add.text(20, 64, '', {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#cfefff',
     fontFamily: 'monospace',
     lineSpacing: 3
   }).setScrollFactor(0);
 
-  d.flagsPrevPageBg = d.flagsMenuScene.add.rectangle(210, 70, 24, 20, 0x2a2a3e)
+  d.flagsPrevPageBg = d.flagsMenuScene.add.rectangle(336, 70, 24, 20, 0x2a2a3e)
     .setStrokeStyle(1, 0x5b6e89)
     .setScrollFactor(0)
     .setInteractive({ useHandCursor: true });
-  d.flagsPrevPageText = d.flagsMenuScene.add.text(210, 70, '<', {
+  d.flagsPrevPageText = d.flagsMenuScene.add.text(336, 70, '<', {
     fontSize: '14px',
     color: '#cfefff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setScrollFactor(0);
 
-  d.flagsNextPageBg = d.flagsMenuScene.add.rectangle(280, 70, 24, 20, 0x2a2a3e)
+  d.flagsNextPageBg = d.flagsMenuScene.add.rectangle(406, 70, 24, 20, 0x2a2a3e)
     .setStrokeStyle(1, 0x5b6e89)
     .setScrollFactor(0)
     .setInteractive({ useHandCursor: true });
-  d.flagsNextPageText = d.flagsMenuScene.add.text(280, 70, '>', {
+  d.flagsNextPageText = d.flagsMenuScene.add.text(406, 70, '>', {
     fontSize: '14px',
     color: '#cfefff',
     fontStyle: 'bold'
   }).setOrigin(0.5).setScrollFactor(0);
 
-  d.flagsPageInfoText = d.flagsMenuScene.add.text(245, 70, '1/1', {
+  d.flagsPageInfoText = d.flagsMenuScene.add.text(371, 70, '1/1', {
     fontSize: '11px',
     color: '#9cc4ff',
     fontFamily: 'monospace'
@@ -81,18 +131,18 @@ export function createFlagsDebugUI(d) {
   d.flagsNextPageBg.on('pointerover', () => d.flagsNextPageBg?.setFillStyle(0x3a3a4e));
   d.flagsNextPageBg.on('pointerout', () => d.flagsNextPageBg?.setFillStyle(0x2a2a3e));
 
-  d.flagsEmptyText = d.flagsMenuScene.add.text(150, 180, 'Nenhuma flag ativa', {
+  d.flagsEmptyText = d.flagsMenuScene.add.text(215, 205, 'Nenhuma flag disponivel', {
     fontSize: '16px',
     color: '#888888',
     align: 'center'
   }).setOrigin(0.5).setScrollFactor(0);
 
-  d.flagsClearButtonBg = d.flagsMenuScene.add.rectangle(150, 322, 210, 34, 0x2a2a3e)
+  d.flagsClearButtonBg = d.flagsMenuScene.add.rectangle(215, 370, 210, 34, 0x2a2a3e)
     .setScrollFactor(0)
     .setStrokeStyle(2, 0xff6666)
     .setInteractive({ useHandCursor: true });
 
-  d.flagsClearButton = d.flagsMenuScene.add.text(150, 322, 'CLEAR ALL TAGS', {
+  d.flagsClearButton = d.flagsMenuScene.add.text(215, 370, 'CLEAR ALL FLAGS', {
     fontSize: '15px',
     color: '#ff6666',
     fontStyle: 'bold',
@@ -178,7 +228,7 @@ export function updateFlagsDebugUI(d) {
   d.layoutFlagsDebugUI();
 
   const flags = window.gameState?.getState?.()?.player?.flags || {};
-  const allEntries = Object.entries(flags).sort(([a], [b]) => a.localeCompare(b));
+  const allEntries = buildFlagsCatalog(flags);
 
   const totalPages = Math.max(1, Math.ceil(allEntries.length / d.flagsPageSize));
   if (d.flagsPageIndex >= totalPages) d.flagsPageIndex = totalPages - 1;
@@ -198,8 +248,9 @@ export function updateFlagsDebugUI(d) {
     return;
   }
 
+  const runtimeCount = Object.keys(flags).length;
   const activeCount = allEntries.filter(([, value]) => value === true).length;
-  d.flagsListText.setText(`Flags: ${allEntries.length} (ativas: ${activeCount})`);
+  d.flagsListText.setText(`Flags: ${allEntries.length} (runtime: ${runtimeCount}) | Ativas: ${activeCount} | Pagina ${d.flagsPageIndex + 1}/${totalPages}`);
   d.flagsListText.setVisible(true);
   d.flagsEmptyText.setVisible(false);
 
@@ -219,24 +270,25 @@ export function updateFlagsDebugUI(d) {
 }
 
 export function createFlagRow(d, flagKey, flagValue, index) {
-  const y = 92 + (index * 22);
+  const y = 98 + (index * 24);
   const row = d.flagsMenuScene.add.container(20, y).setScrollFactor(0);
 
   const isActive = flagValue === true;
-  const valueText = isActive ? 'true' : 'false';
+  const rowBg = d.flagsMenuScene.add.rectangle(195, 0, 390, 20, index % 2 === 0 ? 0x1f2433 : 0x232b3d, 0.55)
+    .setStrokeStyle(1, 0x2f3a52, 0.8)
+    .setOrigin(0.5);
 
-  const labelText = `- ${d.truncateFlagText(flagKey, 18)}: ${valueText}`;
-  const label = d.flagsMenuScene.add.text(0, 0, labelText, {
+  const label = d.flagsMenuScene.add.text(8, 0, d.truncateFlagText(flagKey, 42), {
     fontSize: '12px',
-    color: isActive ? '#cfefff' : '#8ea1b5',
+    color: isActive ? '#d7ecff' : '#b7c8dc',
     fontFamily: 'monospace'
   }).setOrigin(0, 0.5);
 
-  const toggleBg = d.flagsMenuScene.add.rectangle(245, 0, 52, 18, isActive ? 0x1f5a3d : 0x5a1f2a)
+  const toggleBg = d.flagsMenuScene.add.rectangle(362, 0, 58, 18, isActive ? 0x1f5a3d : 0x5a1f2a)
     .setStrokeStyle(1, isActive ? 0x8dffc2 : 0xff7f9a)
     .setInteractive({ useHandCursor: true });
 
-  const toggleTxt = d.flagsMenuScene.add.text(245, 0, isActive ? 'ON' : 'OFF', {
+  const toggleTxt = d.flagsMenuScene.add.text(362, 0, isActive ? 'ON' : 'OFF', {
     fontSize: '11px',
     color: isActive ? '#d7ffe9' : '#ffd4dc',
     fontStyle: 'bold'
@@ -264,7 +316,7 @@ export function createFlagRow(d, flagKey, flagValue, index) {
     d.showDebugToast(`Flag ${!isActive ? 'ativada' : 'desativada'}: ${flagKey}`, !isActive ? 0x2a6f4f : 0x6f2a2a);
   });
 
-  row.add([label, toggleBg, toggleTxt]);
+  row.add([rowBg, label, toggleBg, toggleTxt]);
   d.flagsMenu.add(row);
   d.flagItemRows.push(row);
 }
@@ -274,7 +326,10 @@ export function truncateFlagText(text, maxLength = 18) {
   if (value.length <= maxLength) {
     return value;
   }
-  return `${value.slice(0, Math.max(1, maxLength - 3))}...`;
+
+  const visibleStart = Math.max(4, Math.floor((maxLength - 3) * 0.68));
+  const visibleEnd = Math.max(3, maxLength - 3 - visibleStart);
+  return `${value.slice(0, visibleStart)}...${value.slice(-visibleEnd)}`;
 }
 
 export function clearFlagRows(d) {
@@ -314,6 +369,6 @@ export function layoutFlagsDebugUI(d) {
 
   const hostCamera = d.flagsMenuScene?.cameras?.main || d.scene.cameras.main;
   const { width } = hostCamera;
-  const x = Math.max(12, Math.min(width - 312, 20));
+  const x = Math.max(12, Math.min(width - 442, 20));
   d.flagsMenu.setPosition(x, 70);
 }
