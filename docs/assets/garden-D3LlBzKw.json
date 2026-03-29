@@ -1,0 +1,34 @@
+{
+  "mapId": "garden",
+  "version": "1.0.0",
+  "description": "Elementos interativos da cena de jardim",
+  "elements": [
+    { "id": "garden_flower_purple_2", "type": "object", "name": "Lavanda", "description": "Flor roxa no canteiro.", "area": { "x": 22, "y": 480, "width": 28, "height": 55 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "O perfume da lavanda acalma o ambiente." }] },
+
+    { "id": "garden_vase_1", "type": "object", "name": "Vaso", "description": "Vaso decorativo do jardim.", "area": { "x": 32, "y": 420, "width": 40, "height": 34 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Um vaso de ceramica com detalhes artesanais." }] },
+    { "id": "garden_vase_2", "type": "object", "name": "Vaso", "description": "Vaso decorativo do jardim.", "area": { "x": 480, "y": 420, "width": 40, "height": 34 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "A pintura do vaso combina com o canteiro." }] },
+    { "id": "garden_vase_3", "type": "object", "name": "Vaso", "description": "Vaso decorativo do jardim.", "area": { "x": 32, "y": 370, "width": 40, "height": 34 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Este vaso esta cheio de terra recem trocada." }] },
+    { "id": "garden_vase_4", "type": "object", "name": "Vaso", "description": "Vaso decorativo do jardim.", "area": { "x": 480, "y": 370, "width": 40, "height": 34 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Um vaso maior para mudas novas." }] },
+
+    { "id": "garden_flower_blue_1", "type": "object", "name": "Hortensia", "description": "Flor azul clara.", "area": { "x": 478, "y": 480, "width": 28, "height": 55 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "As petalas azul claro lembram um ceu de inverno." }] },
+
+    { "id": "garden_dwarf_plant_block_a_1", "type": "object", "name": "Planta Ana A1", "description": "Planta ana ornamental.", "area": { "x": 48, "y": 308, "width": 72, "height": 70 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Pequena, mas resistente ao clima." }] },
+
+    { "id": "garden_dwarf_plant_block_b_1", "type": "object", "name": "Planta Ana B1", "description": "Planta ana da mesma especie.", "area": { "x": 446, "y": 318, "width": 95, "height": 70 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Este bloco usa a mesma especie de planta." }] },
+
+    { "id": "garden_red_flower_vase_1", "type": "object", "name": "Jarro Flor Vermelha 1", "description": "Jarro com flores vermelhas.", "area": { "x": 416, "y": 208, "width": 28, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Vermelho intenso em destaque no jardim." }] },
+    { "id": "garden_red_flower_vase_2", "type": "object", "name": "Jarro Flor Vermelha 2", "description": "Jarro com flores vermelhas.", "area": { "x": 450, "y": 208, "width": 28, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "As flores vermelhas chamam atencao de longe." }] },
+
+    { "id": "garden_yellow_flower_vase_1", "type": "object", "name": "Jarro Flor Amarela 1", "description": "Jarro com flores amarelas.", "area": { "x": 48, "y": 210, "width": 28, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "O amarelo traz mais luz ao canteiro." }] },
+    { "id": "garden_yellow_flower_vase_2", "type": "object", "name": "Jarro Flor Amarela 2", "description": "Jarro com flores amarelas.", "area": { "x": 82, "y": 210, "width": 28, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Flores amarelas sempre destacam o caminho." }] },
+
+    { "id": "garden_shrub_1", "type": "object", "name": "Arbusto", "description": "Arbusto da mesma especie.", "area": { "x": 300, "y": 68, "width": 56, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Um arbusto compacto e bem podado." }] },
+    { "id": "garden_shrub_2", "type": "object", "name": "Arbusto", "description": "Arbusto da mesma especie.", "area": { "x": 368, "y": 128, "width": 70, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Outro arbusto alinhado ao desenho do jardim." }] },
+    { "id": "garden_shrub_3", "type": "object", "name": "Arbusto", "description": "Arbusto da mesma especie.", "area": { "x": 434, "y": 68, "width": 56, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Tres arbustos da mesma especie formam este bloco." }] },
+
+    { "id": "garden_mini_coconut_1", "type": "object", "name": "Mini Coqueiro 1", "description": "Mini coqueiro ornamental.", "area": { "x": 50, "y": 62, "width": 70, "height": 80 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Um mini coqueiro com folhas jovens." }] },
+    { "id": "garden_mini_coconut_2", "type": "object", "name": "Mini Coqueiro 2", "description": "Mini coqueiro ornamental.", "area": { "x": 112, "y": 128, "width": 70, "height": 80 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "A irrigacao manteve a copa bem verde." }] },
+    { "id": "garden_mini_coconut_3", "type": "object", "name": "Mini Coqueiro 3", "description": "Mini coqueiro ornamental.", "area": { "x": 180, "y": 62, "width": 70, "height": 80 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "As folhas pequenas balancam com o vento." }] },
+    { "id": "garden_mini_coconut_4", "type": "object", "name": "Mini Coqueiro 4", "description": "Mini coqueiro ornamental.", "area": { "x": 240, "y": 128, "width": 70, "height": 74 }, "indicator": { "text": "[E]", "offsetY": -24 }, "dialogues": [{ "text": "Quatro mini coqueiros completam o conjunto tropical." }] }
+  ]
+}
