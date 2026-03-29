@@ -29,7 +29,7 @@ export const IT_ROOM_NPC_DIALOGUES = {
 export const IT_ROOM_UI_TEXTS = {
   doors: {
     receptionLabel: 'RECEPCAO',
-    elevatorLabel: 'ENTRADA ELEVADOR'
+    elevatorLabel: 'ELEVADOR'
   }
 };
 

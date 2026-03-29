@@ -401,8 +401,8 @@ export default class ItRoomScene extends BaseMapScene {
     // Depths
     if (this.layers.debug) this.layers.debug.setDepth(0).setAlpha(0.3);
     this.layers.floor?.setDepth(1);
-    this.layers.walls2?.setDepth(2);
-    this.layers.walls?.setDepth(3);
+    this.layers.walls?.setDepth(2);
+    this.layers.walls2?.setDepth(3);
     this.layers.objects?.setDepth(4);
     this.layers.doors?.setDepth(5);
     this.layers.objectsOver?.setDepth(6);
@@ -421,10 +421,10 @@ export default class ItRoomScene extends BaseMapScene {
     // Mapa Ti: 32x32 tiles de 16x16 = 512x512px
     this.doorZones = [
       new DoorZone(this, {
-        x: 256,
-        y: 500,
-        width: 64,
-        height: 16,
+        x: 488,
+        y: 250,
+        width: 14,
+        height: 66,
         label: NPC_TEXTS.itRoom?.ui?.doors?.receptionLabel,
         indicatorColor: 0xffff00,
         indicatorTextColor: '#ffff00',
@@ -433,9 +433,9 @@ export default class ItRoomScene extends BaseMapScene {
       }),
       new DoorZone(this, {
         x: 256,
-        y: 24,
+        y: 44,
         width: 64,
-        height: 16,
+        height: 56,
         label: NPC_TEXTS.itRoom?.ui?.doors?.elevatorLabel,
         indicatorColor: 0x00ff00,
         indicatorTextColor: '#00ff00',
@@ -542,8 +542,18 @@ export default class ItRoomScene extends BaseMapScene {
       });
 
       const animationKey = getItSitAnimationKey(npcConfig.textureKey);
-      if (this.anims.exists(animationKey)) {
-        npc.play(animationKey, true);
+      const texture = this.textures.get(npcConfig.textureKey);
+      const hasNumericFrameZero = texture?.has?.(0) === true;
+
+      if (this.anims.exists(animationKey) && hasNumericFrameZero) {
+        try {
+          npc.play(animationKey, true);
+        } catch (error) {
+          console.warn(`[ItRoomScene] Failed to play animation ${animationKey}:`, error?.message || error);
+        }
+      } else {
+        // Fallback seguro para evitar crash de frame inválido.
+        npc.setFrame(0);
       }
 
       this.addCollisionsToSprite(npc, false);

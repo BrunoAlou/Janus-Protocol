@@ -6,9 +6,9 @@
     {
       "id": "obj_ti_sofa_1",
       "type": "object",
-      "name": "Sofa 1",
+      "name": "Sofa",
       "description": "Um sofa compacto para espera rapida.",
-      "area": { "x": 94, "y": 408, "width": 52, "height": 36 },
+      "area": { "x": 94, "y": 68, "width": 52, "height": 36 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Confortavel, mas nao da para cochilar em horario de expediente." }
@@ -19,7 +19,7 @@
       "type": "object",
       "name": "Sofa 2",
       "description": "Sofa de apoio para visitantes.",
-      "area": { "x": 154, "y": 408, "width": 52, "height": 36 },
+      "area": { "x": 154, "y": 68, "width": 52, "height": 36 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Sempre ocupado quando o dia esta corrido." }
@@ -30,7 +30,7 @@
       "type": "object",
       "name": "Sofa 3",
       "description": "Sofa na area de descanso.",
-      "area": { "x": 214, "y": 408, "width": 52, "height": 36 },
+      "area": { "x": 214, "y": 68, "width": 52, "height": 36 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Parece ideal para uma pausa entre chamados." }
@@ -41,7 +41,7 @@
       "type": "object",
       "name": "Sofa 4",
       "description": "Ultimo sofa do conjunto.",
-      "area": { "x": 274, "y": 408, "width": 52, "height": 36 },
+      "area": { "x": 274, "y": 68, "width": 52, "height": 36 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Lugar estrategico para observar o movimento da sala." }
@@ -52,7 +52,7 @@
       "type": "object",
       "name": "Lampada",
       "description": "Iluminacao principal da sala de TI.",
-      "area": { "x": 260, "y": 84, "width": 36, "height": 56 },
+      "area": { "x": 160, "y": 198, "width": 36, "height": 40 },
       "indicator": { "text": "[E]", "offsetY": -34 },
       "dialogues": [
         { "text": "A iluminacao fria ajuda na leitura de codigo por longos periodos." }
@@ -63,7 +63,7 @@
       "type": "terminal",
       "name": "Computadores do Chefe",
       "description": "Estacao de trabalho do gerente de TI.",
-      "area": { "x": 372, "y": 418, "width": 96, "height": 52 },
+      "area": { "x": 160, "y": 280, "width": 70, "height": 118 },
       "indicator": { "text": "[E]", "offsetY": -34 },
       "dialogues": [
         { "text": "Dois monitores, varias janelas e muitos dashboards ativos." }
@@ -85,7 +85,7 @@
       "type": "object",
       "name": "Tapete",
       "description": "Tapete central da sala.",
-      "area": { "x": 260, "y": 278, "width": 176, "height": 94 },
+      "area": { "x": 210, "y": 432, "width": 85, "height": 54 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "O tapete ajuda a reduzir o ruido das cadeiras." }
@@ -107,7 +107,7 @@
       "type": "object",
       "name": "Janela 1",
       "description": "Janela com vista para o predio ao lado.",
-      "area": { "x": 64, "y": 36, "width": 44, "height": 30 },
+      "area": { "x": 80, "y": 26, "width": 44, "height": 18 },
       "indicator": { "text": "[E]", "offsetY": -26 },
       "dialogues": [
         { "text": "A luz da manha entra por aqui." }
@@ -118,7 +118,7 @@
       "type": "object",
       "name": "Janela 2",
       "description": "Janela lateral da sala.",
-      "area": { "x": 144, "y": 36, "width": 44, "height": 30 },
+      "area": { "x": 160, "y": 26, "width": 44, "height": 18 },
       "indicator": { "text": "[E]", "offsetY": -26 },
       "dialogues": [
         { "text": "Vidro limpo e boa ventilacao." }
@@ -129,7 +129,7 @@
       "type": "object",
       "name": "Janela 3",
       "description": "Janela superior da sala.",
-      "area": { "x": 224, "y": 36, "width": 44, "height": 30 },
+      "area": { "x": 335, "y": 26, "width": 44, "height": 18 },
       "indicator": { "text": "[E]", "offsetY": -26 },
       "dialogues": [
         { "text": "Daria para trabalhar aqui o dia todo com essa luz natural." }
@@ -140,7 +140,7 @@
       "type": "object",
       "name": "Janela 4",
       "description": "Janela proxima da mesa do chefe.",
-      "area": { "x": 304, "y": 36, "width": 44, "height": 30 },
+      "area": { "x": 424, "y": 26, "width": 44, "height": 18 },
       "indicator": { "text": "[E]", "offsetY": -26 },
       "dialogues": [
         { "text": "Da para ver o corredor principal por aqui." }

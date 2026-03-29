@@ -63,6 +63,7 @@ export default class BaseMapScene extends Phaser.Scene {
     this.setupNPCs();
     this.setupInteractions();
     this.setupElements();
+    this.registerElementActionHandlers();
     this.setupCamera();
 
     console.log(`[${this.sceneKey}] Scene created`);
@@ -95,7 +96,33 @@ export default class BaseMapScene extends Phaser.Scene {
       this.interactionManager = null;
       this.elementManager = null;
       this.collisionDebugger = null;
+
+      this.events.off('player-sit-on-element', this.onPlayerSitOnElement, this);
     });
+  }
+
+  registerElementActionHandlers() {
+    this.events.off('player-sit-on-element', this.onPlayerSitOnElement, this);
+    this.events.on('player-sit-on-element', this.onPlayerSitOnElement, this);
+  }
+
+  onPlayerSitOnElement(payload = {}) {
+    const elementId = payload.elementId;
+    const element = elementId ? this.elementManager?.getElement?.(elementId) : null;
+
+    if (!this.player || !this.playerController || !element?.area) {
+      return;
+    }
+
+    const targetX = Number.isFinite(payload.x) ? payload.x : element.area.x;
+    const baseTargetY = Number.isFinite(payload.y) ? payload.y : element.area.y;
+    const sitOffsetY = Number.isFinite(payload.offsetY) ? payload.offsetY : 0;
+    const targetY = baseTargetY + sitOffsetY;
+    const sitDirection = (payload.direction || 'down').toLowerCase();
+
+    this.player.body?.setVelocity(0, 0);
+    this.player.setPosition(targetX, targetY);
+    this.playerController.setForcedAction('sit', sitDirection);
   }
 
   /**

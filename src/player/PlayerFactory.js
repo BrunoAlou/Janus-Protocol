@@ -1,5 +1,5 @@
-import { createPlayerAnimations } from './playerAnimations.js';
-import { PLAYER_TEXTURE_KEY, FRAME_WIDTH, FRAME_HEIGHT } from './loadPlayerAssets.js';
+import { createPlayerAnimations, getIdleAnimation } from './playerAnimations.js';
+import { PLAYER_TEXTURE_IDLE, FRAME_WIDTH, FRAME_HEIGHT } from './loadPlayerAssets.js';
 import { Player } from '../entities/Player.js';
 
 /**
@@ -14,28 +14,28 @@ export const PLAYER_HITBOX_CONFIG = {
   useCircle: true,
   
   // Raio do círculo (apenas os pés do personagem)
-  circleRadius: 8,
+  circleRadius: 6,
   
   // Offset do círculo para posicionar nos pés
-  // (baseado no frame 64x64)
-  circleOffsetX: -16,  // Centralizado horizontalmente
-  circleOffsetY: 12, // Próximo à base do sprite
+  // (baseado no frame 32x64)
+  circleOffsetX: 0,  // Centralizado horizontalmente
+  circleOffsetY: 8, // Próximo à base do sprite
   
   // Fallback para hitbox retangular (se useCircle = false)
-  rectWidth: 16,
-  rectHeight: 12,
-  rectOffsetX: 24,  // (64 - 16) / 2 = 24
-  rectOffsetY: 50,  // 64 - 12 - 2 = 50 (próximo à base)
+  rectWidth: 12,
+  rectHeight: 10,
+  rectOffsetX: 10,  // (32 - 12) / 2 = 10
+  rectOffsetY: 50,  // 64 - 10 - 4 = 50 (próximo à base)
 };
 
 export function createPlayer(scene, x, y) {
   console.log('[PlayerFactory] createPlayer called with position:', { x, y });
   
-  // For texture atlas, use default frame (walk_down_01)
-  const preferredFrame = 'walk_down_01';
+  // Start with idle frame from idle texture
+  const preferredFrame = 'idle_down_01';
   
   // Create physics sprite with idle frame
-  const sprite = scene.physics.add.sprite(x, y, PLAYER_TEXTURE_KEY, preferredFrame);
+  const sprite = scene.physics.add.sprite(x, y, PLAYER_TEXTURE_IDLE, preferredFrame);
   console.log('[PlayerFactory] Sprite created at:', { x: sprite.x, y: sprite.y, frame: sprite.frame.name });
   
   // === PIVOT POINT NA BASE ===
@@ -109,11 +109,25 @@ export function createPlayer(scene, x, y) {
   // Register animations
   createPlayerAnimations(scene);
   
+  // Store direction in Phaser DataManager (do not overwrite sprite.data object)
+  sprite.setData('currentDirection', 'down');
+  
   // Start with idle animation
-  if (sprite.anims && sprite.anims.exists('idle')) {
-    sprite.play('idle');
-    console.log('[PlayerFactory] Playing idle animation');
-  }
+  sprite.play('idle_down');
+  console.log('[PlayerFactory] Playing idle_down animation');
+  
+  // Setup animation event handling for walk -> idle transition
+  sprite.on('animationcomplete', (anim) => {
+    // If a walk animation completes, transition to the corresponding idle
+    if (anim.key.startsWith('walk_')) {
+      const direction = anim.key.replace('walk_', '');
+      const idleKey = getIdleAnimation(direction);
+      if (idleKey && sprite.anims.exists(idleKey)) {
+        sprite.play(idleKey);
+        console.log(`[PlayerFactory] Walk animation "${anim.key}" completed, transitioning to "${idleKey}"`);
+      }
+    }
+  });
 
   return sprite;
 }
@@ -123,7 +137,7 @@ export function attachFrameInspector(scene, player) {
   // toggle with I (single frame preview) and G (frame grid)
   scene._debugInspect = false;
   scene._debugFrameIndex = player.frame && typeof player.frame.index !== 'undefined' ? player.frame.index : 0;
-  scene._debugPreview = scene.add.sprite(80, 60, PLAYER_TEXTURE_KEY, scene._debugFrameIndex)
+  scene._debugPreview = scene.add.sprite(80, 60, PLAYER_TEXTURE_IDLE, scene._debugFrameIndex)
     .setScale(3)
     .setScrollFactor(0)
     .setDepth(1000)
@@ -142,7 +156,7 @@ export function attachFrameInspector(scene, player) {
 
   function updateDebugInfo() {
     const idx = scene._debugFrameIndex;
-  const tex = scene.textures.get(PLAYER_TEXTURE_KEY);
+  const tex = scene.textures.get(PLAYER_TEXTURE_IDLE);
     const frameObj = tex ? tex.get(idx) : null;
     let info = `frame: ${idx}`;
     if (frameObj) {
@@ -168,9 +182,9 @@ export function attachFrameInspector(scene, player) {
   function showFrameGrid() {
     if (scene._frameGrid) return;
     console.log('[FrameInspector] showFrameGrid called');
-  const tex = scene.textures.get(PLAYER_TEXTURE_KEY);
+  const tex = scene.textures.get(PLAYER_TEXTURE_IDLE);
     if (!tex) {
-      console.warn(`[FrameInspector] texture ${PLAYER_TEXTURE_KEY} not found`);
+      console.warn(`[FrameInspector] texture ${PLAYER_TEXTURE_IDLE} not found`);
       return;
     }
     let names = typeof tex.getFrameNames === 'function' ? tex.getFrameNames() : Object.keys(tex.frames || {});
@@ -213,7 +227,7 @@ export function attachFrameInspector(scene, player) {
       const row = Math.floor(i / cols);
       const x = startX + col * (thumbSize + padding);
       const y = startY + row * (thumbSize + padding);
-  const img = targetScene.add.image(x, y, PLAYER_TEXTURE_KEY, f)
+  const img = targetScene.add.image(x, y, PLAYER_TEXTURE_IDLE, f)
         .setDisplaySize(thumbSize, thumbSize)
         .setScrollFactor(0)
         .setDepth(10001)

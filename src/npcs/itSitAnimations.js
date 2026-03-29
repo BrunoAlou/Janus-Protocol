@@ -46,7 +46,8 @@ export function createItSitNpcAnimations(scene, npcConfigs = []) {
 
     const animationKey = getItSitAnimationKey(textureKey);
     if (scene.anims.exists(animationKey)) {
-      return;
+      // Animations are global in Phaser. Recreate to avoid stale frame refs after reset/reload.
+      scene.anims.remove(animationKey);
     }
 
     const texture = scene.textures.get(textureKey);

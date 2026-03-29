@@ -3,6 +3,15 @@ import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import DoorZone from '../../components/DoorZone.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
 import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
+import NPCFactory from '../../npcs/NPCFactory.js';
+import {
+  createReaderAnimations,
+  getReaderTextureKey,
+  loadReaderAssets,
+  resolveReaderAnimation
+} from '../../npcs/readerAnimations.js';
+import { createCharacterCommandController } from '../../characters/CharacterCommandController.js';
+import { AmbientMobileNpcService } from './services/npc/AmbientMobileNpcService.js';
 
 /**
  * ArchiveRoomScene - Sala de Arquivos
@@ -10,6 +19,8 @@ import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 export default class ArchiveRoomScene extends BaseMapScene {
   constructor() {
     super(SCENE_NAMES.ARCHIVE_ROOM, 'hallway');
+    this.readerCommandController = null;
+    this.ambientMobileNpcService = null;
   }
 
   preload() {
@@ -17,6 +28,7 @@ export default class ArchiveRoomScene extends BaseMapScene {
     
     // Carregar assets do player
     loadPlayerAssets(this);
+    loadReaderAssets(this);
     
     // Carregar tilesets de forma padronizada e mapa via resolver
     preloadRegisteredTilesets(this);
@@ -112,7 +124,51 @@ export default class ArchiveRoomScene extends BaseMapScene {
   }
 
   setupNPCs() {
-    // Corredor sem NPCs (área de passagem)
-    this.npcs = [];
+    createReaderAnimations(this);
+
+    if (!this.ambientMobileNpcService) {
+      this.ambientMobileNpcService = new AmbientMobileNpcService(this);
+    }
+
+    const reader = NPCFactory.create(this, 130, 150, {
+      id: 'npc_reader',
+      name: 'Reader',
+      texture: getReaderTextureKey(),
+      frame: 18,
+      scale: 1,
+      dialogues: [
+        { text: 'Esse arquivo ainda nao esta completo.', emotion: 'neutral' },
+        { text: 'Estou revisando cada detalhe antes de liberar.', emotion: 'serious' }
+      ]
+    });
+
+    this.addCollisionsToSprite(reader, false);
+
+    this.readerCommandController = createCharacterCommandController(this, reader, {
+      resolveAnimation: resolveReaderAnimation
+    }, {
+      defaultDirection: 'down'
+    });
+
+    this.ambientMobileNpcService.registerRandomWalker({
+      sprite: reader,
+      controller: this.readerCommandController,
+      home: { x: 130, y: 150 },
+      roamRadius: 64,
+      walkSpeed: 34,
+      intervalMs: 3000,
+      walkChance: 0.52,
+      minWalkDistance: 8,
+      idleActions: ['idle', 'read'],
+      directions: ['right', 'up', 'left', 'down'],
+      boundsResolver: () => ({
+        minX: 0,
+        minY: 0,
+        maxX: this.map?.widthInPixels ?? 1024,
+        maxY: this.map?.heightInPixels ?? 1024
+      })
+    });
+
+    this.npcs = [reader];
   }
 }

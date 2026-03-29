@@ -168,6 +168,7 @@ export default class InteractiveElement {
 
     /** @private */
     this._isHovered = false;
+    this._isDestroyed = false;
 
     // Criar elementos visuais
     this._createVisuals();
@@ -428,6 +429,14 @@ export default class InteractiveElement {
    * @private
    */
   _refreshIndicator() {
+    if (this._isDestroyed) {
+      return;
+    }
+
+    if (!this.scene?.sys || !this.scene.sys.isActive?.()) {
+      return;
+    }
+
     if (!this.indicator || !this.indicatorText || !this.indicatorBg) {
       return;
     }
@@ -897,12 +906,17 @@ export default class InteractiveElement {
    * Atualiza posição do indicador (para elementos móveis)
    */
   updateIndicatorPosition() {
-    if (this.sprite && this.indicator) {
+    if (this.sprite) {
       this.area.x = this.sprite.x;
       this.area.y = this.sprite.y;
 
       if (this.interactionZone) {
         this.interactionZone.setPosition(this.sprite.x, this.sprite.y);
+        if (typeof this.interactionZone.body?.updateFromGameObject === 'function') {
+          this.interactionZone.body.updateFromGameObject();
+        } else if (typeof this.interactionZone.body?.reset === 'function') {
+          this.interactionZone.body.reset(this.interactionZone.x, this.interactionZone.y);
+        }
       }
 
       if (this.debugRect) {
@@ -915,9 +929,11 @@ export default class InteractiveElement {
         this.debugText.setDepth((this.sprite?.depth || this.area.y) + 2);
       }
 
-      const offsetY = this.config.indicator?.offsetY || -40;
-      this.indicator.setPosition(this.sprite.x, this.sprite.y + offsetY);
-      this.indicator.setDepth((this.sprite?.depth || this.area.y) + 3);
+      if (this.indicator) {
+        const offsetY = this.config.indicator?.offsetY || -40;
+        this.indicator.setPosition(this.sprite.x, this.sprite.y + offsetY);
+        this.indicator.setDepth((this.sprite?.depth || this.area.y) + 3);
+      }
     }
   }
 
@@ -939,6 +955,8 @@ export default class InteractiveElement {
    * Destrói o elemento e limpa recursos
    */
   destroy() {
+    this._isDestroyed = true;
+
     if (this.ownsSprite) {
       this.sprite?.destroy();
     }

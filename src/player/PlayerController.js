@@ -2,7 +2,12 @@
 // Usa um controlador abstrato de comandos para permitir mesma interface entre player e NPCs
 
 import { createCharacterCommandController } from '../characters/CharacterCommandController.js';
-import { resolvePlayerAnimation } from './playerAnimations.js';
+import {
+  ANIM_PHONE_HOLD,
+  ANIM_PHONE_PUTAWAY,
+  ANIM_PHONE_TAKE,
+  resolvePlayerAnimation
+} from './playerAnimations.js';
 
 export default class PlayerController {
   constructor(scene, player, options = {}) {
@@ -27,6 +32,29 @@ export default class PlayerController {
     });
 
     this._moving = false;
+    this.forcedAction = null;
+    this.forcedDirection = null;
+    this._phoneState = null;
+    this._onAnimComplete = (anim) => {
+      if (this.forcedAction !== 'phone') {
+        return;
+      }
+
+      if (anim.key === ANIM_PHONE_TAKE) {
+        this._phoneState = 'hold';
+        this.player.play(ANIM_PHONE_HOLD, true);
+        return;
+      }
+
+      if (anim.key === ANIM_PHONE_PUTAWAY) {
+        const direction = this.forcedDirection || this.commandController.getLastDirection?.() || 'down';
+        this.forcedAction = null;
+        this.forcedDirection = null;
+        this._phoneState = null;
+        this.commandController.execute({ action: 'idle', direction });
+      }
+    };
+    this.player.on('animationcomplete', this._onAnimComplete);
 
     // Leo passa comandos vindos do teclado para o mesmo controlador usado por NPCs
     this.commandController = createCharacterCommandController(scene, player, {
@@ -52,6 +80,34 @@ export default class PlayerController {
 
   update() {
     if (!this.player || !this.player.body) return;
+
+    if (this.forcedAction === 'sit' && this.isInputDown()) {
+      this.clearForcedAction();
+    }
+
+    if (this.forcedAction) {
+      this.player.body.setVelocity(0, 0);
+
+      if (this.forcedAction === 'phone') {
+        if (!this.player.anims?.isPlaying && this._phoneState === 'hold') {
+          this.player.play(ANIM_PHONE_HOLD, true);
+        }
+        return;
+      }
+
+      const forcedDirection = this.forcedDirection || this.commandController.getLastDirection?.() || 'down';
+      const forcedAnimKey = resolvePlayerAnimation(this.forcedAction, forcedDirection);
+      const currentAnimKey = this.player.anims?.currentAnim?.key || null;
+
+      // For scripted actions (ex: phone), trigger once and keep the last frame.
+      if (currentAnimKey !== forcedAnimKey) {
+        this.commandController.execute({
+          action: this.forcedAction,
+          direction: forcedDirection
+        });
+      }
+      return;
+    }
 
     if (!this.enabled || this.isBlockedByDialog()) {
       this.player.body.setVelocity(0, 0);
@@ -92,5 +148,37 @@ export default class PlayerController {
         if (typeof this.opts.onMoveEnd === 'function') this.opts.onMoveEnd();
       }
     }
+  }
+
+  setForcedAction(action, direction = null) {
+    const normalizedAction = action || null;
+    this.forcedAction = normalizedAction;
+    this.forcedDirection = direction;
+
+    if (normalizedAction === 'phone') {
+      this._phoneState = 'take';
+      if (this.player.body) {
+        this.player.body.setVelocity(0, 0);
+      }
+      this.player.play(ANIM_PHONE_TAKE, true);
+    }
+  }
+
+  clearForcedAction() {
+    if (this.forcedAction === 'phone') {
+      this._phoneState = 'putaway';
+      if (this.player.body) {
+        this.player.body.setVelocity(0, 0);
+      }
+      if (this.player.anims?.currentAnim?.key !== ANIM_PHONE_PUTAWAY) {
+        this.player.play(ANIM_PHONE_PUTAWAY, true);
+      }
+      return;
+    }
+
+    this.forcedAction = null;
+    this.forcedDirection = null;
+    this._phoneState = null;
+    this.commandController.execute({ action: 'idle' });
   }
 }

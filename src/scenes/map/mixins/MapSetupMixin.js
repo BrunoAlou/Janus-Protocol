@@ -88,8 +88,8 @@ export const MapSetupMixin = {
     // Configurar depths
     if (this.layers.debug) this.layers.debug.setDepth(0).setAlpha(0.3);
     this.layers.floor?.setDepth(1);
-    this.layers.walls2?.setDepth(2);
-    this.layers.walls?.setDepth(3);
+    this.layers.walls?.setDepth(2);
+    this.layers.walls2?.setDepth(3);
     this.layers.objects?.setDepth(4);
     this.layers.doors?.setDepth(5);
     this.layers.objectsOver?.setDepth(6);

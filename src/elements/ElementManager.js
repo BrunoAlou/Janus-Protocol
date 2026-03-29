@@ -607,7 +607,7 @@ export default class ElementManager {
     const element = this.elements.get(id);
     if (element) {
       if (this._hoveredElement === element) {
-        this._hoveredElement.setHovered(false);
+        this._hoveredElement._isHovered = false;
         this._hoveredElement = null;
       }
       this.nearbyElements.delete(element);
@@ -628,7 +628,9 @@ export default class ElementManager {
    * Destrói todos os elementos e limpa recursos
    */
   destroy() {
-    this._hoveredElement?.setHovered(false);
+    if (this._hoveredElement) {
+      this._hoveredElement._isHovered = false;
+    }
     this._hoveredElement = null;
 
     for (const element of this.elements.values()) {

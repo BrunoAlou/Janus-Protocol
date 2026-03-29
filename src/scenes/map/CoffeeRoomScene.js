@@ -1,6 +1,7 @@
 import BaseMapScene from './BaseMapScene.js';
 import NPCFactory from '../../npcs/NPCFactory.js';
 import { SCENE_NAMES } from '../../constants/SceneNames.js';
+import DoorZone from '../../components/DoorZone.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 import {
@@ -9,7 +10,14 @@ import {
   loadBakerAssets,
   resolveBakerAnimation
 } from '../../npcs/bakerAnimations.js';
+import {
+  createLouchGuyAnimations,
+  getLouchGuyTextureKey,
+  loadLouchGuyAssets,
+  resolveLouchGuyAnimation
+} from '../../npcs/louchGuyAnimations.js';
 import { createCharacterCommandController } from '../../characters/CharacterCommandController.js';
+import { AmbientMobileNpcService } from './services/npc/AmbientMobileNpcService.js';
 
 /**
  * CoffeeRoomScene - Cena da cafeteria
@@ -17,16 +25,38 @@ import { createCharacterCommandController } from '../../characters/CharacterComm
 export default class CoffeeRoomScene extends BaseMapScene {
   constructor() {
     super(SCENE_NAMES.COFFEE_ROOM, 'coffee');
+    this.isTransitioning = false;
+    this.useLegacyNpcInteractionManager = false;
     this.baker = null;
     this.bakerHome = { x: 320, y: 240 };
     this.bakerCommandController = null;
+    this.ambientMobileNpcService = null;
+  }
+
+  init(data) {
+    super.init(data);
+    this.isTransitioning = false;
   }
 
   preload() {
     loadPlayerAssets(this);
     loadBakerAssets(this);
+    loadLouchGuyAssets(this);
     preloadRegisteredTilesets(this);
     super.preload();
+  }
+
+  create() {
+    super.create();
+    this.setupDoorTransitions();
+    this.registerDoorZonesToDebugger();
+  }
+
+  update(time, delta) {
+    super.update(time, delta);
+    if (this.player && this.doorZones) {
+      this.doorZones.forEach((door) => door.update(this.player, this.input, this.tweens));
+    }
   }
 
   getSpawnX() {
@@ -39,6 +69,11 @@ export default class CoffeeRoomScene extends BaseMapScene {
 
   setupNPCs() {
     createBakerAnimations(this);
+    createLouchGuyAnimations(this);
+
+    if (!this.ambientMobileNpcService) {
+      this.ambientMobileNpcService = new AmbientMobileNpcService(this);
+    }
 
     const baker = NPCFactory.create(this, 320, 240, {
       name: 'Baker',
@@ -62,11 +97,51 @@ export default class CoffeeRoomScene extends BaseMapScene {
       defaultDirection: 'down'
     });
 
-    this.startBakerAmbientBehavior(baker);
+    this.ambientMobileNpcService.registerRandomWalker({
+      sprite: baker,
+      controller: this.bakerCommandController,
+      home: this.bakerHome,
+      roamRadius: 96,
+      walkSpeed: 36,
+      intervalMs: 2800,
+      walkChance: 0.65,
+      minWalkDistance: 8,
+      idleActions: ['idle', 'read', 'lift'],
+      directions: ['right', 'up', 'left', 'down'],
+      boundsResolver: () => ({
+        minX: 0,
+        minY: 0,
+        maxX: this.map?.widthInPixels ?? 1024,
+        maxY: this.map?.heightInPixels ?? 1024
+      })
+    });
+
     this.baker = baker;
 
+    const louchGuy = NPCFactory.create(this, 250, 320, {
+      id: 'npc_louch_guy',
+      name: 'Louch Guy',
+      texture: getLouchGuyTextureKey(),
+      frame: 9,
+      scale: 1,
+      dialogues: [
+        { text: 'Esse cafe ajuda a organizar as ideias.', emotion: 'neutral' }
+      ]
+    });
+
+    this.addCollisionsToSprite(louchGuy, false);
+
+    const louchGuyController = createCharacterCommandController(this, louchGuy, {
+      resolveAnimation: resolveLouchGuyAnimation
+    }, {
+      defaultDirection: 'down'
+    });
+
+    louchGuyController.execute({ action: 'sit', direction: 'down' });
+
     this.npcs = [
-      baker
+      baker,
+      louchGuy
     ];
   }
 
@@ -75,73 +150,33 @@ export default class CoffeeRoomScene extends BaseMapScene {
     bakerSprite.setScale(playerScale);
   }
 
-  startBakerAmbientBehavior(bakerSprite) {
-    this.playBakerStationaryAction(bakerSprite);
-
-    this.time.addEvent({
-      delay: 2800,
-      loop: true,
-      callback: () => {
-        if (!bakerSprite?.active || bakerSprite._isWalking) {
-          return;
-        }
-
-        const shouldWalk = Math.random() < 0.65;
-        if (shouldWalk) {
-          this.moveBakerRandomly(bakerSprite);
-          return;
-        }
-
-        this.playBakerStationaryAction(bakerSprite);
-      }
-    });
+  setupDoorTransitions() {
+    this.doorZones = [
+      new DoorZone(this, {
+        x: 320,
+        y: 468,
+        width: 120,
+        height: 24,
+        label: 'ELEVADOR',
+        indicatorColor: 0x66ccff,
+        indicatorTextColor: '#66ccff',
+        onInteract: () => this.transitionToElevator(),
+        proximityDistance: 56
+      })
+    ];
   }
 
-  moveBakerRandomly(bakerSprite) {
-    const maxOffset = 96;
-    const minX = 0;
-    const minY = 0;
-    const maxX = this.map?.widthInPixels ?? 1024;
-    const maxY = this.map?.heightInPixels ?? 1024;
+  transitionToElevator() {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
 
-    const targetX = Math.max(minX, Math.min(maxX, this.bakerHome.x + (Math.random() * maxOffset * 2 - maxOffset)));
-    const targetY = Math.max(minY, Math.min(maxY, this.bakerHome.y + (Math.random() * maxOffset * 2 - maxOffset)));
+    this.cameras.main.fadeOut(500, 0, 0, 0);
 
-    const distance = Math.hypot(targetX - bakerSprite.x, targetY - bakerSprite.y);
-    if (distance < 8) {
-      this.playBakerStationaryAction(bakerSprite);
-      return;
-    }
-
-    const speed = 36;
-    const result = this.bakerCommandController.execute({
-      action: 'walk',
-      target: { x: targetX, y: targetY },
-      speed
-    });
-
-    bakerSprite._isWalking = true;
-
-    this.time.delayedCall(Math.max(600, result.estimatedDurationMs), () => {
-      if (!bakerSprite?.active) {
-        return;
-      }
-
-      bakerSprite.setVelocity(0, 0);
-      bakerSprite._isWalking = false;
-      this.playBakerStationaryAction(bakerSprite);
-    });
-  }
-
-  playBakerStationaryAction(bakerSprite) {
-    const actions = ['idle', 'read', 'lift'];
-    const directions = ['right', 'up', 'left', 'down'];
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    const direction = directions[Math.floor(Math.random() * directions.length)];
-
-    this.bakerCommandController.execute({
-      action,
-      direction
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      window.sceneManager.goToMap(SCENE_NAMES.ELEVATOR, {
+        user: this.user,
+        spawnPoint: 'fromCoffeeRoom'
+      });
     });
   }
 }

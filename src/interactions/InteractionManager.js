@@ -13,6 +13,7 @@ export default class InteractionManager {
     this.registeredNPCs = [];
     this.currentInteractable = null;
     this.hoveredNPC = null;
+    this._npcColliders = [];
     
     // Tecla E para interação
     this.interactKey = scene.input.keyboard.addKey('E');
@@ -90,6 +91,87 @@ export default class InteractionManager {
     }
   }
 
+  _getNpcInteractionRadius(npc) {
+    const radiusFromBody = Number(npc?.interactionZone?.body?.radius);
+    if (Number.isFinite(radiusFromBody) && radiusFromBody > 0) {
+      return radiusFromBody;
+    }
+
+    const radiusFromConfig = Number(npc?.interactionRadius);
+    if (Number.isFinite(radiusFromConfig) && radiusFromConfig > 0) {
+      return radiusFromConfig;
+    }
+
+    return 32;
+  }
+
+  _isPlayerInsideNpcRange(npc, wasNearby = false) {
+    if (!npc?.active || !this.player?.active) {
+      return false;
+    }
+
+    const radius = this._getNpcInteractionRadius(npc);
+    const playerHalfWidth = Number(this.player?.body?.halfWidth) || 0;
+    const playerHalfHeight = Number(this.player?.body?.halfHeight) || 0;
+    const playerReach = Math.max(playerHalfWidth, playerHalfHeight);
+
+    // Histerese evita flicker na borda: sair exige distancia maior que entrar.
+    const hysteresis = wasNearby ? 16 : 6;
+    const effectiveRadius = radius + playerReach + hysteresis;
+
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      npc.x,
+      npc.y
+    );
+
+    return distance <= effectiveRadius;
+  }
+
+  _syncNearbyNPCsByDistance() {
+    this.registeredNPCs.forEach((npc) => {
+      if (!npc?.active) {
+        this.onPlayerExitNPCZone(npc);
+        return;
+      }
+
+      const wasNearby = this.nearbyNPCs.has(npc);
+
+      if (this._isPlayerInsideNpcRange(npc, wasNearby)) {
+        this.onPlayerEnterNPCZone(npc);
+        return;
+      }
+
+      this.onPlayerExitNPCZone(npc);
+    });
+  }
+
+  _selectClosestNearbyNpc() {
+    let closestNpc = null;
+    let closestDistance = Infinity;
+
+    this.nearbyNPCs.forEach((npc) => {
+      if (!npc?.active) {
+        return;
+      }
+
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        npc.x,
+        npc.y
+      );
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestNpc = npc;
+      }
+    });
+
+    this.currentInteractable = closestNpc;
+  }
+
   handleMouseClick(pointer) {
     if (this._isInteractionBlocked()) {
       return;
@@ -130,6 +212,20 @@ export default class InteractionManager {
         null,
         this
       );
+
+      if (npc?.body) {
+        if (typeof npc.body.setImmovable === 'function') {
+          npc.body.setImmovable(true);
+        }
+        if (typeof npc.body.setPushable === 'function') {
+          npc.body.setPushable(false);
+        }
+      }
+
+      if (this.player?.body && npc?.body) {
+        const collider = this.scene.physics.add.collider(this.player, npc);
+        this._npcColliders.push(collider);
+      }
     });
 
     console.log('[InteractionManager] Registered', npcs.length, 'NPCs');
@@ -186,6 +282,9 @@ export default class InteractionManager {
     if (this._isInteractionBlocked()) {
       return;
     }
+
+    this._syncNearbyNPCsByDistance();
+    this._selectClosestNearbyNpc();
 
     if (!this.currentInteractable) {
       // Só logar se não houver nada em nenhum dos sistemas
@@ -300,6 +399,7 @@ export default class InteractionManager {
    */
   update() {
     this._updateHoveredNPC();
+    this._syncNearbyNPCsByDistance();
 
     if (this._isInteractionBlocked()) {
       if (this.currentInteractable?.interactionIndicator) {
@@ -315,30 +415,19 @@ export default class InteractionManager {
       return;
     }
 
-    // Verificar distância de todos os NPCs próximos
-    const toRemove = [];
-    
-    this.nearbyNPCs.forEach(npc => {
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        npc.x,
-        npc.y
-      );
+    this._selectClosestNearbyNpc();
 
-      // Se ficou longe, remover
-      if (distance > npc.interactionZone.body.radius + 10) {
-        toRemove.push(npc);
-      }
-    });
-
-    toRemove.forEach(npc => this.onPlayerExitNPCZone(npc));
+    if (this.currentInteractable?.interactionIndicator) {
+      this.currentInteractable.interactionIndicator.setVisible(true);
+    }
   }
 
   /**
    * Limpar recursos
    */
   destroy() {
+    this._npcColliders.forEach((collider) => collider?.destroy?.());
+    this._npcColliders = [];
     this.interactKey?.destroy();
     this.nearbyNPCs.clear();
     this.registeredNPCs = [];

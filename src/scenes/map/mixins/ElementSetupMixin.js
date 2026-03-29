@@ -20,6 +20,7 @@ export const ElementSetupMixin = {
     // Carregar elementos do arquivo JSON
     const mapId = this.mapKey || this.sceneKey.toLowerCase().replace('scene', '');
     await this.elementManager.loadFromFile(mapId);
+    this.setupSofaSitOptions();
     this.syncSpriteNpcsToElements();
     this.setupNpcContactFlags();
 
@@ -28,6 +29,67 @@ export const ElementSetupMixin = {
     }
 
     console.log(`[${this.sceneKey}] Elements loaded for map: ${mapId}`);
+  },
+
+  setupSofaSitOptions() {
+    if (!this.elementManager?.getObjects) {
+      return;
+    }
+
+    const objects = this.elementManager.getObjects();
+    objects.forEach((element) => {
+      if (!element || element.type !== 'object') {
+        return;
+      }
+
+      const identifier = `${element.id || ''} ${element.name || ''} ${element.description || ''}`.toLowerCase();
+      const isSofa = identifier.includes('sofa');
+      if (!isSofa) {
+        return;
+      }
+
+      const hasSitOption = Array.isArray(element.options)
+        && element.options.some((opt) => String(opt?.id || '').startsWith('opt_sit_'));
+
+      if (hasSitOption) {
+        return;
+      }
+
+      if (!Array.isArray(element.options)) {
+        element.options = [];
+      }
+
+      element.options.unshift({
+        id: `opt_sit_${element.id}`,
+        label: 'Sentar',
+        icon: '🪑',
+        action: {
+          type: 'event',
+          target: 'player-sit-on-element',
+          data: {
+            direction: this.resolveSofaSitDirection(element),
+            offsetY: 10
+          }
+        }
+      });
+    });
+  },
+
+  resolveSofaSitDirection(element) {
+    const id = String(element?.id || '').toLowerCase();
+    const sceneKey = String(this.sceneKey || '').toLowerCase();
+
+    if (sceneKey === 'receptionscene') {
+      if (id === 'couch_1' || id === 'couch_2') {
+        return 'right';
+      }
+
+      if (id === 'couch_3') {
+        return 'left';
+      }
+    }
+
+    return 'down';
   },
 
   /**

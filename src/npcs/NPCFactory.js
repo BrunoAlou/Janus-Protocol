@@ -68,6 +68,12 @@ export default class NPCFactory {
     npc.interactionZone = scene.add.circle(x, y, interactionRadius, 0x00ff00, 0);
     scene.physics.add.existing(npc.interactionZone);
     npc.interactionZone.body.setCircle(interactionRadius);
+    if (typeof npc.interactionZone.body.setAllowGravity === 'function') {
+      npc.interactionZone.body.setAllowGravity(false);
+    }
+    if (typeof npc.interactionZone.body.setImmovable === 'function') {
+      npc.interactionZone.body.setImmovable(true);
+    }
     npc.interactionZone.npcRef = npc; // Referência ao NPC
 
     const getNameTagOffset = () => Math.max(32, Math.round((npc.displayHeight || 64) * 0.55));
@@ -100,6 +106,11 @@ export default class NPCFactory {
       const indicatorOffset = nameTagOffset + 16;
 
       this.interactionZone?.setPosition(this.x, this.y);
+      if (typeof this.interactionZone?.body?.updateFromGameObject === 'function') {
+        this.interactionZone.body.updateFromGameObject();
+      } else if (typeof this.interactionZone?.body?.reset === 'function') {
+        this.interactionZone.body.reset(this.interactionZone.x, this.interactionZone.y);
+      }
       this.interactionIndicator?.setPosition(this.x, this.y - indicatorOffset);
       this.interactionIndicator?.setDepth(npcDepth + 2);
       this.nameTag?.setPosition(this.x, this.y - nameTagOffset);

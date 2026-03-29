@@ -37,6 +37,8 @@ export default class ElevatorScene extends BaseMapScene {
 
   init(data) {
     super.init(data);
+    // Forçar spawn no ponto padrão do elevador, ignorar posição anterior
+    this.resumePosition = null;
     this.isTransitioning = false;
     this._janusAssessmentRunning = false;
     this.dialogueFlow = new SceneDialogueFlowService(this);
@@ -673,11 +675,11 @@ export default class ElevatorScene extends BaseMapScene {
   }
 
   getSpawnX() {
-    return 8; // Centro do minimapa 16x16
+    return 36;
   }
 
   getSpawnY() {
-    return 8;
+    return 56;
   }
 
   setupNPCs() {
