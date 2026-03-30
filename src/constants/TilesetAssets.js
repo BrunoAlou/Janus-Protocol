@@ -50,7 +50,7 @@ export function preloadRegisteredTilesets(scene) {
   Object.values(TILESET_ASSETS).forEach(({ textureKey, fileName }) => {
     if (!scene.textures.exists(textureKey)) {
       // Use relative path that works with Vite's base config
-      scene.load.image(textureKey, new URL(`../assets/${fileName}`, import.meta.url).href);
+      scene.load.image(textureKey, new URL(`../assets/tilesets/${fileName}`, import.meta.url).href);
     }
   });
 }

@@ -242,35 +242,32 @@ export default class ElevatorScene extends BaseMapScene {
     if (this.isTransitioning) return;
 
     if (this._janusAssessmentRunning) {
+      console.log('[ElevatorScene] Destinations blocked: Janus assessment is running');
       return;
     }
 
-    const dialogScene = this.scene.get(SCENE_NAMES.DIALOG);
-    if (!dialogScene) {
-      console.warn('[ElevatorScene] DialogScene indisponivel para destinos');
-      return;
-    }
+    this.dialogueFlow?.ensureDialogScene(SCENE_NAMES.DIALOG, 10, 0, () => {
+      if (window.gameState?.getFlag?.(this.elevatorQuantumIntroCompletedFlagKey) !== true) {
+        console.log('[ElevatorScene] Destinations redirected: intro flow not completed');
+        this.showQuantumIntroFlow();
+        return;
+      }
 
-    if (!this.scene.isActive(SCENE_NAMES.DIALOG)) {
-      this.scene.launch(SCENE_NAMES.DIALOG);
-    }
+      if (!this.isJanusAssessmentCompleted()) {
+        console.log('[ElevatorScene] Destinations redirected: Janus assessment not completed');
+        this.startJanusAssessment();
+        return;
+      }
 
-    if (window.gameState?.getFlag?.(this.elevatorQuantumIntroCompletedFlagKey) !== true) {
-      this.showQuantumIntroFlow();
-      return;
-    }
+      if (!this.hasPrimaryObjectiveSelected()) {
+        console.log('[ElevatorScene] Destinations redirected: objective selection pending');
+        this.showObjectiveDefinitionMenu();
+        return;
+      }
 
-    if (!this.isJanusAssessmentCompleted()) {
-      this.startJanusAssessment();
-      return;
-    }
-
-    if (!this.hasPrimaryObjectiveSelected()) {
-      this.showObjectiveDefinitionMenu();
-      return;
-    }
-
-    this.showDestinationMenu();
+      console.log('[ElevatorScene] Showing destination menu');
+      this.showDestinationMenu();
+    });
   }
 
   hasPrimaryObjectiveSelected() {
@@ -537,7 +534,7 @@ export default class ElevatorScene extends BaseMapScene {
           action: { type: 'scene', target: SCENE_NAMES.QUANTUM_OBJECTIVES }
         },
         {
-          id: 'hallway',
+          id: 'it-room',
           label: ELEVATOR_TEXTS.destinationMenu.options.itRoom,
           icon: '🚪',
           action: { type: 'scene', target: SCENE_NAMES.IT_ROOM }

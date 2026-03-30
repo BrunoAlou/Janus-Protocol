@@ -20,7 +20,7 @@ import {
  */
 export default class ItRoomScene extends BaseMapScene {
   constructor() {
-    super(SCENE_NAMES.IT_ROOM, 'ti_map');
+    super(SCENE_NAMES.IT_ROOM, 'it-room');
   }
 
   preload() {
@@ -33,7 +33,7 @@ export default class ItRoomScene extends BaseMapScene {
     preloadRegisteredTilesets(this);
     
     // Carregar mapa da sala de TI
-    this.load.tilemapTiledJSON('ti_map', resolveMapPath('Ti.json'));
+    this.load.tilemapTiledJSON(this.mapKey, resolveMapPath(this.mapKey));
 
     const dialogueByNpcId = NPC_TEXTS.itRoom?.dialogues || {};
     const configs = toNpcList(IT_ROOM_NPCS_CONFIG)

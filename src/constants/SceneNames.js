@@ -31,7 +31,6 @@ export const SCENE_NAMES = Object.freeze({
   GARDEN: 'GardenScene',
   COFFEE_ROOM: 'CoffeeRoomScene',
   BOSS_ROOM: 'BossRoomScene',
-  HALLWAY: 'HallwayScene',
   QUANTUM_OBJECTIVES: 'QuantumObjectivesScene',
   
   // Minigames
@@ -72,7 +71,6 @@ export const MAP_SCENES = Object.freeze([
   SCENE_NAMES.GARDEN,
   SCENE_NAMES.COFFEE_ROOM,
   SCENE_NAMES.BOSS_ROOM,
-  SCENE_NAMES.HALLWAY,
   SCENE_NAMES.QUANTUM_OBJECTIVES
 ]);
 

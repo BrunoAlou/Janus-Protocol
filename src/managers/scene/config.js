@@ -12,7 +12,7 @@ export function createMapConfig() {
     [SCENE_NAMES.ELEVATOR]: { sceneKey: SCENE_NAMES.ELEVATOR, mapKey: 'elevator' },
     [SCENE_NAMES.QUANTUM_OBJECTIVES]: { sceneKey: SCENE_NAMES.QUANTUM_OBJECTIVES, mapKey: 'elevator' },
     [SCENE_NAMES.GARDEN]: { sceneKey: SCENE_NAMES.GARDEN, mapKey: 'garden' },
-    [SCENE_NAMES.COFFEE_ROOM]: { sceneKey: SCENE_NAMES.COFFEE_ROOM, mapKey: 'coffee' },
+    [SCENE_NAMES.COFFEE_ROOM]: { sceneKey: SCENE_NAMES.COFFEE_ROOM, mapKey: 'coffee-room' },
     [SCENE_NAMES.BOSS_ROOM]: { sceneKey: SCENE_NAMES.BOSS_ROOM, mapKey: 'boss-room' }
   };
 }

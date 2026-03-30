@@ -24,7 +24,7 @@ import { AmbientMobileNpcService } from './services/npc/AmbientMobileNpcService.
  */
 export default class CoffeeRoomScene extends BaseMapScene {
   constructor() {
-    super(SCENE_NAMES.COFFEE_ROOM, 'coffee');
+    super(SCENE_NAMES.COFFEE_ROOM, 'coffee-room');
     this.isTransitioning = false;
     this.useLegacyNpcInteractionManager = false;
     this.baker = null;

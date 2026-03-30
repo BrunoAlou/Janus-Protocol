@@ -18,7 +18,7 @@ import { AmbientMobileNpcService } from './services/npc/AmbientMobileNpcService.
  */
 export default class ArchiveRoomScene extends BaseMapScene {
   constructor() {
-    super(SCENE_NAMES.ARCHIVE_ROOM, 'hallway');
+    super(SCENE_NAMES.ARCHIVE_ROOM, 'archive-room');
     this.readerCommandController = null;
     this.ambientMobileNpcService = null;
   }

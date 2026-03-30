@@ -35,12 +35,20 @@ export class SceneDialogueFlowService {
       return false;
     }
 
-    if (!this.scene.scene.isActive(dialogSceneKey)) {
-      this.scene.scene.launch(dialogSceneKey);
+    if (this.scene.scene.isActive(dialogSceneKey)) {
+      dialogScene.showDialog(payload);
+      return true;
     }
 
-    dialogScene.showDialog(payload);
-    return true;
+    // Evita race condition: aguarda DialogScene estar ativa/criada antes de invocar UI.
+    this.ensureDialogScene(dialogSceneKey, 8, 0, () => {
+      const readyScene = this.scene.scene.get(dialogSceneKey);
+      if (readyScene && typeof readyScene.showDialog === 'function') {
+        readyScene.showDialog(payload);
+      }
+    });
+
+    return false;
   }
 
   showOptionsDialog(dialogSceneKey, payload) {
@@ -49,12 +57,20 @@ export class SceneDialogueFlowService {
       return false;
     }
 
-    if (!this.scene.scene.isActive(dialogSceneKey)) {
-      this.scene.scene.launch(dialogSceneKey);
+    if (this.scene.scene.isActive(dialogSceneKey)) {
+      dialogScene.showOptionsDialog(payload);
+      return true;
     }
 
-    dialogScene.showOptionsDialog(payload);
-    return true;
+    // Evita race condition: aguarda DialogScene estar ativa/criada antes de invocar UI.
+    this.ensureDialogScene(dialogSceneKey, 8, 0, () => {
+      const readyScene = this.scene.scene.get(dialogSceneKey);
+      if (readyScene && typeof readyScene.showOptionsDialog === 'function') {
+        readyScene.showOptionsDialog(payload);
+      }
+    });
+
+    return false;
   }
 
   createLikertOptions(questionId, positiveAxis, negativeAxis, labels = null) {

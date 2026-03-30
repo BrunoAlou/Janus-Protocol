@@ -5,14 +5,18 @@
 
 // Mapa estático de JSON de mapas gerado no build do Vite.
 // Usa URLs finais (hashadas) para funcionar em dev e produção.
-const MAP_JSON_URLS = import.meta.glob('../assets/*.json', {
+const MAP_JSON_URLS = import.meta.glob('../assets/maps/*.json', {
   eager: true,
   query: '?url',
   import: 'default'
 });
 
 // Mapa estático de todos os assets para garantir paths válidos (com hash) no build.
-const ASSET_URLS = import.meta.glob('../assets/**/*', {
+const ASSET_URLS = import.meta.glob([
+  '../assets/**/*.{png,json,jpg,jpeg,webp,gif}',
+  '!../assets/_legacy-unused/**',
+  '!../assets/_editor-source/**'
+], {
   eager: true,
   query: '?url',
   import: 'default'
@@ -59,7 +63,7 @@ export function resolveMapPath(mapFileOrId) {
   const fileName = raw.endsWith('.json') ? raw : `${raw}.json`;
 
   // 1) Match exato por arquivo
-  const exactKey = `../assets/${fileName}`;
+  const exactKey = `../assets/maps/${fileName}`;
   if (MAP_JSON_URLS[exactKey]) {
     return MAP_JSON_URLS[exactKey];
   }

@@ -18,7 +18,7 @@ export const MAP_ASSETS = Object.freeze({
   [SCENE_NAMES.RECEPTION]: {
     sceneKey: SCENE_NAMES.RECEPTION,
     mapKey: 'reception',
-    path: './src/assets/reception.json',
+    path: './src/assets/maps/reception.json',
     displayName: 'Recepção',
     spawnX: 320,
     spawnY: 400
@@ -54,7 +54,7 @@ export const MAP_ASSETS = Object.freeze({
   [SCENE_NAMES.ARCHIVE_ROOM]: {
     sceneKey: SCENE_NAMES.ARCHIVE_ROOM,
     mapKey: 'archive-room',
-    path: './src/assets/archive-room.json',
+    path: './src/assets/maps/archive-room.json',
     displayName: 'Arquivo',
     spawnX: 21,
     spawnY: 240
@@ -62,8 +62,8 @@ export const MAP_ASSETS = Object.freeze({
   
   [SCENE_NAMES.IT_ROOM]: {
     sceneKey: SCENE_NAMES.IT_ROOM,
-    mapKey: 'Ti',
-    path: './src/assets/Ti.json',
+    mapKey: 'it-room',
+    path: './src/assets/maps/it-room.json',
     displayName: 'Sala de TI',
     spawnX: 320,
     spawnY: 400
@@ -81,7 +81,7 @@ export const MAP_ASSETS = Object.freeze({
   [SCENE_NAMES.ELEVATOR]: {
     sceneKey: SCENE_NAMES.ELEVATOR,
     mapKey: 'elevator',
-    path: './src/assets/elevator.json',
+    path: './src/assets/maps/elevator.json',
     displayName: 'Elevador',
     spawnX: 320,
     spawnY: 300
@@ -90,7 +90,7 @@ export const MAP_ASSETS = Object.freeze({
   [SCENE_NAMES.GARDEN]: {
     sceneKey: SCENE_NAMES.GARDEN,
     mapKey: 'garden',
-    path: './src/assets/garden.json',
+    path: './src/assets/maps/garden.json',
     displayName: 'Jardim',
     spawnX: 320,
     spawnY: 400
@@ -98,8 +98,8 @@ export const MAP_ASSETS = Object.freeze({
 
   [SCENE_NAMES.COFFEE_ROOM]: {
     sceneKey: SCENE_NAMES.COFFEE_ROOM,
-    mapKey: 'coffee',
-    path: './src/assets/coffee.json',
+    mapKey: 'coffee-room',
+    path: './src/assets/maps/coffee-room.json',
     displayName: 'Cafeteria',
     spawnX: 320,
     spawnY: 400
@@ -108,19 +108,10 @@ export const MAP_ASSETS = Object.freeze({
   [SCENE_NAMES.BOSS_ROOM]: {
     sceneKey: SCENE_NAMES.BOSS_ROOM,
     mapKey: 'boss-room',
-    path: './src/assets/boss-room.json',
+    path: './src/assets/maps/boss-room.json',
     displayName: 'Sala do Chefe',
     spawnX: 320,
     spawnY: 400
-  },
-  
-  [SCENE_NAMES.HALLWAY]: {
-    sceneKey: SCENE_NAMES.HALLWAY,
-    mapKey: 'hallway',
-    path: './src/assets/hallway.json',
-    displayName: 'Entrada Elevador',
-    spawnX: 21,
-    spawnY: 240
   }
 });
 

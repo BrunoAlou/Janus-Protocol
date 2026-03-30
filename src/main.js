@@ -19,7 +19,7 @@ import MinigameMenuScene from "./scenes/MinigameMenuScene.js";
 
 // Cenas de mapa
 import ReceptionScene from "./scenes/map/ReceptionScene.js";
-import ArchiveRoomScene from "./scenes/map/HallwayScene.js";
+import ArchiveRoomScene from "./scenes/map/ArchiveRoomScene.js";
 import ItRoomScene from "./scenes/map/ItRoomScene.js";
 import ElevatorScene from "./scenes/map/ElevatorScene.js";
 import QuantumObjectivesScene from "./scenes/map/QuantumObjectivesScene.js";
