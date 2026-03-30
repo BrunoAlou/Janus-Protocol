@@ -722,6 +722,22 @@ export default class GameStateManager {
       }
     });
 
+    if (typeof window !== 'undefined' && window.dilemmaJourneyRuntime) {
+      try {
+        window.dilemmaJourneyRuntime.recordOptionSelection({
+          at: now,
+          axis,
+          source: block.payload.source,
+          sourceId: block.payload.sourceId,
+          label: block.payload.label,
+          optionId: block.payload.optionId,
+          scene: block.payload.scene
+        });
+      } catch (error) {
+        console.warn('[GameStateManager] runtime dilemma sync failed:', error?.message || error);
+      }
+    }
+
     this.saveProgress();
     return block;
   }

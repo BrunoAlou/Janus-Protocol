@@ -118,7 +118,7 @@ export default class CoffeeRoomScene extends BaseMapScene {
 
     this.baker = baker;
 
-    const louchGuy = NPCFactory.create(this, 250, 320, {
+    const louchGuy = NPCFactory.create(this, 215, 358, {
       id: 'npc_louch_guy',
       name: 'Louch Guy',
       texture: getLouchGuyTextureKey(),
@@ -137,7 +137,7 @@ export default class CoffeeRoomScene extends BaseMapScene {
       defaultDirection: 'down'
     });
 
-    louchGuyController.execute({ action: 'sit', direction: 'down' });
+    louchGuyController.execute({ action: 'sit', direction: 'right' });
 
     this.npcs = [
       baker,
@@ -153,10 +153,10 @@ export default class CoffeeRoomScene extends BaseMapScene {
   setupDoorTransitions() {
     this.doorZones = [
       new DoorZone(this, {
-        x: 320,
-        y: 468,
-        width: 120,
-        height: 24,
+        x: 256,
+        y: 40,
+        width: 78,
+        height: 52,
         label: 'ELEVADOR',
         indicatorColor: 0x66ccff,
         indicatorTextColor: '#66ccff',

@@ -1,3 +1,5 @@
+import { deriveProfilesFromState } from '../profile/DerivedProfileEngine.js';
+
 function clamp01(value) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(1, value));
@@ -431,16 +433,59 @@ function buildChoicesTrace(state) {
   };
 }
 
+function buildNarrativeAudit(state, runtimeSummary, derivedProfiles) {
+  const flags = state?.player?.flags || {};
+  const stats = state?.player?.stats || {};
+
+  const endingPayload = stats.ending_payload || null;
+  const endingHistory = Array.isArray(stats.ending_history) ? stats.ending_history : [];
+  const runtime = runtimeSummary || {};
+  const history = Array.isArray(runtime.history) ? runtime.history : [];
+
+  return {
+    enabled: true,
+    ending: {
+      resolved: flags.ending_resolved === true,
+      endingId: flags.ending_id || endingPayload?.endingId || null,
+      objective: flags.ending_objective || endingPayload?.objective || null,
+      dominantAxis: flags.ending_dominant_axis || endingPayload?.dominantAxis || null,
+      tone: flags.ending_tone || endingPayload?.tone || null,
+      resolvedAtMs: Number(flags.ending_resolved_at_ms || endingPayload?.resolvedAt || 0) || null,
+      latestPayload: endingPayload,
+      history: endingHistory
+    },
+    runtime: {
+      dilemmasResolved: Number(runtime?.runtimeDilemmas?.resolved || 0),
+      optionsSelected: Number(runtime?.runtimeDilemmas?.selectedOptions || 0),
+      journeysCompleted: Number(runtime?.runtimeJourneys?.completed || 0),
+      journeysTotal: Number(runtime?.runtimeJourneys?.total || 0),
+      impactTotals: runtime?.impactTotals || {},
+      bySource: runtime?.bySource || {},
+      byDilemma: runtime?.byDilemma || {},
+      historyPreview: history.slice(-15)
+    },
+    profileCalibration: {
+      dominantAxis: derivedProfiles?.dominantAxis || null,
+      confidenceGlobal: Number(derivedProfiles?.confidence?.global || 0),
+      confidenceComponents: derivedProfiles?.confidence?.components || {},
+      calibrationPreset: derivedProfiles?.confidence?.diagnostics?.calibrationPreset || 'default'
+    }
+  };
+}
+
 export function generateBaseReport({ state, minigameManager, mode = 'prod' }) {
   const safeState = state || {};
   const stats = safeState?.player?.stats || {};
   const flags = safeState?.player?.flags || {};
+  const derivedProfiles = deriveProfilesFromState(safeState);
 
   const profile = computeAxisProfile(stats, flags);
   const fixedResults = buildFixedResults(safeState);
   const minigames = buildMinigameSection(minigameManager);
   const badges = buildBadgesSection(safeState, minigames);
   const choicesTrace = buildChoicesTrace(safeState);
+  const runtimeSummary = window.dilemmaJourneyRuntime?.buildRuntimeSummary?.(safeState) || null;
+  const narrativeAudit = buildNarrativeAudit(safeState, runtimeSummary, derivedProfiles);
 
   const sectionCoverage = {
     profile: profile.coverage,
@@ -516,6 +561,12 @@ export function generateBaseReport({ state, minigameManager, mode = 'prod' }) {
       profile: {
         enabled: profile.totalPoints > 0,
         gpi: profile.normalized,
+        derived: {
+          disc: derivedProfiles.disc,
+          bigFive: derivedProfiles.bigFive,
+          confidence: derivedProfiles.confidence,
+          dominantAxis: derivedProfiles.dominantAxis
+        },
         source: {
           totalPoints: profile.totalPoints,
           detectedAxis: profile.detectedAxis,
@@ -524,7 +575,9 @@ export function generateBaseReport({ state, minigameManager, mode = 'prod' }) {
       },
       fixedResults,
       minigames,
-      badges
+      badges,
+      runtime: runtimeSummary,
+      narrativeAudit
     }
   };
 

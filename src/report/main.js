@@ -134,6 +134,24 @@ function renderReport(mode, report) {
     });
     body.appendChild(list);
 
+    const derived = sections.profile?.derived || {};
+    if (Object.keys(derived).length > 0) {
+      body.appendChild(el('h3', null, 'Perfil Derivado'));
+      const derivedList = el('ul');
+      derivedList.appendChild(el('li', null, `Dominant axis: ${derived.dominantAxis || 'n/d'}`));
+      derivedList.appendChild(el('li', null, `Confidence: ${Number(derived?.confidence?.global || 0)}%`));
+
+      const disc = derived.disc || {};
+      const discText = `DISC => D:${Number(disc.D || 0).toFixed(1)} I:${Number(disc.I || 0).toFixed(1)} S:${Number(disc.S || 0).toFixed(1)} C:${Number(disc.C || 0).toFixed(1)}`;
+      derivedList.appendChild(el('li', null, discText));
+
+      const bf = derived.bigFive || {};
+      const bfText = `Big Five => O:${Number(bf.O || 0).toFixed(2)} C:${Number(bf.C || 0).toFixed(2)} E:${Number(bf.E || 0).toFixed(2)} A:${Number(bf.A || 0).toFixed(2)} N:${Number(bf.N || 0).toFixed(2)}`;
+      derivedList.appendChild(el('li', null, bfText));
+
+      body.appendChild(derivedList);
+    }
+
     if (mode === 'debug') {
       body.appendChild(el('h3', null, 'Fonte de calculo'));
       renderJsonBlock(body, sections.profile.source || {});
@@ -219,6 +237,58 @@ function renderReport(mode, report) {
       body.appendChild(row);
     });
   });
+
+  if (sections.narrativeAudit?.enabled) {
+    renderSection(root, 'Narrative Audit', 100, (body) => {
+      const audit = sections.narrativeAudit || {};
+      const ending = audit.ending || {};
+      const runtime = audit.runtime || {};
+      const calibration = audit.profileCalibration || {};
+
+      body.appendChild(el('h3', null, 'Ending'));
+      const endingList = el('ul');
+      endingList.appendChild(el('li', null, `Resolved: ${ending.resolved ? 'yes' : 'no'}`));
+      endingList.appendChild(el('li', null, `Ending ID: ${ending.endingId || 'n/d'}`));
+      endingList.appendChild(el('li', null, `Objective: ${ending.objective || 'n/d'}`));
+      endingList.appendChild(el('li', null, `Dominant axis: ${ending.dominantAxis || 'n/d'}`));
+      endingList.appendChild(el('li', null, `Tone: ${ending.tone || 'n/d'}`));
+      body.appendChild(endingList);
+
+      body.appendChild(el('h3', null, 'Runtime Narrative Signals'));
+      const runtimeList = el('ul');
+      runtimeList.appendChild(el('li', null, `Dilemmas resolved: ${runtime.dilemmasResolved || 0}`));
+      runtimeList.appendChild(el('li', null, `Options selected: ${runtime.optionsSelected || 0}`));
+      runtimeList.appendChild(el('li', null, `Journeys completed: ${runtime.journeysCompleted || 0}/${runtime.journeysTotal || 0}`));
+      const impact = runtime.impactTotals || {};
+      runtimeList.appendChild(
+        el(
+          'li',
+          null,
+          `Impact totals => execution:${Number(impact.execution || 0)} collaboration:${Number(impact.collaboration || 0)} resilience:${Number(impact.resilience || 0)} innovation:${Number(impact.innovation || 0)}`
+        )
+      );
+      body.appendChild(runtimeList);
+
+      body.appendChild(el('h3', null, 'Calibration'));
+      const calibrationList = el('ul');
+      calibrationList.appendChild(el('li', null, `Preset: ${calibration.calibrationPreset || 'default'}`));
+      calibrationList.appendChild(el('li', null, `Confidence global: ${Number(calibration.confidenceGlobal || 0)}%`));
+      body.appendChild(calibrationList);
+
+      if (mode === 'debug') {
+        body.appendChild(el('h3', null, 'Ending payload (raw)'));
+        renderJsonBlock(body, ending.latestPayload || null);
+        body.appendChild(el('h3', null, 'Ending history (raw)'));
+        renderJsonBlock(body, ending.history || []);
+        body.appendChild(el('h3', null, 'Runtime by source (raw)'));
+        renderJsonBlock(body, runtime.bySource || {});
+        body.appendChild(el('h3', null, 'Runtime by dilemma (raw)'));
+        renderJsonBlock(body, runtime.byDilemma || {});
+        body.appendChild(el('h3', null, 'Runtime history preview (raw)'));
+        renderJsonBlock(body, runtime.historyPreview || []);
+      }
+    });
+  }
 
   if (mode === 'debug' && report.debug) {
     renderSection(root, 'Debug Details', 100, (body) => {

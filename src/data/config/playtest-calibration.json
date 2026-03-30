@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "presetId": "playtest_2026_q1_v1",
+    "sampleSize": 42,
+    "notes": "Calibracao inicial baseada em sessoes de playtest internas"
+  },
+  "disc": {
+    "traitMultipliers": {
+      "D": 1.02,
+      "I": 0.98,
+      "S": 1.01,
+      "C": 0.99
+    },
+    "axisWeightAdjustments": {
+      "D": { "execution": 1.05, "innovation": 0.95, "resilience": 1.0, "collaboration": 1.0 },
+      "I": { "collaboration": 1.05, "innovation": 0.95, "resilience": 1.0, "execution": 1.0 },
+      "S": { "collaboration": 0.97, "resilience": 1.06, "execution": 1.02, "innovation": 1.0 },
+      "C": { "execution": 1.04, "resilience": 1.03, "collaboration": 0.96, "innovation": 1.0 }
+    }
+  },
+  "bigFive": {
+    "traitBias": {
+      "O": 0.05,
+      "C": 0.08,
+      "E": 0.02,
+      "A": 0.04,
+      "N": -0.07
+    },
+    "scaleGain": 0.98
+  },
+  "confidence": {
+    "weights": {
+      "signalVolume": 0.28,
+      "axisBalance": 0.18,
+      "dilemmaCoverage": 0.19,
+      "journeyCoverage": 0.16,
+      "objectiveCoverage": 0.12,
+      "consistency": 0.07
+    },
+    "targets": {
+      "signalVolume": 48,
+      "runtimeDilemmas": 14
+    },
+    "consistencyWindow": 16
+  }
+}

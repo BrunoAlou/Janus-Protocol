@@ -824,6 +824,17 @@ export default class InteractiveElement {
     };
     this._trackInteraction('option_selected', trackingPayload);
     this._trackSessionMetrics('option_selected', trackingPayload);
+
+    if (window.dilemmaJourneyRuntime?.recordOptionSelection) {
+      window.dilemmaJourneyRuntime.recordOptionSelection({
+        optionId: option?.id || null,
+        source: this.name,
+        sourceId: this.id,
+        label: option?.label || null,
+        scene: this.scene?.scene?.key || null,
+        at: Date.now()
+      });
+    }
     
     if (option.disabled) {
       console.log(`[InteractiveElement] Option disabled: ${option.disabledReason}`);

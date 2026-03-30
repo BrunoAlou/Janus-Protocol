@@ -21,6 +21,7 @@ export default class QuantumObjectivesScene extends BaseMapScene {
     this.primaryObjectiveChoiceFlagKey = 'elevator_primary_objective_choice';
     this.primaryObjectiveAxisFlagKey = 'elevator_primary_objective_axis';
     this.hubIntroSeenFlagKey = 'quantum_objective_hub_intro_seen';
+    this.endingResolvedFlagKey = 'ending_resolved';
   }
 
   init(data) {
@@ -207,6 +208,21 @@ export default class QuantumObjectivesScene extends BaseMapScene {
     const activeObjectives = this.getActiveObjectiveOptions();
     const hasAnyActiveObjective = activeObjectives.length > 0;
     const selectedAxis = window.gameState?.getFlag?.(this.primaryObjectiveAxisFlagKey) || 'nao definido';
+    const hasCompletedObjective = [
+      this.bossObjectiveCompletedFlagKey,
+      this.teamObjectiveCompletedFlagKey,
+      this.solveObjectiveCompletedFlagKey,
+      this.stabilizeObjectiveCompletedFlagKey
+    ].some((key) => window.gameState?.getFlag?.(key) === true);
+    const endingAlreadyResolved = window.gameState?.getFlag?.(this.endingResolvedFlagKey) === true;
+
+    const finalizeOption = (hasCompletedObjective && !endingAlreadyResolved)
+      ? [{
+          id: 'objective_finalize_story',
+          label: 'Finalizar Enredo (Resolver Desfecho)',
+          action: { type: 'custom', target: 'resolve-ending' }
+        }]
+      : [];
 
     this.dialogueFlow?.ensureDialogScene(SCENE_NAMES.DIALOG, 6, 0, () => {
       this.dialogueFlow?.showOptionsDialog(SCENE_NAMES.DIALOG, {
@@ -216,6 +232,7 @@ export default class QuantumObjectivesScene extends BaseMapScene {
           : ELEVATOR_TEXTS.objectiveHub.noObjectiveGreeting,
         options: [
           ...activeObjectives,
+          ...finalizeOption,
           {
             id: 'objective_quiz',
             label: ELEVATOR_TEXTS.objectiveHub.menu.quiz,
@@ -248,6 +265,11 @@ export default class QuantumObjectivesScene extends BaseMapScene {
       return;
     }
 
+    if (option?.id === 'objective_finalize_story') {
+      this.resolveAndShowEnding();
+      return;
+    }
+
     if (action.type === 'minigame') {
       window.sceneManager?.startMinigame?.(action.target, {
         source: 'quantum_objectives',
@@ -277,6 +299,38 @@ export default class QuantumObjectivesScene extends BaseMapScene {
         });
       });
     }
+  }
+
+  resolveAndShowEnding() {
+    const resolver = window.resolveEndingFromState;
+    const applyEnding = window.applyEndingToGameState;
+    const state = window.gameState?.getState?.();
+
+    if (typeof resolver !== 'function' || !state) {
+      return;
+    }
+
+    const ending = resolver(state);
+    if (!ending) {
+      this.openActiveObjectivesMenu();
+      return;
+    }
+
+    if (typeof applyEnding === 'function') {
+      applyEnding(window.gameState, ending);
+    }
+
+    this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
+      name: 'Janus IA - Desfecho',
+      dialogues: [
+        { text: ending.title },
+        { text: ending.summary },
+        ...ending.dialogues.map((text) => ({ text }))
+      ],
+      onComplete: () => {
+        this.transitionToElevator();
+      }
+    });
   }
 
   transitionToElevator() {

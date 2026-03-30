@@ -6,6 +6,8 @@ import MinigameManager from "./managers/MinigameManager.js";
 import { GameStateManager } from './state/index.js';
 import { SCENE_NAMES } from './constants/SceneNames.js';
 import { installDebugHotkey, toggleDebugWithAccessControl } from './utils/debugAccess.js';
+import DilemmaJourneyRuntime from './runtime/DilemmaJourneyRuntime.js';
+import { resolveEndingFromState, applyEndingToGameState } from './narrative/EndingResolver.js';
 
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
@@ -95,6 +97,12 @@ window.minigameManager = new MinigameManager();
 
 // Estado global do jogo (flags, quests, progresso em memória)
 window.gameState = new GameStateManager();
+
+// Runtime de dilemas/journeys e ending resolver
+window.dilemmaJourneyRuntime = new DilemmaJourneyRuntime(window.gameState);
+window.resolveEndingFromState = resolveEndingFromState;
+window.applyEndingToGameState = applyEndingToGameState;
+window.dilemmaJourneyRuntime.syncJourneys();
 
 // Inicializar SceneManager global
 window.sceneManager = new SceneManager(game);
