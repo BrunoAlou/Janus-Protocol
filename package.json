@@ -31,8 +31,13 @@
   },
   "homepage": "https://github.com/BrunoAlou/Janus-Protocol#readme",
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
     "phaser": "^3.90.0",
-    "mongodb": "^6.3.0"
+    "mongodb": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "sharp": "^0.34.4",
