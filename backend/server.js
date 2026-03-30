@@ -41,6 +41,11 @@ const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || 'WPL_AP1.XX
 // Google OAuth config (NEVER commit CLIENT_SECRET - use environment variables only)
 const GOOGLE_CLIENT_ID = sanitizeEnvValue(process.env.GOOGLE_CLIENT_ID) || 'your-client-id.apps.googleusercontent.com';
 const GOOGLE_CLIENT_SECRET = sanitizeEnvValue(process.env.GOOGLE_CLIENT_SECRET); // ⚠️ NUNCA faça commit disso!
+const DEBUG_MANAGER_PASSWORD = sanitizeEnvValue(
+  process.env.DEBUG_MANAGER_PASSWORD ||
+  process.env.PASS_MANAGER_PASSWORD ||
+  process.env.PASS_MANAGER
+);
 
 // Fallback para arquivo local quando MongoDB não estiver disponível
 const DATA_DIR = path.join(__dirname, 'data');
@@ -138,6 +143,14 @@ function getLastHashForSession(session_id, events) {
     if (e.session_id === session_id && e.hash) return e.hash;
   }
   return null;
+}
+
+function safePasswordEquals(input, expected) {
+  if (typeof input !== 'string' || typeof expected !== 'string') return false;
+  const a = Buffer.from(input, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 const server = http.createServer((req, res) => {
@@ -609,6 +622,38 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Debug unlock (password-based)
+  if (req.method === 'POST' && req.url === '/api/debug/unlock') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        if (!DEBUG_MANAGER_PASSWORD) {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'debug_password_not_configured' }));
+          return;
+        }
+
+        const payload = JSON.parse(body || '{}');
+        const candidate = typeof payload?.password === 'string' ? payload.password : '';
+        const valid = safePasswordEquals(candidate, DEBUG_MANAGER_PASSWORD);
+
+        if (!valid) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'invalid_password' }));
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, unlocked: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
   // Public minigame averages used by frontend comparison panel
   if (req.method === 'GET' && req.url === '/api/minigames/public-averages') {
     try {
@@ -642,6 +687,7 @@ async function startServer() {
         hasClientSecret: Boolean(GOOGLE_CLIENT_SECRET),
         clientIdLooksValid: GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')
       });
+      console.log('[Server] Debug unlock configured:', Boolean(DEBUG_MANAGER_PASSWORD));
     });
 
     // Graceful shutdown

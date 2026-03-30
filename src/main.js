@@ -5,6 +5,7 @@ import SceneManager from "./managers/SceneManager.js";
 import MinigameManager from "./managers/MinigameManager.js";
 import { GameStateManager } from './state/index.js';
 import { SCENE_NAMES } from './constants/SceneNames.js';
+import { installDebugHotkey, toggleDebugWithAccessControl } from './utils/debugAccess.js';
 
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
@@ -97,6 +98,10 @@ window.gameState = new GameStateManager();
 
 // Inicializar SceneManager global
 window.sceneManager = new SceneManager(game);
+
+// Controle de debug protegido por senha em produção (Ctrl+P)
+window.toggleDebugWithAccessControl = toggleDebugWithAccessControl;
+installDebugHotkey();
 
 // Fluxo global de reset de sessão disparado pela flag resetgame no modo debug
 window.gameState.on('resetgame-triggered', ({ source } = {}) => {

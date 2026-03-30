@@ -212,6 +212,14 @@ export default class PauseMenuScene extends Phaser.Scene {
   }
 
   toggleDebug(button) {
+    if (typeof window.toggleDebugWithAccessControl === 'function') {
+      window.toggleDebugWithAccessControl().then((state) => {
+        const enabled = state === true;
+        button.label.setText(enabled ? 'Debug: Ligado' : 'Debug: Desligado');
+      });
+      return;
+    }
+
     // Buscar a cena de mapa atual para acessar o collisionDebugger
     const currentMap = window.sceneManager?.currentState?.map;
     if (currentMap) {
@@ -242,7 +250,7 @@ export default class PauseMenuScene extends Phaser.Scene {
 
   showControls() {
     // Mostrar tela de controles
-    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nP - Toggle Debug\nGerar Report Base: Menu ESC (com Debug ligado)');
+    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nCtrl+P - Toggle Debug (producao pede senha)\nGerar Report Base: Menu ESC (com Debug ligado)');
   }
 
   async openBaseReport() {
