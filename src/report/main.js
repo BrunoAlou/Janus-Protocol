@@ -1,5 +1,6 @@
 import { readReportFromSession } from './openBaseReport.js';
 import { generateBaseReport } from './baseReportEngine.js';
+import { loadRadarValuesFromBackend, renderGpiRadar } from './radar.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -50,7 +51,7 @@ function renderSection(container, title, coverageValue, bodyRenderer) {
   container.appendChild(card);
 }
 
-function renderReport(mode, report) {
+function renderReport(mode, report, backendRadar = null) {
   const root = document.getElementById('report-root');
   root.innerHTML = '';
 
@@ -64,6 +65,10 @@ function renderReport(mode, report) {
   const coverage = el('div', 'coverage');
   coverage.textContent = `Completude global: ${report.coverage.globalCompleteness}%`;
   root.appendChild(coverage);
+
+  renderSection(root, 'Radar GPI', 100, (body) => {
+    renderGpiRadar(body, report, backendRadar);
+  });
 
   if (mode === 'debug' && report.coverage?.breakdown) {
     const breakdownCard = el('section', 'card');
@@ -156,6 +161,7 @@ function renderReport(mode, report) {
       body.appendChild(el('h3', null, 'Fonte de calculo'));
       renderJsonBlock(body, sections.profile.source || {});
     }
+
   });
 
   renderSection(root, 'Resultados Fixos', report.coverage.bySection.fixedResults || 0, (body) => {
@@ -356,14 +362,14 @@ function readModeFromUrl() {
   return value === 'debug' ? 'debug' : 'prod';
 }
 
-function setupModeSwitchers(initialMode, report) {
+function setupModeSwitchers(initialMode, report, backendRadar = null) {
   const prodBtn = document.getElementById('mode-prod');
   const debugBtn = document.getElementById('mode-debug');
 
   const applyMode = (mode) => {
     prodBtn.classList.toggle('active', mode === 'prod');
     debugBtn.classList.toggle('active', mode === 'debug');
-    renderReport(mode, report);
+    renderReport(mode, report, backendRadar);
 
     const params = new URLSearchParams(window.location.search);
     params.set('mode', mode);
@@ -376,7 +382,7 @@ function setupModeSwitchers(initialMode, report) {
   applyMode(initialMode);
 }
 
-function bootstrapReportPage() {
+async function bootstrapReportPage() {
   const sessionReport = readReportFromSession();
   const modeFromUrl = readModeFromUrl();
 
@@ -388,7 +394,8 @@ function bootstrapReportPage() {
   });
 
   const report = sessionReport || fallbackReport;
-  setupModeSwitchers(modeFromUrl, report);
+  const backendRadar = await loadRadarValuesFromBackend(report);
+  setupModeSwitchers(modeFromUrl, report, backendRadar);
 }
 
 bootstrapReportPage();
