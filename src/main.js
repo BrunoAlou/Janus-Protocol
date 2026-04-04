@@ -9,6 +9,8 @@ import { installDebugHotkey, toggleDebugWithAccessControl } from './utils/debugA
 import DilemmaJourneyRuntime from './runtime/DilemmaJourneyRuntime.js';
 import { resolveEndingFromState, applyEndingToGameState } from './narrative/EndingResolver.js';
 
+const REPORT_RESET_REQUEST_KEY = 'janus_report_reset_request';
+
 // Cenas de sistema
 import LoginScene from "./scenes/LoginScene.js";
 import UIScene from "./scenes/UIScene.js";
@@ -112,7 +114,7 @@ window.toggleDebugWithAccessControl = toggleDebugWithAccessControl;
 installDebugHotkey();
 
 // Fluxo global de reset de sessão disparado pela flag resetgame no modo debug
-window.gameState.on('resetgame-triggered', ({ source } = {}) => {
+function runSessionResetFlow(source = 'unknown') {
   console.log('[Main] resetgame-triggered:', source || 'unknown');
 
   const auth = window.gameState.getAuth?.() || {};
@@ -134,6 +136,24 @@ window.gameState.on('resetgame-triggered', ({ source } = {}) => {
     user,
     spawnPoint: 'default'
   });
+}
+
+window.gameState.on('resetgame-triggered', ({ source } = {}) => {
+  runSessionResetFlow(source || 'unknown');
+});
+
+window.addEventListener('storage', (event) => {
+  if (event.key !== REPORT_RESET_REQUEST_KEY || !event.newValue) {
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(event.newValue);
+    const requestId = payload?.id || 'unknown';
+    runSessionResetFlow(`report-request:${requestId}`);
+  } catch {
+    runSessionResetFlow('report-request:malformed');
+  }
 });
 
 // O Phaser já inicia LoginScene automaticamente (primeira da lista)

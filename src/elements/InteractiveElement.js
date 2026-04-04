@@ -825,6 +825,16 @@ export default class InteractiveElement {
     this._trackInteraction('option_selected', trackingPayload);
     this._trackSessionMetrics('option_selected', trackingPayload);
 
+    this.scene.events.emit('interactive-option-selected', {
+      elementId: this.id,
+      elementName: this.name,
+      optionId: option?.id || null,
+      optionLabel: option?.label || null,
+      optionAxis: trackingPayload.optionAxis,
+      scene: this.scene?.scene?.key || null,
+      at: Date.now()
+    });
+
     if (window.dilemmaJourneyRuntime?.recordOptionSelection) {
       window.dilemmaJourneyRuntime.recordOptionSelection({
         optionId: option?.id || null,

@@ -14,13 +14,13 @@ export function renderCoverageBreakdown(root, report, mode) {
 
   list.appendChild(el('li', null, `Perfil: ${breakdown.profile.available}/${breakdown.profile.total} => ${breakdown.profile.percentage}%`));
   list.appendChild(el('li', null, `Resultados fixos: ${breakdown.fixedResults.available}/${breakdown.fixedResults.total} => ${breakdown.fixedResults.percentage}%`));
-  list.appendChild(el('li', null, `Minigames: ${breakdown.minigames.available}/${breakdown.minigames.total} => ${breakdown.minigames.percentage}%`));
+  list.appendChild(el('li', null, `Desafios: ${breakdown.minigames.available}/${breakdown.minigames.total} => ${breakdown.minigames.percentage}%`));
   list.appendChild(el('li', null, `Badges (sinais): ${breakdown.badges.available}/${breakdown.badges.total} => ${breakdown.badges.percentage}%`));
   list.appendChild(el('li', null, `Global: media das 4 secoes = ${breakdown.global.rawAverage.toFixed(2)} => ${breakdown.global.rounded}%`));
 
   breakdownBody.appendChild(list);
   if (breakdown.minigames.reason) {
-    breakdownBody.appendChild(el('p', 'muted', `Motivo minigames: ${breakdown.minigames.reason}`));
+    breakdownBody.appendChild(el('p', 'muted', `Motivo desafios: ${breakdown.minigames.reason}`));
   }
   breakdownCard.appendChild(breakdownBody);
   root.appendChild(breakdownCard);
@@ -108,7 +108,7 @@ export function renderMinigamesSection(root, report, mode) {
   const sections = report.sections || {};
   if (!sections.minigames?.enabled) return;
 
-  renderSection(root, 'Minigames', report.coverage.bySection.minigames || 0, (body) => {
+  renderSection(root, 'Desafios', report.coverage.bySection.minigames || 0, (body) => {
     const summary = sections.minigames.summary || {};
     const list = el('ul');
     list.appendChild(el('li', null, `Unlocked: ${summary.totalUnlocked || 0}`));
@@ -117,7 +117,7 @@ export function renderMinigamesSection(root, report, mode) {
     body.appendChild(list);
 
     if (mode === 'debug') {
-      body.appendChild(el('h3', null, 'Raw minigames'));
+      body.appendChild(el('h3', null, 'Raw desafios'));
       renderJsonBlock(body, sections.minigames.minigames || []);
     }
   });
@@ -240,6 +240,54 @@ export function renderDebugDetailsSection(root, report, mode) {
         );
       });
       body.appendChild(interactionsList);
+    }
+
+    const featureFlags = report.debug.featureFlags || {};
+    const flagEntries = Array.isArray(featureFlags.entries) ? featureFlags.entries : [];
+    if (flagEntries.length > 0) {
+      body.appendChild(el('h3', null, 'Feature flags'));
+
+      const filterRow = el('div', 'flags-filter-row');
+      const filterLabel = el('label', 'flags-filter-label', 'Type');
+      const filterSelect = el('select', 'flags-filter-select');
+      const typeOptions = ['all', ...(Array.isArray(featureFlags.types) ? featureFlags.types : [])];
+
+      typeOptions.forEach((type) => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type === 'all'
+          ? 'all'
+          : (featureFlags.typeLabels?.[type] || type);
+        filterSelect.appendChild(option);
+      });
+
+      filterRow.appendChild(filterLabel);
+      filterRow.appendChild(filterSelect);
+      body.appendChild(filterRow);
+
+      const flagsList = el('ul', 'flags-list');
+      const renderFlagsList = () => {
+        const selectedType = filterSelect.value || 'all';
+        flagsList.innerHTML = '';
+
+        flagEntries
+          .filter((entry) => selectedType === 'all' || entry.type === selectedType)
+          .forEach((entry) => {
+            const label = entry.typeLabel || entry.type || 'misc';
+            const valueText = entry.value === true
+              ? 'true'
+              : entry.value === false
+                ? 'false'
+                : String(entry.value);
+            flagsList.appendChild(el('li', null, `${label} | ${entry.key} = ${valueText}`));
+          });
+      };
+
+      filterSelect.addEventListener('change', renderFlagsList);
+      renderFlagsList();
+      body.appendChild(flagsList);
+    } else {
+      body.appendChild(el('p', 'muted', 'Nenhuma feature flag registrada.'));
     }
 
     body.appendChild(el('h3', null, 'Escolhas e sinais coletados ate agora (raw)'));

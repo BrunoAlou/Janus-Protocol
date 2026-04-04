@@ -35,6 +35,74 @@ function mapAxisShort(axis) {
   return map[axis] || '?';
 }
 
+const FEATURE_FLAG_TYPE_ORDER = [
+  'interaction',
+  'door_unlock',
+  'objective',
+  'minigame_unlock',
+  'reception',
+  'elevator',
+  'ending',
+  'tutorial',
+  'system',
+  'misc'
+];
+
+const FEATURE_FLAG_TYPE_LABELS = {
+  interaction: 'interaction',
+  door_unlock: 'door unlock',
+  objective: 'objective',
+  minigame_unlock: 'challenge unlock',
+  reception: 'reception',
+  elevator: 'elevator',
+  ending: 'ending',
+  tutorial: 'tutorial',
+  system: 'system',
+  misc: 'misc'
+};
+
+function resolveFeatureFlagType(flagKey) {
+  const key = String(flagKey || '').toLowerCase();
+  if (!key) return 'misc';
+
+  if (key.includes('interaction') || key.startsWith('contacted_')) return 'interaction';
+  if (key.includes('door') && key.includes('unlocked')) return 'door_unlock';
+  if (key.startsWith('objective_')) return 'objective';
+  if (key.startsWith('minigame_unlocked_')) return 'minigame_unlock';
+  if (key.startsWith('reception_') || key.startsWith('receptionist_')) return 'reception';
+  if (key.startsWith('elevator_')) return 'elevator';
+  if (key.startsWith('ending_')) return 'ending';
+  if (key.includes('tutorial') || key.includes('intro')) return 'tutorial';
+  if (key === 'resetgame' || key.startsWith('debug_') || key.startsWith('janus_')) return 'system';
+
+  return 'misc';
+}
+
+function buildFeatureFlags(flags = {}) {
+  const entries = Object.entries(flags).map(([key, value]) => ({
+    key,
+    value,
+    enabled: value === true,
+    type: resolveFeatureFlagType(key),
+    typeLabel: FEATURE_FLAG_TYPE_LABELS[resolveFeatureFlagType(key)] || 'misc'
+  }));
+
+  entries.sort((a, b) => {
+    const aIndex = FEATURE_FLAG_TYPE_ORDER.indexOf(a.type);
+    const bIndex = FEATURE_FLAG_TYPE_ORDER.indexOf(b.type);
+    if (aIndex !== bIndex) return aIndex - bIndex;
+    return a.key.localeCompare(b.key);
+  });
+
+  const types = FEATURE_FLAG_TYPE_ORDER.filter((type) => entries.some((entry) => entry.type === type));
+
+  return {
+    types,
+    typeLabels: FEATURE_FLAG_TYPE_LABELS,
+    entries
+  };
+}
+
 function normalizeSourceName(source) {
   if (!source) return 'Fonte';
   const value = String(source).trim();
@@ -484,6 +552,7 @@ export function generateBaseReport({ state, minigameManager, mode = 'prod' }) {
   const minigames = buildMinigameSection(minigameManager);
   const badges = buildBadgesSection(safeState, minigames);
   const choicesTrace = buildChoicesTrace(safeState);
+  const featureFlags = buildFeatureFlags(flags);
   const runtimeSummary = window.dilemmaJourneyRuntime?.buildRuntimeSummary?.(safeState) || null;
   const narrativeAudit = buildNarrativeAudit(safeState, runtimeSummary, derivedProfiles);
 
@@ -594,6 +663,7 @@ export function generateBaseReport({ state, minigameManager, mode = 'prod' }) {
         quests: safeState?.player?.quests || {}
       },
       choicesTrace,
+      featureFlags,
       coverageBreakdown,
       missingSignals: {
         fixedResults: fixedResults.missing,

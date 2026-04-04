@@ -48,6 +48,7 @@ export default class CoffeeRoomScene extends BaseMapScene {
 
   create() {
     super.create();
+    window.gameState?.setFlag?.('objective_talk_to_team_evidence', true);
     this.setupDoorTransitions();
     this.registerDoorZonesToDebugger();
   }

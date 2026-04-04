@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
 import { SCENE_NAMES } from '../constants/SceneNames.js';
+import {
+  countCompletedObjectives,
+  isEndgameLocked,
+  isReportUnlocked,
+  syncObjectiveProgress
+} from '../state/objectiveProgress.js';
 
 /**
  * PauseMenuScene - Menu de configurações (ESC)
@@ -40,7 +46,7 @@ export default class PauseMenuScene extends Phaser.Scene {
     const musicBtn = this.createMenuItem(0, 0, 'Música: Ligada');
     const debugBtn = this.createMenuItem(0, 70, 'Debug: Desligado');
     const controlsBtn = this.createMenuItem(0, 140, 'Controles');
-    const reportBtn = this.createMenuItem(0, 210, 'Gerar Report Base');
+    const reportBtn = this.createMenuItem(0, 210, 'Abrir Report Base');
     const quitBtn = this.createMenuItem(0, 280, 'Sair do Jogo', 0xff0000);
 
     // Guardar referência ao botão de debug para atualizar texto
@@ -250,12 +256,18 @@ export default class PauseMenuScene extends Phaser.Scene {
 
   showControls() {
     // Mostrar tela de controles
-    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nCtrl+P - Toggle Debug (producao pede senha)\nGerar Report Base: Menu ESC (com Debug ligado)');
+    alert('Controles:\nWASD / Setas - Movimento\nE - Interagir\nESC - Menu\nESPAÇO - Avançar diálogo\nCtrl+P - Toggle Debug (producao pede senha)\nReport Base: Menu ESC (disponivel a partir de 2 objetivos concluidos)');
   }
 
   async openBaseReport() {
-    if (window.debugEnabled !== true) {
-      alert('Ative o Debug antes de gerar o report em modo de analise.');
+    syncObjectiveProgress(window.gameState);
+
+    const completedObjectives = countCompletedObjectives(window.gameState);
+    const reportUnlocked = isReportUnlocked(window.gameState, 2);
+    const endgameLocked = isEndgameLocked(window.gameState);
+
+    if (!reportUnlocked && !endgameLocked) {
+      alert(`Report indisponivel no momento. Conclua pelo menos 2 objetivos (atual: ${completedObjectives}/4).`);
       return;
     }
 
@@ -266,10 +278,7 @@ export default class PauseMenuScene extends Phaser.Scene {
         throw new Error('openBaseReportFromGame not available');
       }
 
-      openBaseReportFromGame({
-        debugEnabled: true,
-        mode: 'debug'
-      });
+      openBaseReportFromGame({ mode: 'prod' });
     } catch (error) {
       console.error('[PauseMenuScene] Falha ao abrir report base:', error);
       alert('Nao foi possivel gerar o report agora. Verifique o console para detalhes.');

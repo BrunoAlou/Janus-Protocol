@@ -47,6 +47,7 @@ export default class ArchiveRoomScene extends BaseMapScene {
   create() {
     console.log('[ArchiveRoomScene] create() called');
     super.create();
+    window.gameState?.setFlag?.('checkpoint_archive_room_visited', true);
     
     console.log('[ArchiveRoomScene] super.create() finished');
     

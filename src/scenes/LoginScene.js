@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import AuthManager from '../auth/AuthManager.js';
 import { SCENE_NAMES } from '../constants/SceneNames.js';
+import { isEndgameLocked } from '../state/objectiveProgress.js';
 
 const LOGIN_INPUT_SESSION_KEY = 'janus_login_first_input_at';
 
@@ -194,6 +195,11 @@ export default class LoginScene extends Phaser.Scene {
       window.gameState.setStat('session_last_auth_at_ms', Date.now());
     }
 
+    if (isEndgameLocked(window.gameState)) {
+      this.showEndgameLockedScreen(user);
+      return;
+    }
+
     const lastLocation = window.gameState?.getPlayerLastLocation?.();
     const lastPosition = window.gameState?.getPlayerPosition?.();
     const hasValidLastScene = !!lastLocation?.scene && !!window.sceneManager?.mapConfig?.[lastLocation.scene];
@@ -220,5 +226,63 @@ export default class LoginScene extends Phaser.Scene {
     window.sceneManager.startGameplay(initialScene, initialData);
     
     console.log('[LoginScene] Gameplay started via SceneManager');
+  }
+
+  showEndgameLockedScreen(user) {
+    const { width, height } = this.cameras.main;
+
+    this.children.removeAll();
+
+    this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e);
+
+    this.add.text(width / 2, height / 3, 'JORNADA FINALIZADA', {
+      fontSize: '42px',
+      fontFamily: 'Arial',
+      color: '#00d9ff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height / 3 + 56, `Usuario: ${user?.name || 'Participante'}`, {
+      fontSize: '18px',
+      fontFamily: 'Arial',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height / 2 - 28, 'Esta sessao entrou em modo somente report.', {
+      fontSize: '18px',
+      fontFamily: 'Arial',
+      color: '#b8d4ff'
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, height / 2 + 6, 'Use o botao abaixo para abrir o report final.', {
+      fontSize: '18px',
+      fontFamily: 'Arial',
+      color: '#b8d4ff'
+    }).setOrigin(0.5);
+
+    const reportBtn = this.createButton(width / 2, height / 2 + 95, 'Abrir Report Final', 0x00a67d);
+    reportBtn.on('pointerdown', () => this.openEndgameReport());
+
+    const logoutBtn = this.createButton(width / 2, height / 2 + 170, 'Sair e trocar conta', 0x666666);
+    logoutBtn.on('pointerdown', () => {
+      this.authManager.logout();
+      this.scene.restart();
+    });
+
+    this.openEndgameReport();
+  }
+
+  async openEndgameReport() {
+    try {
+      const module = await import('../report/openBaseReport.js');
+      const openBaseReportFromGame = module?.openBaseReportFromGame;
+      if (typeof openBaseReportFromGame !== 'function') {
+        throw new Error('openBaseReportFromGame not available');
+      }
+
+      openBaseReportFromGame({ mode: 'prod' });
+    } catch (error) {
+      console.error('[LoginScene] Falha ao abrir report final:', error);
+    }
   }
 }

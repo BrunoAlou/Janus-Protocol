@@ -141,9 +141,9 @@ export const ELEVATOR_TEXTS = {
       team: 'Objetivo (Colaboracao): conversar com a equipe',
       solve: 'Objetivo (Inovacao): executar protocolo de correcao',
       stabilize: 'Objetivo (Resiliencia): estabilizar ambiente critico',
-      quiz: 'Minigame: quiz de evidencias',
-      memory: 'Minigame: memoria de incidentes',
-      puzzle: 'Minigame: reconstituir log quebrado',
+      quiz: 'Desafio: quiz de evidencias',
+      memory: 'Desafio: memoria de incidentes',
+      puzzle: 'Desafio: reconstituir log quebrado',
       back: 'Voltar ao elevador'
     }
   }

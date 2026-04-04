@@ -8,7 +8,7 @@
       "type": "object",
       "name": "Sofa",
       "description": "Um sofa compacto para espera rapida.",
-      "area": { "x": 94, "y": 68, "width": 52, "height": 36 },
+      "area": { "x": 48, "y": 80, "width": 35, "height": 35 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Confortavel, mas nao da para cochilar em horario de expediente." }
@@ -19,7 +19,7 @@
       "type": "object",
       "name": "Sofa 2",
       "description": "Sofa de apoio para visitantes.",
-      "area": { "x": 154, "y": 68, "width": 52, "height": 36 },
+      "area": { "x": 48, "y": 110, "width": 35, "height": 25 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Sempre ocupado quando o dia esta corrido." }
@@ -30,7 +30,7 @@
       "type": "object",
       "name": "Sofa 3",
       "description": "Sofa na area de descanso.",
-      "area": { "x": 214, "y": 68, "width": 52, "height": 36 },
+      "area": { "x": 48, "y": 140, "width": 35, "height": 35 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Parece ideal para uma pausa entre chamados." }
@@ -41,7 +41,7 @@
       "type": "object",
       "name": "Sofa 4",
       "description": "Ultimo sofa do conjunto.",
-      "area": { "x": 274, "y": 68, "width": 52, "height": 36 },
+      "area": { "x": 48, "y": 175, "width": 35, "height": 35 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Lugar estrategico para observar o movimento da sala." }
@@ -96,7 +96,28 @@
       "type": "object",
       "name": "Caixas",
       "description": "Caixas com equipamentos novos.",
-      "area": { "x": 118, "y": 146, "width": 54, "height": 54 },
+      "area": { "x": 94, "y": 432, "width": 37, "height": 37 },
+      "indicator": { "text": "[E]", "offsetY": -30 },
+      "dialogues": [
+        { "text": "Etiquetas indicam perifericos e pecas de reposicao." }
+      ]
+    },
+        {
+      "id": "obj_ti_caixas_2",
+      "type": "object",
+      "name": "Caixas",
+      "description": "Caixas com equipamentos novos.",
+      "area": { "x": 48, "y": 400, "width": 37, "height": 37 },
+      "indicator": { "text": "[E]", "offsetY": -30 },
+      "dialogues": [
+        { "text": "Etiquetas indicam perifericos e pecas de reposicao." }
+      ]
+    },    {
+      "id": "obj_ti_caixas_3",
+      "type": "object",
+      "name": "Caixas",
+      "description": "Caixas com equipamentos novos.",
+      "area": { "x": 48, "y": 446, "width": 37, "height": 37 },
       "indicator": { "text": "[E]", "offsetY": -30 },
       "dialogues": [
         { "text": "Etiquetas indicam perifericos e pecas de reposicao." }

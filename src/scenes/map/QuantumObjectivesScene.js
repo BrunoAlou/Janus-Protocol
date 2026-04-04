@@ -5,6 +5,13 @@ import { preloadRegisteredTilesets } from '../../constants/TilesetAssets.js';
 import loadPlayerAssets from '../../player/loadPlayerAssets.js';
 import { SceneDialogueFlowService } from './services/SceneDialogueFlowService.js';
 import { ELEVATOR_TEXTS } from '../../i18n/elevatorTexts.js';
+import {
+  ENDGAME_LOCK_FLAG,
+  countCompletedObjectives,
+  isFinalizationUnlocked,
+  isReportUnlocked,
+  syncObjectiveProgress
+} from '../../state/objectiveProgress.js';
 
 export default class QuantumObjectivesScene extends BaseMapScene {
   constructor() {
@@ -22,6 +29,8 @@ export default class QuantumObjectivesScene extends BaseMapScene {
     this.primaryObjectiveAxisFlagKey = 'elevator_primary_objective_axis';
     this.hubIntroSeenFlagKey = 'quantum_objective_hub_intro_seen';
     this.endingResolvedFlagKey = 'ending_resolved';
+    this.endgameReportOnlyFlagKey = 'janus_endgame_report_only';
+    this.endgameCompletedAtFlagKey = 'janus_endgame_completed_at';
   }
 
   init(data) {
@@ -63,6 +72,18 @@ export default class QuantumObjectivesScene extends BaseMapScene {
 
     if (window.gameState?.getFlag?.(this.hubIntroSeenFlagKey) === undefined) {
       this.setHubFlag(this.hubIntroSeenFlagKey, false);
+    }
+
+    if (window.gameState?.getFlag?.(ENDGAME_LOCK_FLAG) === undefined) {
+      this.setHubFlag(ENDGAME_LOCK_FLAG, false);
+    }
+
+    if (window.gameState?.getFlag?.(this.endgameReportOnlyFlagKey) === undefined) {
+      this.setHubFlag(this.endgameReportOnlyFlagKey, false);
+    }
+
+    if (window.gameState?.getFlag?.(this.endgameCompletedAtFlagKey) === undefined) {
+      this.setHubFlag(this.endgameCompletedAtFlagKey, 0);
     }
   }
 
@@ -205,18 +226,25 @@ export default class QuantumObjectivesScene extends BaseMapScene {
       return;
     }
 
+    syncObjectiveProgress(window.gameState);
+
     const activeObjectives = this.getActiveObjectiveOptions();
     const hasAnyActiveObjective = activeObjectives.length > 0;
     const selectedAxis = window.gameState?.getFlag?.(this.primaryObjectiveAxisFlagKey) || 'nao definido';
-    const hasCompletedObjective = [
-      this.bossObjectiveCompletedFlagKey,
-      this.teamObjectiveCompletedFlagKey,
-      this.solveObjectiveCompletedFlagKey,
-      this.stabilizeObjectiveCompletedFlagKey
-    ].some((key) => window.gameState?.getFlag?.(key) === true);
+    const completedObjectivesCount = countCompletedObjectives(window.gameState);
+    const reportUnlocked = isReportUnlocked(window.gameState, 2);
+    const finalizationUnlocked = isFinalizationUnlocked(window.gameState, 4);
     const endingAlreadyResolved = window.gameState?.getFlag?.(this.endingResolvedFlagKey) === true;
 
-    const finalizeOption = (hasCompletedObjective && !endingAlreadyResolved)
+    const reportOption = reportUnlocked
+      ? [{
+          id: 'objective_open_partial_report',
+          label: `Abrir Report Base (${completedObjectivesCount}/4 objetivos)`,
+          action: { type: 'custom', target: 'open-report' }
+        }]
+      : [];
+
+    const finalizeOption = (finalizationUnlocked && !endingAlreadyResolved)
       ? [{
           id: 'objective_finalize_story',
           label: 'Finalizar Enredo (Resolver Desfecho)',
@@ -228,10 +256,11 @@ export default class QuantumObjectivesScene extends BaseMapScene {
       this.dialogueFlow?.showOptionsDialog(SCENE_NAMES.DIALOG, {
         name: ELEVATOR_TEXTS.objectiveHub.title,
         greeting: hasAnyActiveObjective
-          ? `${ELEVATOR_TEXTS.objectiveHub.menuGreeting} (Eixo foco: ${selectedAxis})`
+          ? `${ELEVATOR_TEXTS.objectiveHub.menuGreeting} (Eixo foco: ${selectedAxis} | Concluidos: ${completedObjectivesCount}/4)`
           : ELEVATOR_TEXTS.objectiveHub.noObjectiveGreeting,
         options: [
           ...activeObjectives,
+          ...reportOption,
           ...finalizeOption,
           {
             id: 'objective_quiz',
@@ -270,23 +299,22 @@ export default class QuantumObjectivesScene extends BaseMapScene {
       return;
     }
 
-    if (action.type === 'minigame') {
-      window.sceneManager?.startMinigame?.(action.target, {
-        source: 'quantum_objectives',
-        objectiveId: window.gameState?.getFlag?.(this.primaryObjectiveChoiceFlagKey) || 'no-objective-selected'
-      });
-
-      if (option?.activeFlag && option?.completeFlag) {
-        this.setHubFlag(option.activeFlag, false);
-        this.setHubFlag(option.completeFlag, true);
-      }
-
+    if (option?.id === 'objective_open_partial_report') {
+      this.openProgressReport();
       return;
     }
 
-    if (action.type === 'scene' && option?.activeFlag && option?.completeFlag) {
-      this.setHubFlag(option.activeFlag, false);
-      this.setHubFlag(option.completeFlag, true);
+    if (action.type === 'minigame') {
+      window.sceneManager?.startMinigame?.(action.target, {
+        source: 'quantum_objectives',
+        objectiveId: window.gameState?.getFlag?.(this.primaryObjectiveChoiceFlagKey) || 'no-objective-selected',
+        objectiveContext: {
+          source: 'objective-hub',
+          objectiveId: option?.id || null
+        }
+      });
+
+      return;
     }
 
     if (action.type === 'scene' && action.target) {
@@ -302,6 +330,20 @@ export default class QuantumObjectivesScene extends BaseMapScene {
   }
 
   resolveAndShowEnding() {
+    syncObjectiveProgress(window.gameState);
+
+    if (!isFinalizationUnlocked(window.gameState, 4)) {
+      this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
+        name: 'Janus IA',
+        dialogues: [
+          { text: 'Ainda nao e possivel fechar o enredo.' },
+          { text: 'Conclua os 4 objetivos antes de resolver o desfecho.' }
+        ],
+        onComplete: () => this.openActiveObjectivesMenu()
+      });
+      return;
+    }
+
     const resolver = window.resolveEndingFromState;
     const applyEnding = window.applyEndingToGameState;
     const state = window.gameState?.getState?.();
@@ -320,6 +362,10 @@ export default class QuantumObjectivesScene extends BaseMapScene {
       applyEnding(window.gameState, ending);
     }
 
+    this.setHubFlag(ENDGAME_LOCK_FLAG, true);
+    this.setHubFlag(this.endgameReportOnlyFlagKey, true);
+    this.setHubFlag(this.endgameCompletedAtFlagKey, Date.now());
+
     this.dialogueFlow?.showDialog(SCENE_NAMES.DIALOG, {
       name: 'Janus IA - Desfecho',
       dialogues: [
@@ -328,9 +374,26 @@ export default class QuantumObjectivesScene extends BaseMapScene {
         ...ending.dialogues.map((text) => ({ text }))
       ],
       onComplete: () => {
+        this.openProgressReport();
         this.transitionToElevator();
       }
     });
+  }
+
+  async openProgressReport() {
+    try {
+      const module = await import('../../report/openBaseReport.js');
+      const openBaseReportFromGame = module?.openBaseReportFromGame;
+      if (typeof openBaseReportFromGame !== 'function') {
+        throw new Error('openBaseReportFromGame not available');
+      }
+
+      openBaseReportFromGame({
+        mode: 'prod'
+      });
+    } catch (error) {
+      console.error('[QuantumObjectivesScene] Falha ao abrir report:', error);
+    }
   }
 
   transitionToElevator() {

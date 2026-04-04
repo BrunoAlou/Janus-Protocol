@@ -461,16 +461,12 @@ export default class ElevatorScene extends BaseMapScene {
     this.setElevatorFlag(this.elevatorObjectiveAxisFlagKey, axis);
 
     this.setElevatorFlag(this.elevatorBossObjectiveActiveFlagKey, objectiveKey === 'boss');
-    this.setElevatorFlag(this.elevatorBossObjectiveCompletedFlagKey, false);
 
     this.setElevatorFlag(this.elevatorTeamObjectiveActiveFlagKey, objectiveKey === 'team');
-    this.setElevatorFlag(this.elevatorTeamObjectiveCompletedFlagKey, false);
 
     this.setElevatorFlag(this.elevatorSolveObjectiveActiveFlagKey, objectiveKey === 'solve');
-    this.setElevatorFlag(this.elevatorSolveObjectiveCompletedFlagKey, false);
 
     this.setElevatorFlag(this.elevatorStabilizeObjectiveActiveFlagKey, objectiveKey === 'stabilize');
-    this.setElevatorFlag(this.elevatorStabilizeObjectiveCompletedFlagKey, false);
 
     this.dialogueFlow?.addAxisPoints(axis, points);
     this.dialogueFlow?.appendAxisChoiceEntry({

@@ -62,6 +62,7 @@ export default class ItRoomScene extends BaseMapScene {
 
   create() {
     super.create();
+    window.gameState?.setFlag?.('checkpoint_it_room_visited', true);
     
     // Fade in
     this.cameras.main.fadeIn(500, 0, 0, 0);

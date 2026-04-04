@@ -37,6 +37,7 @@ export default class BossRoomScene extends BaseMapScene {
 
   create() {
     super.create();
+    window.gameState?.setFlag?.('objective_talk_to_boss_evidence', true);
     this.setupDoorTransitions();
     this.registerDoorZonesToDebugger();
   }
@@ -91,7 +92,7 @@ export default class BossRoomScene extends BaseMapScene {
           return;
         }
 
-        const nextAction = Math.random() < 0.45 ? 'sit' : 'idle_phone';
+        const nextAction = Math.random() < 0.45 ? 'idle' : 'idle_phone';
         this.bossCommandController.execute({ action: nextAction, direction: 'left' });
       }
     });
@@ -102,10 +103,10 @@ export default class BossRoomScene extends BaseMapScene {
   setupDoorTransitions() {
     this.doorZones = [
       new DoorZone(this, {
-        x: 320,
-        y: 468,
-        width: 120,
-        height: 24,
+        x: 254,
+        y: 42,
+        width: 76,
+        height: 54,
         label: 'ELEVADOR',
         indicatorColor: 0x66ccff,
         indicatorTextColor: '#66ccff',

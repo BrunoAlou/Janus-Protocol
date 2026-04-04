@@ -93,6 +93,7 @@ export default class ReceptionScene extends BaseMapScene {
     createSitGuyAnimations(this);
 
     super.create(); // Chama o create da BaseMapScene
+    window.gameState?.setFlag?.('checkpoint_reception_visited', true);
 
     this.registerStoryEvents();
     

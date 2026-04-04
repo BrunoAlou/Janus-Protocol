@@ -60,6 +60,7 @@ export default class GardenScene extends BaseMapScene {
 
   create() {
     super.create();
+    window.gameState?.setFlag?.('checkpoint_garden_visited', true);
     this.setupDoorTransitions();
     this.registerDoorZonesToDebugger();
 

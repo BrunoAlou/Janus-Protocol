@@ -36,8 +36,8 @@ export default class UIScene extends Phaser.Scene {
 
     console.log('[UIScene] Menu background created at:', this.menuBackground.x, this.menuBackground.y);
 
-    // Botão de Minigames (lado esquerdo)
-    this.minigamesButton = this.add.text(30, 20, '🎮 MINIGAMES', {
+    // Botão de Desafios (lado esquerdo)
+    this.minigamesButton = this.add.text(30, 20, '🎮 DESAFIOS', {
       fontSize: '20px',
       color: '#00d9ff',
       fontStyle: 'bold',
@@ -65,7 +65,7 @@ export default class UIScene extends Phaser.Scene {
 
     console.log('[UIScene] Minigames button created at:', this.minigamesButton.x, this.minigamesButton.y);
 
-    // Criar menu de minigames (inicialmente oculto)
+    // Criar menu de desafios (inicialmente oculto)
     this.createMinigamesMenu();
 
     // Sincronizar estado inicial e visibilidade
@@ -109,7 +109,7 @@ export default class UIScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x00d9ff);
 
     // Título
-    const title = this.add.text(140, 20, 'MINIGAMES', {
+    const title = this.add.text(140, 20, 'DESAFIOS', {
       fontSize: '24px',
       color: '#00d9ff',
       fontStyle: 'bold'
@@ -123,7 +123,7 @@ export default class UIScene extends Phaser.Scene {
     this.minigamesEntriesContainer = this.add.container(0, 0);
 
     this.minigamesEmptyText = this.add.text(140, 170,
-      'Nenhum minigame desbloqueado ainda', {
+      'Nenhum desafio desbloqueado ainda', {
         fontSize: '14px',
         color: '#888888',
         align: 'center',
@@ -211,7 +211,7 @@ export default class UIScene extends Phaser.Scene {
         fontStyle: 'bold'
       }).setOrigin(0, 0.5);
 
-      const gameDesc = this.add.text(-100, 10, config.description || 'Minigame desbloqueado', {
+      const gameDesc = this.add.text(-100, 10, config.description || 'Desafio desbloqueado', {
         fontSize: '12px',
         color: '#aaaaaa'
       }).setOrigin(0, 0.5);
@@ -266,7 +266,7 @@ export default class UIScene extends Phaser.Scene {
 
   startMinigame(gameKey) {
     if (!this.minigameManager?.isUnlocked(gameKey)) {
-      console.warn('[UIScene] Minigame not unlocked yet:', gameKey);
+      console.warn('[UIScene] Challenge not unlocked yet:', gameKey);
       return;
     }
 

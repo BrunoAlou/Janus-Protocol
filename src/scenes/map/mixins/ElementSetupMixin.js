@@ -79,6 +79,10 @@ export const ElementSetupMixin = {
     const id = String(element?.id || '').toLowerCase();
     const sceneKey = String(this.sceneKey || '').toLowerCase();
 
+    if (sceneKey === 'itroomscene') {
+      return 'right';
+    }
+
     if (sceneKey === 'receptionscene') {
       if (id === 'couch_1' || id === 'couch_2') {
         return 'right';
@@ -117,7 +121,14 @@ export const ElementSetupMixin = {
       npc.nameTag = null;
       npc.elementInteractionId = elementId;
 
-      if (this.elementManager.getElement(elementId)) {
+      const existingElement = this.elementManager.getElement(elementId);
+      if (existingElement) {
+        existingElement.followSprite = npc;
+        existingElement.sprite = npc;
+        if (existingElement.config) {
+          existingElement.config.followSprite = npc;
+        }
+        existingElement.updateIndicatorPosition?.();
         return;
       }
 

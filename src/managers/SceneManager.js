@@ -7,6 +7,7 @@
 
 import { SCENE_NAMES } from '../constants/SceneNames.js';
 import { createMapConfig, createSceneCategories } from './scene/config.js';
+import { syncObjectiveProgress } from '../state/objectiveProgress.js';
 
 export default class SceneManager {
   constructor(game) {
@@ -22,6 +23,8 @@ export default class SceneManager {
       minigame: null,    // Minigame ativo (null se não houver)
       system: []         // Cenas de sistema ativas
     };
+
+    this._activeMinigameContext = null;
     
     console.log('[SceneManager] Initialized');
   }
@@ -270,6 +273,24 @@ export default class SceneManager {
       console.error(`[SceneManager] Invalid minigame: ${minigameKey}`);
       return;
     }
+
+    const minigameManager = window.minigameManager;
+    if (minigameManager?.syncWithGameState) {
+      minigameManager.syncWithGameState();
+    }
+
+    if (minigameManager?.isEnabled && !minigameManager.isEnabled(minigameKey)) {
+      console.warn(`[SceneManager] Minigame disabled by config: ${minigameKey}`);
+      return;
+    }
+
+    if (minigameManager && !minigameManager.isUnlocked(minigameKey)) {
+      minigameManager.unlock(minigameKey, {
+        source: data?.source || 'scene-manager-start',
+        scene: this.currentState.map,
+        autoUnlockedAtStart: true
+      });
+    }
     
     console.log(`[SceneManager] Starting minigame: ${minigameKey}`);
     
@@ -291,6 +312,13 @@ export default class SceneManager {
       returnToScene: this.currentState.map,
       timestamp: Date.now()
     };
+
+    this._activeMinigameContext = {
+      minigameKey,
+      mapScene: this.currentState.map,
+      objectiveContext: data?.objectiveContext || null,
+      source: data?.source || null
+    };
     
     this.startScene(minigameKey, minigameData);
     this.currentState.minigame = minigameKey;
@@ -307,12 +335,16 @@ export default class SceneManager {
     }
     
     console.log(`[SceneManager] Ending minigame: ${this.currentState.minigame}`);
+
+    const minigameKey = this.currentState.minigame;
+    const context = this._activeMinigameContext || {};
     
     const returnScene = this.currentState.map;
     
     // Parar minigame
     this.stopScene(this.currentState.minigame);
     this.currentState.minigame = null;
+    this._activeMinigameContext = null;
     
     // Retomar cena de mapa
     if (returnScene) {
@@ -322,8 +354,28 @@ export default class SceneManager {
     // Retomar cenas de sistema
     this.ensureSystemScenesActive();
     
+    const enrichedResult = {
+      ...result,
+      minigameKey,
+      mapScene: context.mapScene || returnScene,
+      source: context.source || null,
+      objectiveContext: context.objectiveContext || null
+    };
+
+    if (enrichedResult.completed === true && window.gameState?.setFlag) {
+      if (minigameKey === SCENE_NAMES.PUZZLE) {
+        window.gameState.setFlag('objective_solve_challenge_success', true);
+      }
+
+      if (minigameKey === SCENE_NAMES.MEMORY) {
+        window.gameState.setFlag('objective_stabilize_challenge_success', true);
+      }
+
+      syncObjectiveProgress(window.gameState);
+    }
+
     // Emitir evento com resultado do minigame
-    this.game.events.emit('minigame-completed', result);
+    this.game.events.emit('minigame-completed', enrichedResult);
   }
   
   /**

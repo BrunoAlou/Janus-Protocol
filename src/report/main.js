@@ -1,6 +1,9 @@
 import { readReportFromSession } from './openBaseReport.js';
 import { generateBaseReport } from './baseReportEngine.js';
 import { loadRadarValuesFromBackend, renderGpiRadar } from './radar.js';
+import { ensureDebugAccess } from '../utils/debugAccess.js';
+
+const REPORT_RESET_REQUEST_KEY = 'janus_report_reset_request';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -51,6 +54,38 @@ function renderSection(container, title, coverageValue, bodyRenderer) {
   container.appendChild(card);
 }
 
+function buildResetRequestPayload(report) {
+  return {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+    source: 'report_prod',
+    requestedAt: Date.now(),
+    playerId: report?.player?.id || null,
+    provider: report?.player?.provider || null
+  };
+}
+
+async function requestSessionReset(report) {
+  const confirmed = window.confirm(
+    'Esta acao vai resetar a sessao de jogo em abas abertas para este usuario. Deseja continuar?'
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const accessGranted = await ensureDebugAccess();
+    if (!accessGranted) {
+      return;
+    }
+
+    const payload = buildResetRequestPayload(report);
+    window.localStorage.setItem(REPORT_RESET_REQUEST_KEY, JSON.stringify(payload));
+    window.alert('Solicitacao de reset enviada para o jogo ativo.');
+  } catch (error) {
+    window.alert(error?.message || 'Nao foi possivel solicitar o reset da sessao.');
+  }
+}
+
 function renderReport(mode, report, backendRadar = null) {
   const root = document.getElementById('report-root');
   root.innerHTML = '';
@@ -65,6 +100,30 @@ function renderReport(mode, report, backendRadar = null) {
   const coverage = el('div', 'coverage');
   coverage.textContent = `Completude global: ${report.coverage.globalCompleteness}%`;
   root.appendChild(coverage);
+
+  if (mode === 'prod') {
+    renderSection(root, 'Administracao', 100, (body) => {
+      body.appendChild(
+        el(
+          'p',
+          'muted',
+          'Reset de sessao exige senha do debug manager e aciona o reset no jogo em abas abertas.'
+        )
+      );
+
+      const resetBtn = el('button', 'danger-btn', 'Resetar Sessao (Senha Debug)');
+      resetBtn.addEventListener('click', async () => {
+        resetBtn.disabled = true;
+        try {
+          await requestSessionReset(report);
+        } finally {
+          resetBtn.disabled = false;
+        }
+      });
+
+      body.appendChild(resetBtn);
+    });
+  }
 
   renderSection(root, 'Radar GPI', 100, (body) => {
     renderGpiRadar(body, report, backendRadar);
@@ -98,7 +157,7 @@ function renderReport(mode, report, backendRadar = null) {
       el(
         'li',
         null,
-        `Minigames: ${breakdown.minigames.available}/${breakdown.minigames.total} => ${breakdown.minigames.percentage}%`
+        `Desafios: ${breakdown.minigames.available}/${breakdown.minigames.total} => ${breakdown.minigames.percentage}%`
       )
     );
     list.appendChild(
@@ -118,7 +177,7 @@ function renderReport(mode, report, backendRadar = null) {
 
     breakdownBody.appendChild(list);
     if (breakdown.minigames.reason) {
-      breakdownBody.appendChild(el('p', 'muted', `Motivo minigames: ${breakdown.minigames.reason}`));
+      breakdownBody.appendChild(el('p', 'muted', `Motivo desafios: ${breakdown.minigames.reason}`));
     }
     breakdownCard.appendChild(breakdownBody);
     root.appendChild(breakdownCard);
@@ -204,7 +263,7 @@ function renderReport(mode, report, backendRadar = null) {
   });
 
   if (sections.minigames?.enabled) {
-    renderSection(root, 'Minigames', report.coverage.bySection.minigames || 0, (body) => {
+    renderSection(root, 'Desafios', report.coverage.bySection.minigames || 0, (body) => {
       const summary = sections.minigames.summary || {};
       const list = el('ul');
       list.appendChild(el('li', null, `Unlocked: ${summary.totalUnlocked || 0}`));
@@ -213,7 +272,7 @@ function renderReport(mode, report, backendRadar = null) {
       body.appendChild(list);
 
       if (mode === 'debug') {
-        body.appendChild(el('h3', null, 'Raw minigames'));
+        body.appendChild(el('h3', null, 'Raw desafios'));
         renderJsonBlock(body, sections.minigames.minigames || []);
       }
     });
@@ -344,6 +403,54 @@ function renderReport(mode, report, backendRadar = null) {
           );
         });
         body.appendChild(interactionsList);
+      }
+
+      const featureFlags = report.debug.featureFlags || {};
+      const flagEntries = Array.isArray(featureFlags.entries) ? featureFlags.entries : [];
+      if (flagEntries.length > 0) {
+        body.appendChild(el('h3', null, 'Feature flags'));
+
+        const filterRow = el('div', 'flags-filter-row');
+        const filterLabel = el('label', 'flags-filter-label', 'Type');
+        const filterSelect = el('select', 'flags-filter-select');
+        const typeOptions = ['all', ...(Array.isArray(featureFlags.types) ? featureFlags.types : [])];
+
+        typeOptions.forEach((type) => {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = type === 'all'
+            ? 'all'
+            : (featureFlags.typeLabels?.[type] || type);
+          filterSelect.appendChild(option);
+        });
+
+        filterRow.appendChild(filterLabel);
+        filterRow.appendChild(filterSelect);
+        body.appendChild(filterRow);
+
+        const flagsList = el('ul', 'flags-list');
+        const renderFlagsList = () => {
+          const selectedType = filterSelect.value || 'all';
+          flagsList.innerHTML = '';
+
+          flagEntries
+            .filter((entry) => selectedType === 'all' || entry.type === selectedType)
+            .forEach((entry) => {
+              const label = entry.typeLabel || entry.type || 'misc';
+              const valueText = entry.value === true
+                ? 'true'
+                : entry.value === false
+                  ? 'false'
+                  : String(entry.value);
+              flagsList.appendChild(el('li', null, `${label} | ${entry.key} = ${valueText}`));
+            });
+        };
+
+        filterSelect.addEventListener('change', renderFlagsList);
+        renderFlagsList();
+        body.appendChild(flagsList);
+      } else {
+        body.appendChild(el('p', 'muted', 'Nenhuma feature flag registrada.'));
       }
 
       body.appendChild(el('h3', null, 'Escolhas e sinais coletados ate agora (raw)'));

@@ -74,12 +74,14 @@ export function loadBossAssets(scene) {
 export function createBossAnimations(scene) {
   createDirectionalSet(scene, 'idle', BOSS_TEXTURE_KEYS.idle, 6, 6);
   createDirectionalSet(scene, 'idle_phone', BOSS_TEXTURE_KEYS.phone, 3, 6);
-  createDirectionalSet(scene, 'sit', BOSS_TEXTURE_KEYS.sit, 3, 5);
 }
 
 export function resolveBossAnimation(action = 'idle_phone', direction = 'down') {
   const actionKey = (action || 'idle_phone').toLowerCase();
   const directionKey = (direction || 'down').toLowerCase();
+  if (actionKey === 'sit') {
+    return BOSS_ANIM_MAP.idle_phone[directionKey] || BOSS_ANIM_MAP.idle_phone.down;
+  }
   return BOSS_ANIM_MAP[actionKey]?.[directionKey] || BOSS_ANIM_MAP.idle_phone.down;
 }
 
