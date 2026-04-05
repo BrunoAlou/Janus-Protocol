@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode devbuild",
-    "build:prod": "vite build --mode production",
+    "build:prod": "vite build --mode production --outDir build",
     "preview": "vite preview",
     "start": "node backend/server.js",
     "optimize:assets": "node scripts/optimize-assets.js --json --images --write",
